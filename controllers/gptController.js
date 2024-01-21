@@ -2,10 +2,8 @@ import { getCompletionBigFour, getCompletionPlanets, getCompletionPlanetsVer2 } 
 
 export async function handleBigFour(req, res) {
   try {
-    console.log("input xxx")
 
     const { prompt } = req.body;
-    console.log("input xxx")
     console.log(req.body)
     const response = await getCompletionBigFour(prompt);
     console.log(response)

@@ -1,8 +1,7 @@
 
 import OpenAI from "openai";
 
-// const client = new OpenAI();
-const client = new OpenAI({ apiKey: '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'})
+const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY})
 
 export async function getCompletionBigFour(input) {
     console.log("input " + input)
