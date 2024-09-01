@@ -1,0 +1,134 @@
+org: kobst
+app: stellium
+service: stellium-backend
+
+provider:
+  name: aws
+  runtime: nodejs14.x 
+  stage: dev
+  region: us-east-1 
+
+functions:
+  app:
+    handler: server.handler
+    timeout: 30 # Timeout in seconds
+    events:
+      - http:
+          path: /
+          method: any
+          cors: true
+      - http:
+          path: /{proxy+}
+          method: any
+          cors: true
+      - http:
+          path: /birthData
+          method: post
+          cors: true
+      - http:
+          path: /birthData
+          method: options
+          cors: true
+      - http:
+          path: /progressedChart
+          method: post
+          cors: true
+      - http:
+          path: /progressedChart
+          method: options
+          cors: true
+      - http:
+          path: /instantTransits
+          method: post
+          cors: true
+      - http:
+          path: /instantTransits
+          method: options
+          cors: true
+      - http:
+          path: /getBigFour
+          method: post
+          cors: true
+      - http:
+          path: /getBigFour
+          method: options
+          cors: true
+      - http:
+          path: /getPlanetsVer2
+          method: post
+          cors: true
+      - http:
+          path: /getPlanetsVer2
+          method: options
+          cors: true
+      - http:
+          path: /promptGeneration
+          method: post
+          cors: true
+      - http:
+          path: /promptGeneration
+          method: options
+          cors: true
+      - http:
+          path: /getPrompts
+          method: post
+          cors: true
+      - http:
+          path: /getPrompts
+          method: options
+          cors: true
+      - http:
+          path: /dailyTransits
+          method: post
+          cors: true
+      - http:
+          path: /periodTransits
+          method: post
+          cors: true
+      - http:
+          path: /generatePeriodAspectsForChart
+          method: post
+          cors: true
+      - http:
+          path: /generateSummaryTransitSignsForPeriod
+          method: post
+          cors: true
+      - http:
+          path: /generateSummaryTransitHousesForBirthChart
+          method: post
+          cors: true
+      - http:
+          path: /periodTransitsForChart
+          method: post
+          cors: true
+      - http:
+          path: /dailyAspects
+          method: post
+          cors: true
+      - http:
+          path: /dailyRetrogrades
+          method: post
+          cors: true
+      - http:
+          path: /saveUserProfile
+          method: post
+          cors: true
+      - http:
+          path: /getUsers
+          method: post
+          cors: true
+      - http:
+          path: /saveBirthChartInterpretation
+          method: post
+          cors: true
+      - http:
+          path: /getPeriodAspectsForUser
+          method: post
+          cors: true
+
+custom:
+  serverless-offline:
+    httpPort: 3001
+
+plugins:
+  - serverless-offline
