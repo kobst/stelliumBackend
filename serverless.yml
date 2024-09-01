@@ -82,48 +82,96 @@ functions:
           method: post
           cors: true
       - http:
+          path: /dailyTransits
+          method: options
+          cors: true
+      - http:
           path: /periodTransits
           method: post
+          cors: true
+      - http:
+          path: /periodTransits
+          method: options
           cors: true
       - http:
           path: /generatePeriodAspectsForChart
           method: post
           cors: true
       - http:
+          path: /generatePeriodAspectsForChart
+          method: options
+          cors: true
+      - http:
           path: /generateSummaryTransitSignsForPeriod
           method: post
+          cors: true
+      - http:
+          path: /generateSummaryTransitSignsForPeriod
+          method: options
           cors: true
       - http:
           path: /generateSummaryTransitHousesForBirthChart
           method: post
           cors: true
       - http:
+          path: /generateSummaryTransitHousesForBirthChart
+          method: options
+          cors: true
+      - http:
           path: /periodTransitsForChart
           method: post
+          cors: true
+      - http:
+          path: /periodTransitsForChart
+          method: options
           cors: true
       - http:
           path: /dailyAspects
           method: post
           cors: true
       - http:
+          path: /dailyAspects
+          method: options
+          cors: true
+      - http:
           path: /dailyRetrogrades
           method: post
+          cors: true
+      - http:
+          path: /dailyRetrogrades
+          method: options
           cors: true
       - http:
           path: /saveUserProfile
           method: post
           cors: true
       - http:
+          path: /saveUserProfile
+          method: options
+          cors: true
+      - http:
           path: /getUsers
           method: post
+          cors: true
+      - http:
+          path: /getUsers
+          method: options
           cors: true
       - http:
           path: /saveBirthChartInterpretation
           method: post
           cors: true
       - http:
+          path: /saveBirthChartInterpretation
+          method: options
+          cors: true
+      - http:
           path: /getPeriodAspectsForUser
           method: post
+          cors: true
+      - http:
+          path: /getPeriodAspectsForUser
+          method: options
           cors: true
 
 custom:
