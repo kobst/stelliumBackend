@@ -11,7 +11,12 @@ import {
     saveUserTransitAspects, 
     getPeriodAspectsForUser,
     saveBirthChartInterpretation,
-    getBirthChartInterpretation } from '../services/dbService.js'
+    getBirthChartInterpretation,
+    saveDailyTransitInterpretationData,
+    saveWeeklyTransitInterpretationData,
+    getWeeklyTransitInterpretationData,
+    upsertVectorizedInterpretation,
+    getDailyTransitInterpretationData} from '../services/dbService.js'
 
 import { findDailyTransitAspectsForBirthChart, 
     createGroupedTransitObjects, 
@@ -244,6 +249,7 @@ export async function handleSaveBirthChartInterpretation(req, res) {
     try {
         const { userId, heading, promptDescription, interpretation } = req.body;
         const result = await saveBirthChartInterpretation(userId, heading, promptDescription, interpretation);
+        await upsertVectorizedInterpretation(userId, heading, promptDescription, interpretation);
         res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -262,3 +268,53 @@ export async function handleGetBirthChartInterpretation(req, res) {
 
 
 
+export async function handleSaveDailyTransitInterpretationData(req, res) {
+    console.log("handleSaveDailyTransitInterpretationData")
+    console.log(req.body)
+    try {
+        const { date, combinedAspectsDescription, dailyTransitInterpretation } = req.body;
+        const dailyTransit = await saveDailyTransitInterpretationData(date, combinedAspectsDescription, dailyTransitInterpretation);
+        res.status(200).json({ message: 'Daily transit data saved successfully', dailyTransit });
+      } catch (error) {
+        console.error('Error saving daily transit data:', error);
+        res.status(500).json({ message: 'Error saving daily transit data', error: error.message });
+      }
+}
+
+export async function handleGetDailyTransitInterpretationData(req, res) {
+    console.log("handleGetDailyTransitInterpretationData")
+    try {
+        const { date } = req.body;
+        const dailyTransit = await getDailyTransitInterpretationData(date);
+        res.status(200).json(dailyTransit);
+    } catch (error) {
+        console.error('Error getting daily transit data:', error);
+        res.status(500).json({ message: 'Error getting daily transit data', error: error.message });
+    }
+}
+
+
+export async function handleSaveWeeklyTransitInterpretationData(req, res) {
+    console.log("handleSaveWeeklyTransitInterpretationData")
+    console.log(req.body)
+    try {
+        const { date, combinedAspectsDescription, weeklyTransitInterpretation, sign } = req.body;
+        const weeklyTransit = await saveWeeklyTransitInterpretationData(date, combinedAspectsDescription, weeklyTransitInterpretation, sign);
+        res.status(200).json({ message: 'Weekly transit data saved successfully', weeklyTransit });
+    } catch (error) {
+        console.error('Error saving weekly transit data:', error);          
+        res.status(500).json({ message: 'Error saving weekly transit data', error: error.message });
+    }
+}
+
+export async function handleGetWeeklyTransitInterpretationData(req, res) {
+    console.log("handleGetWeeklyTransitInterpretationData")
+    try {
+        const { date } = req.body;
+        const weeklyTransit = await getWeeklyTransitInterpretationData(date);
+        res.status(200).json(weeklyTransit);
+    } catch (error) {
+        console.error('Error getting weekly transit data:', error);
+        res.status(500).json({ message: 'Error getting weekly transit data', error: error.message });
+    }
+}           

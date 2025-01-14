@@ -1,4 +1,3 @@
-
 import { 
     elements, 
     elementPoints,
@@ -134,7 +133,7 @@ const findDailyTransitAspectsForBirthChartSnapshot = (dailyTransits, birthChart)
             const anotherPlanetFullDegree = getProperty(anotherPlanet, 'fullDegree', 'full_degree');
             const transitIsRetro = getProperty(transit, 'isRetro', 'is_retro');
 
-            const aspectObject = calculateAspectObject(transitFullDegree, anotherPlanetFullDegree, transitIsRetro, transit.name);
+            const aspectObject = calculateAspectObject(transitFullDegree, anotherPlanetFullDegree, transitIsRetro, transit.name, false);
             if (aspectObject) {
                 const transit_object = {
                     'transitingPlanet': transit['name'],
@@ -175,7 +174,7 @@ export const findAspectsForBirthChart = (birthChart) => {
             const anotherPlanetFullDegree = getProperty(anotherPlanet, 'fullDegree', 'full_degree');
             const transitIsRetro = getProperty(transitingPlanet, 'isRetro', 'is_retro');
 
-            const aspectObject = calculateAspectObject(transitFullDegree, anotherPlanetFullDegree, transitIsRetro, transitingPlanet.name);
+            const aspectObject = calculateAspectObject(transitFullDegree, anotherPlanetFullDegree, transitIsRetro, transitingPlanet.name, true);
             if (aspectObject) {
                 const transit_object = {
                     'transitingPlanet': transitingPlanet['name'],
@@ -194,6 +193,42 @@ export const findAspectsForBirthChart = (birthChart) => {
 
 
 
+export const findAspectsBetweenTwoBirthCharts = (birthChart1, birthChart2) => {
+    console.log("findAspectsForBirthChart")
+    birthChart.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
+    const aspects = [];
+
+    for (let i = 0; i < birthChart1.length; i++) {
+        const transitingPlanet = birthChart1[i]
+        for (let j = 0; j < birthChart2.length; j++) {
+            const anotherPlanet = birthChart2[j]
+            if (!anotherPlanet) {
+                console.log(j)
+                console.log(birthChart2)
+            }
+
+            const transitFullDegree = getProperty(transitingPlanet, 'fullDegree', 'full_degree');
+            const anotherPlanetFullDegree = getProperty(anotherPlanet, 'fullDegree', 'full_degree');
+            const transitIsRetro = getProperty(transitingPlanet, 'isRetro', 'is_retro');
+
+            const aspectObject = calculateAspectObject(transitFullDegree, anotherPlanetFullDegree, transitIsRetro, transitingPlanet.name, true);
+            if (aspectObject) {
+                const transit_object = {
+                    'transitingPlanet': transitingPlanet['name'],
+                    'transitingPlanetDegree': transitFullDegree,
+                    'aspectingPlanet': anotherPlanet['name'],
+                    'aspectingPlanetDegree': anotherPlanetFullDegree,
+                    'aspectType': aspectObject['aspectType'],
+                    'orb': aspectObject['orb'],
+                  }
+                aspects.push(transit_object)
+            } 
+        };
+    };
+    return aspects;
+}
+
+
 export const createGroupedTransitObjects = (transits) => {
         const groupedTransits = {};
         // Group transits by key
@@ -201,7 +236,7 @@ export const createGroupedTransitObjects = (transits) => {
           const key = `${transit.transitingPlanet}-${transit.aspectingPlanet}-${transit.aspectType}`;
           if (!groupedTransits[key]) {
             groupedTransits[key] = [];
-            console.log("key: " + key)
+            // console.log("key: " + key)
 
           }
           groupedTransits[key].push(transit);
@@ -210,7 +245,7 @@ export const createGroupedTransitObjects = (transits) => {
         const summaryTransits = [];
         // Process each group
         for (const key in groupedTransits) {
-            console.log("key grouped Transits: " + key)
+            // console.log("key grouped Transits: " + key)
 
           if (groupedTransits.hasOwnProperty(key)) {
             const group = groupedTransits[key];
@@ -220,7 +255,6 @@ export const createGroupedTransitObjects = (transits) => {
             // Split the group into continuous periods
             let currentGroup = [group[0]];
             for (let i = 1; i < group.length; i++) {
-                console.log(" into groups ")
               const dateDiff = differenceInDays(parse(group[i].date, 'yyyy-MM-dd HH:mm:ss', new Date()), 
                                                 parse(group[i - 1].date, 'yyyy-MM-dd HH:mm:ss', new Date()));
 
@@ -242,8 +276,8 @@ export const createGroupedTransitObjects = (transits) => {
 
 function createSummaryTransit(key, group) {
     // Sort the group by date to find the earliest and latest dates
-    console.log("key: " + key)
-    console.log("group: " + group.length)
+    // console.log("key: " + key)
+    // console.log("group: " + group.length)
     group.sort((a, b) => new Date(a.date) - new Date(b.date));
     const earliestDate = group[0].date;
     const latestDate = group[group.length - 1].date;
@@ -344,24 +378,44 @@ function calculateAspect(degree1, degree2, isRetro, transitName) {
     return null;
 }
 
-function calculateAspectObject(degree1, degree2, isRetro, transitName) {
+
+const orbDegreesTransit = {
+    'Moon': 8,
+    'Mercury': 5,
+    'Venus': 5,
+    'Sun': 5,
+    'Mars': 3,
+    'Jupiter': 3,
+    'Saturn': 3,
+    'Uranus': 3,
+    'Neptune': 3,
+    'Pluto': 3
+};
+
+const orbDegreesNatal = {
+    'Moon': 7,
+    'Mercury': 7,
+    'Venus': 7,
+    'Sun': 7,
+    'Mars': 5,
+    'Jupiter': 5,
+    'Saturn': 5,
+    'Uranus': 5,
+    'Neptune': 5,
+    'Pluto': 5
+};
+
+
+function calculateAspectObject(degree1, degree2, isRetro, transitName, isNatal) {
     // console.log("calculateAspectObject")
     let diff = Math.abs(degree1 - degree2);
     diff = diff > 180 ? 360 - diff : diff;
-    const orbDegrees = {
-        'Moon': 8,
-        'Mercury': 5,
-        'Venus': 5,
-        'Sun': 5,
-        'Mars': 3,
-        'Jupiter': 3,
-        'Saturn': 3,
-        'Uranus': 3,
-        'Neptune': 3,
-        'Pluto': 3
-    };
 
-    const maxOrb = orbDegrees[transitName];
+    let maxOrb = orbDegreesTransit[transitName];
+    if (isNatal) {
+        maxOrb = orbDegreesNatal[transitName];
+    }
+
 
     const aspects = [
         { name: 'conjunction', orb: 0 },
@@ -392,6 +446,10 @@ function calculateAspectObject(degree1, degree2, isRetro, transitName) {
     }
     return null;
 }
+
+
+
+
 
 
 
@@ -525,6 +583,11 @@ export function trackPlanetaryHouses(transitsData, birthChartHouses) {
                     currentHouse = birthChartHouses[i].house;
                     break;
                 }
+            }
+
+            // Skip adding the transit if currentHouse is null
+            if (currentHouse === null) {
+                return;
             }
 
             const lastHouseTransit = planetaryHouses[planetName].transitHouses[planetaryHouses[planetName].transitHouses.length - 1];

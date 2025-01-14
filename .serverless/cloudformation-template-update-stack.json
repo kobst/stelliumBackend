@@ -208,7 +208,11 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
+<<<<<<< HEAD
           "S3Key": "serverless/stellium-backend/dev/1725219090838-2024-09-01T19:31:30.838Z/stellium-backend.zip"
+=======
+          "S3Key": "serverless/stellium-backend/dev/1713044103751-2024-04-13T21:35:03.751Z/stellium-backend.zip"
+>>>>>>> fetchingFromDB
         },
         "Handler": "server.handler",
         "Runtime": "nodejs14.x",
@@ -226,14 +230,22 @@
         "AppLogGroup"
       ]
     },
+<<<<<<< HEAD
     "AppLambdaVersion7doIPo4ls6yKWnN8epCE4O0s5XQdOoXHrlFwGjGI7A": {
+=======
+    "AppLambdaVersionjz1fsWT0oJwlpe9TiT3G7EE6VLerkqjxtN9wgo": {
+>>>>>>> fetchingFromDB
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "AppLambdaFunction"
         },
+<<<<<<< HEAD
         "CodeSha256": "Ruu6i/bxKNtP7OmWYGDB9nu5Iv95uqsOTPIbOHAocS0="
+=======
+        "CodeSha256": "bj9orJ4NYn0awTZBB/iO7qSswj23oKzOIfjMvr51ToI="
+>>>>>>> fetchingFromDB
       }
     },
     "ApiGatewayRestApi": {
@@ -293,7 +305,11 @@
         }
       }
     },
+<<<<<<< HEAD
     "ApiGatewayResourceInstanttransits": {
+=======
+    "ApiGatewayResourceDaytransits": {
+>>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": {
@@ -302,7 +318,11 @@
             "RootResourceId"
           ]
         },
+<<<<<<< HEAD
         "PathPart": "instantTransits",
+=======
+        "PathPart": "dayTransits",
+>>>>>>> fetchingFromDB
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         }
@@ -353,6 +373,7 @@
         }
       }
     },
+<<<<<<< HEAD
     "ApiGatewayResourceGetprompts": {
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
@@ -548,6 +569,8 @@
         }
       }
     },
+=======
+>>>>>>> fetchingFromDB
     "ApiGatewayMethodOptions": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -787,7 +810,11 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
+<<<<<<< HEAD
     "ApiGatewayMethodInstanttransitsOptions": {
+=======
+    "ApiGatewayMethodDaytransitsOptions": {
+>>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "AuthorizationType": "NONE",
@@ -849,7 +876,11 @@
           }
         },
         "ResourceId": {
+<<<<<<< HEAD
           "Ref": "ApiGatewayResourceInstanttransits"
+=======
+          "Ref": "ApiGatewayResourceDaytransits"
+>>>>>>> fetchingFromDB
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -1079,6 +1110,7 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
+<<<<<<< HEAD
     "ApiGatewayMethodGetpromptsOptions": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -1692,6 +1724,8 @@
         }
       }
     },
+=======
+>>>>>>> fetchingFromDB
     "ApiGatewayMethodAny": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -1879,13 +1913,21 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
+<<<<<<< HEAD
     "ApiGatewayMethodInstanttransitsPost": {
+=======
+    "ApiGatewayMethodDaytransitsPost": {
+>>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "HttpMethod": "POST",
         "RequestParameters": {},
         "ResourceId": {
+<<<<<<< HEAD
           "Ref": "ApiGatewayResourceInstanttransits"
+=======
+          "Ref": "ApiGatewayResourceDaytransits"
+>>>>>>> fetchingFromDB
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -2063,6 +2105,7 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
+<<<<<<< HEAD
     "ApiGatewayMethodGetpromptsPost": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -2662,6 +2705,9 @@
       ]
     },
     "ApiGatewayDeployment1725219082646": {
+=======
+    "ApiGatewayDeployment1713044097610": {
+>>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -2674,6 +2720,7 @@
         "ApiGatewayMethodProxyVarOptions",
         "ApiGatewayMethodBirthdataOptions",
         "ApiGatewayMethodProgressedchartOptions",
+<<<<<<< HEAD
         "ApiGatewayMethodInstanttransitsOptions",
         "ApiGatewayMethodGetbigfourOptions",
         "ApiGatewayMethodGetplanetsver2Options",
@@ -2691,19 +2738,31 @@
         "ApiGatewayMethodGetusersOptions",
         "ApiGatewayMethodSavebirthchartinterpretationOptions",
         "ApiGatewayMethodGetperiodaspectsforuserOptions",
+=======
+        "ApiGatewayMethodDaytransitsOptions",
+        "ApiGatewayMethodGetbigfourOptions",
+        "ApiGatewayMethodGetplanetsver2Options",
+        "ApiGatewayMethodPromptgenerationOptions",
+>>>>>>> fetchingFromDB
         "ApiGatewayMethodAny",
         "ApiGatewayMethodProxyVarAny",
         "ApiGatewayMethodBirthdataPost",
         "ApiGatewayMethodBirthdataOptions",
         "ApiGatewayMethodProgressedchartPost",
         "ApiGatewayMethodProgressedchartOptions",
+<<<<<<< HEAD
         "ApiGatewayMethodInstanttransitsPost",
         "ApiGatewayMethodInstanttransitsOptions",
+=======
+        "ApiGatewayMethodDaytransitsPost",
+        "ApiGatewayMethodDaytransitsOptions",
+>>>>>>> fetchingFromDB
         "ApiGatewayMethodGetbigfourPost",
         "ApiGatewayMethodGetbigfourOptions",
         "ApiGatewayMethodGetplanetsver2Post",
         "ApiGatewayMethodGetplanetsver2Options",
         "ApiGatewayMethodPromptgenerationPost",
+<<<<<<< HEAD
         "ApiGatewayMethodPromptgenerationOptions",
         "ApiGatewayMethodGetpromptsPost",
         "ApiGatewayMethodGetpromptsOptions",
@@ -2719,6 +2778,9 @@
         "ApiGatewayMethodGetusersPost",
         "ApiGatewayMethodSavebirthchartinterpretationPost",
         "ApiGatewayMethodGetperiodaspectsforuserPost"
+=======
+        "ApiGatewayMethodPromptgenerationOptions"
+>>>>>>> fetchingFromDB
       ]
     },
     "AppLambdaPermissionApiGateway": {
@@ -2867,7 +2929,11 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
+<<<<<<< HEAD
           "S3Key": "serverless/stellium-backend/dev/1725219090838-2024-09-01T19:31:30.838Z/custom-resources.zip"
+=======
+          "S3Key": "serverless/stellium-backend/dev/1713044103751-2024-04-13T21:35:03.751Z/custom-resources.zip"
+>>>>>>> fetchingFromDB
         },
         "FunctionName": "stellium-backend-dev-custom-resource-apigw-cw-role",
         "Handler": "api-gateway-cloud-watch-role/handler.handler",
@@ -2909,7 +2975,11 @@
     "AppLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
+<<<<<<< HEAD
         "Ref": "AppLambdaVersion7doIPo4ls6yKWnN8epCE4O0s5XQdOoXHrlFwGjGI7A"
+=======
+        "Ref": "AppLambdaVersionjz1fsWT0oJwlpe9TiT3G7EE6VLerkqjxtN9wgo"
+>>>>>>> fetchingFromDB
       },
       "Export": {
         "Name": "sls-stellium-backend-dev-AppLambdaFunctionQualifiedArn"

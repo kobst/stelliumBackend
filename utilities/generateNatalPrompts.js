@@ -108,7 +108,7 @@ export const generateNatalPrompts = (promptKey, birthData) => {
         const descriptionFromCode = decodeRulerCode(code)
         // const description = `${rulerPlanet} ruler of ${sign} and the ${houseNum} house in ${planetData.sign} in ${planetData.house} house (${code})` 
         // responses.push(description);
-        responses.push(`${descriptionFromCode}`)
+        responses.push(`${descriptionFromCode} (${code})`)
         // responses = responses.concat(findAspects(rulerPlanet, birthData));
       }
       birthData.planets.forEach(planetData => {
@@ -142,15 +142,18 @@ export const generateNatalPrompts = (promptKey, birthData) => {
   export const generateNatalPositions = (promptKey, birthData) => {
     const prompt = relevantPromptAspects[promptKey];
 
-    const allPlanets = [
-        "Sun", "Moon", "Ascendant", "Mercury", "Venus", "Mars", "Saturn",
-        "Jupiter", "Uranus", "Neptune", "Pluto", "Part of Fortune", "Node",
-        "South Node"
-      ]
     let responses = [];
     let map = {}
 
-    allPlanets.forEach(planet => {
+
+    const matchingPlanetNames = birthData.planets
+    .filter(planet => prompt.houses.includes(planet.house))
+    .map(planet => planet.name);
+
+    // add matchiingPlanetnames to prompt.planets
+    const planetsToCheck = prompt.planets.concat(matchingPlanetNames)
+
+    planetsToCheck.forEach(planet => {
       const planetData = birthData.planets.find(p => p.name === planet);
       const houseCode = planetData.house.toString().padStart(2, '0'); // Pad the house number to ensure it's 2 digits
     //   code = planetCodes[planet] + signCodes[planetData.sign] + houseCode
@@ -168,7 +171,7 @@ export const generateNatalPrompts = (promptKey, birthData) => {
       map[planet] = codeSimple
 
       let description = decodePlanetHouseCode(code)
-      responses.push(`${description}  (ref: ${code})`)
+      responses.push(`${description} `)
 
     });
 
@@ -191,64 +194,73 @@ export const generateNatalPrompts = (promptKey, birthData) => {
         }
     })
 
-    Object.keys(map).forEach((key) => {
-        // console.log(key)
-        responses = responses.concat(findAspectsMap(key, birthData, map));
+
+
+ 
+    planetsToCheck.forEach(planet => {
+        responses = responses.concat(findAspectsMap(birthData, planet));
     })
 
-    return responses.join("\n");
-
+    // return responses.join("\n"); this allows 
+  return responses
 }
 
 
-function findAspectsMap(planetName, birthData, map) {
-    let aspectList = [];
-    birthData.aspects.forEach(aspect => {
-      if (aspect.aspecting_planet === planetName) {
-        const aspectPhrase = addAspectDescriptionMap(aspect, birthData, true, map);
-        aspectList.push(aspectPhrase);
-      }
-      if (aspect.aspected_planet === planetName) {
-        const aspectPhrase = addAspectDescriptionMap(aspect, birthData, false, map);
-        aspectList.push(aspectPhrase);
-      }
-    });
-    return aspectList;
-  }
+function findAspectsMap(birthData, planetName) {
+  const relevantAspects = birthData.aspects.filter(aspect => 
+      aspect.transitingPlanet === planetName || aspect.aspectingPlanet === planetName
+  );
+  return relevantAspects.map(aspect => addAspectDescriptionMap(aspect));
+}
 
-  function addAspectDescriptionMap(aspect, birthData, aspecting, map) {
-    const aspectType = aspect.type.toLowerCase();
-    let otherPlanet = "";
-    let otherPlanetId = "";
-    let planetName = "";
+
+function addAspectDescriptionMap(aspect) {
+  const signs = [
+      'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+  ];
+
+  const transitingPlanetSign = signs[Math.floor(aspect.transitingPlanetDegree / 30)];
+  const aspectingPlanetSign = signs[Math.floor(aspect.aspectingPlanetDegree / 30)];
+  const orbDesc = orbDescription(aspect.orb); 
+  const description = `${aspect.transitingPlanet} in ${transitingPlanetSign} is ${orbDesc} ${aspect.aspectType} ${aspect.aspectingPlanet} in ${aspectingPlanetSign}`;
+
+  const code = "A-" + planetCodes[aspect.transitingPlanet] + orbCodes[orbDesc] + transitCodes[aspect.aspectType] + planetCodes[aspect.aspectingPlanet]
+  return `${description} (ref: ${code})`
+
+}
+
+  // function addAspectDescriptionMap(aspect, birthData, aspecting, map) {
+  //   const aspectType = aspect.type.toLowerCase();
+  //   let otherPlanet = "";
+  //   let otherPlanetId = "";
+  //   let planetName = "";
   
-    if (aspecting) {
-      planetName = aspect.aspecting_planet;
-      otherPlanet = 'aspected_planet';
-      otherPlanetId = 'aspected_planet_id';
-    } else {
-      planetName = aspect.aspected_planet;
-      otherPlanet = 'aspecting_planet';
-      otherPlanetId = 'aspecting_planet_id';
-    }
+  //   if (aspecting) {
+  //     planetName = aspect.transitingPlanet;
+  //     otherPlanet = aspect.transitingPlanet;
+  //   } else {
+  //     planetName = aspect.aspectingPlanet;
+  //     otherPlanet = 'aspecting_planet';
+  //   }
   
-    const orbDesc = orbDescription(aspect.orb); // Assuming orbDescription is defined elsewhere
+  //   const orbDesc = orbDescription(aspect.orb); // Assuming orbDescription is defined elsewhere
 
-    var code = ''
-    if (!map[aspect[otherPlanet]]) {
-        console.log(aspect[otherPlanet] + " not in map")
-        code = "A-" + map[planetName] + orbCodes[orbDesc] + transitCodes[aspectType] + 'p' + planetCodes[aspect[otherPlanet]] + signCodes[birthData.planets[aspect[otherPlanetId]].sign]
+  //   var code = ''
+  //   if (!map[aspect[otherPlanet]]) {
+  //       console.log(aspect[otherPlanet] + " not in map")
+  //       code = "A-" + map[planetName] + orbCodes[orbDesc] + transitCodes[aspectType] + 'p' + planetCodes[aspect[otherPlanet]] + signCodes[birthData.planets[aspect[otherPlanetId]].sign]
 
-        // return (aspect[otherPlanet] + " not in map")
-    } else {
-        code = "A-" + map[planetName] + orbCodes[orbDesc] + transitCodes[aspectType] + map[aspect[otherPlanet]]
-        // return(decodeAspectCodeMap(code))
+  //       // return (aspect[otherPlanet] + " not in map")
+  //   } else {
+  //       code = "A-" + map[planetName] + orbCodes[orbDesc] + transitCodes[aspectType] + map[aspect[otherPlanet]]
+  //       // return(decodeAspectCodeMap(code))
 
-    }
-    // const code = "A-" + map[planetName] + orbCodes[orbDesc] + transitCodes[aspectType] + map[aspect[otherPlanet]]
+  //   }
+  //   // const code = "A-" + map[planetName] + orbCodes[orbDesc] + transitCodes[aspectType] + map[aspect[otherPlanet]]
 
-    // return code
-    return decodeAspectCodeMap(code) 
-  }
+  //   // return code
+  //   return decodeAspectCodeMap(code) 
+  // }
   
 

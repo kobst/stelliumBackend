@@ -1,6 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
+import { processInterpretationSection } from '../utilities/vectorize.js';
 
-const connection_string = process.env.MONGO_CONNECTION_STRING;
+const connection_string = process.env.MONGO_CONNECTION_STRING
 const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });
 
 client.connect();
@@ -11,6 +12,8 @@ const retrogradesCollection = db.collection('retrogrades');
 const userCollection = db.collection('users');
 const birthChartInterpretations = db.collection('user_birth_chart_interpretation');
 const userTransitAspectsCollection = db.collection('user_transit_aspects');
+const dailyTransitInterpretations = db.collection('daily_transit_interpretations');
+const weeklyTransitInterpretations = db.collection('weekly_transit_interpretations');
 
 export async function initializeDatabase() {
     try {
@@ -83,6 +86,7 @@ export async function getPeriodTransitsObject (startDate, endDate) {
 // get all transits from the general transit collection for a given date range
 export async function getPeriodTransits (startDate, endDate) {
     const start = new Date(startDate);
+    start.setDate(start.getDate() - 7); //
     start.setUTCHours(0, 0, 0, 0);
     const end = new Date(endDate);
     end.setUTCHours(23, 59, 59, 999);
@@ -267,6 +271,16 @@ export async function saveBirthChartInterpretation(userId, heading, promptDescri
     }
 }
 
+
+export async function upsertVectorizedInterpretation(userId, heading, promptDescription, interpretation) {
+    try {
+        await processInterpretationSection(userId, heading, promptDescription, interpretation);
+    } catch (error) {
+        console.error("Error in upsertVectorizedInterpretation:", error);
+        throw error;
+    }
+}
+
 export async function getBirthChartInterpretation(userId) {
     console.log("getBirthChartInterpretation", { userId });
     try {
@@ -284,3 +298,98 @@ export async function getBirthChartInterpretation(userId) {
         throw error;
     }
 }
+
+
+export async function saveDailyTransitInterpretationData(date, combinedAspectsDescription, dailyTransitInterpretation) {
+
+    // Convert the date string to a Date object
+    const isoDate = new Date(date);
+    // Set the time to 00:00:00
+    isoDate.setUTCHours(0, 0, 0, 0);
+
+    const document = {
+        date: isoDate,
+        combinedDescription: combinedAspectsDescription,
+        dailyTransitInterpretation: dailyTransitInterpretation
+    };
+
+    const result = await dailyTransitInterpretations.updateOne(
+        { date: isoDate },
+        { $set: document },
+        { upsert: true }
+    );
+
+    // If a new document was inserted, we need to fetch it to get the _id
+    if (result.upsertedId) {
+        const insertedDocument = await dailyTransitInterpretations.findOne({ _id: result.upsertedId });
+        return insertedDocument;
+    } else {
+        // If the document was updated, fetch and return the updated document
+        const updatedDocument = await dailyTransitInterpretations.findOne({ date: isoDate });
+        return updatedDocument;
+    }
+}
+
+
+export async function getDailyTransitInterpretationData(date) {
+    const startDate = new Date(date);
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+
+    const documents = await dailyTransitInterpretations.find({
+        date: {
+            $gte: startDate,
+            $lt: endDate
+        }
+    }).sort({ date: 1 }).toArray();
+
+    return documents;
+}
+
+
+export async function saveWeeklyTransitInterpretationData(date, combinedAspectsDescription, weeklyTransitInterpretation, sign) {
+    const isoDate = new Date(date);
+    isoDate.setUTCHours(0, 0, 0, 0);
+
+    const interpretation = {
+        sign,
+        combinedDescription: Array.isArray(combinedAspectsDescription) ? combinedAspectsDescription : [combinedAspectsDescription],
+        weeklyTransitInterpretation
+    };
+
+
+    const result = await weeklyTransitInterpretations.updateOne(
+        { date: isoDate },
+        { 
+            $setOnInsert: { date: isoDate },
+            $push: { weeklyInterpretations: interpretation }
+        },
+        { upsert: true }
+    );
+
+    if (result.upsertedId) {
+        return await weeklyTransitInterpretations.findOne({ _id: result.upsertedId });
+    } else {
+        return await weeklyTransitInterpretations.findOne({ date: isoDate });
+    }
+
+}
+
+export async function getWeeklyTransitInterpretationData(date) {
+    const startDate = new Date(date);
+    startDate.setUTCHours(0, 0, 0, 0);
+
+    const endDate = new Date(startDate);
+    endDate.setUTCMonth(endDate.getUTCMonth() + 1);
+
+    const documents = await weeklyTransitInterpretations.find({
+        date: {
+            $gte: startDate,
+            $lt: endDate
+        }
+    }).sort({ date: 1 }).toArray();
+
+    return documents;
+}       

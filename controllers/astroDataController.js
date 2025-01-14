@@ -302,6 +302,8 @@ export async function handlePromptGeneration(req, res) {
     // console.log(req)
 
     const birthData = req.body
+    console.log("birth data x x x")
+    console.log(birthData)
 
     const everything = generateNatalPositions('everything', birthData)
     const personality = generateNatalPositions('personality', birthData)

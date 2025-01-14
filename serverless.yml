@@ -90,10 +90,6 @@ functions:
           method: post
           cors: true
       - http:
-          path: /periodTransits
-          method: options
-          cors: true
-      - http:
           path: /generatePeriodAspectsForChart
           method: post
           cors: true
@@ -171,6 +167,82 @@ functions:
           cors: true
       - http:
           path: /getPeriodAspectsForUser
+          method: options
+          cors: true
+      - http:
+          path: /saveDailyTransitInterpretationData
+          method: post
+          cors: true
+      - http:
+          path: /saveDailyTransitInterpretationData
+          method: options
+          cors: true
+      - http:
+          path: /getDailyTransitInterpretationData
+          method: post
+          cors: true
+      - http:
+          path: /getDailyTransitInterpretationData
+          method: options
+          cors: true
+      - http:
+          path: /saveWeeklyTransitInterpretationData
+          method: post
+          cors: true
+      - http:
+          path: /saveWeeklyTransitInterpretationData
+          method: options
+          cors: true
+      - http:
+          path: /getWeeklyTransitInterpretationData
+          method: post
+          cors: true
+      - http:
+          path: /getWeeklyTransitInterpretationData
+          method: options
+          cors: true
+      - http:
+          path: /generateSummaryTransitsForUser
+          method: post
+          cors: true
+      - http:
+          path: /dailyTransitInterpretation
+          method: post
+          cors: true
+      - http:
+          path: /dailyTransitInterpretation
+          method: options
+          cors: true
+      - http:
+          path: /getGptResponseForFormattedUserTransits
+          method: post
+          cors: true
+      - http:
+          path: /getGptResponseForFormattedUserTransits
+          method: options
+          cors: true
+      - http:
+          path: /handleUserQuery
+          method: post
+          cors: true
+      - http:
+          path: /handleUserQuery
+          method: options
+          cors: true
+      - http:
+          path: /getGptPromptsForWeeklyCategoryTransits
+          method: post
+          cors: true
+      - http:
+          path: /getGptPromptsForWeeklyCategoryTransits
+          method: options
+          cors: true
+      - http:
+          path: /getDominance
+          method: post
+          cors: true
+      - http:
+          path: /getDominance
           method: options
           cors: true
 

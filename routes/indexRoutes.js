@@ -1,8 +1,20 @@
 import express from 'express';
 const router = express.Router();
 
-import { handleBirthData, handleProgressedChart, handleinstantTransits, handleGeneralPeriodTransits, handlePromptGeneration } from '../controllers/astroDataController.js';
-import { handleBigFour, handlePlanets, handlePlanetsVer2, handlePromptGenerationGPT } from '../controllers/gptController.js';
+import { handleBirthData, handleProgressedChart, handleinstantTransits, handleGeneralPeriodTransits, handlePromptGeneration,
+} from '../controllers/astroDataController.js';
+import { 
+    handleDominance,
+    handleBigFour, 
+    handlePlanets, 
+    handlePlanetsVer2, 
+    handlePromptGenerationGPT, 
+    handleDailyTransitInterpretation,
+    handleGptResponseForFormattedUserTransits,
+    handleGptResponseForWeeklyUserTransits,
+    handleGptPromptsForWeeklyCategoryTransits,
+    handleUserQuery
+} from '../controllers/gptController.js';
 import { handleDailyTransits, 
     handlePeriodTransits,
     handleDailyAspects, 
@@ -16,6 +28,10 @@ import { handleDailyTransits,
     handleGetUsers,
     handleSaveBirthChartInterpretation,
     handleGetBirthChartInterpretation,
+    handleSaveDailyTransitInterpretationData,
+    handleGetDailyTransitInterpretationData,
+    handleSaveWeeklyTransitInterpretationData,
+    handleGetWeeklyTransitInterpretationData,
     generateSummaryTransitsForUser } from '../controllers/dbDataController.js';
 
 // astroData: get fresh astrological data from the astrological API
@@ -34,6 +50,12 @@ router.post('/periodTransits', generateSummaryTransitSignsForPeriod);
 router.post('/generateSummaryTransitSignsForPeriod', generateSummaryTransitSignsForPeriod);
 router.post('/periodAspects', handlePeriodAspects);
 
+
+// save daily/weeklytransit interpretation data
+router.post('/saveDailyTransitInterpretationData', handleSaveDailyTransitInterpretationData);
+router.post('/getDailyTransitInterpretationData', handleGetDailyTransitInterpretationData);
+router.post('/saveWeeklyTransitInterpretationData', handleSaveWeeklyTransitInterpretationData);
+router.post('/getWeeklyTransitInterpretationData', handleGetWeeklyTransitInterpretationData);
 
 router.post('/dailyRetrogrades', handleRetrogrades);
 
@@ -57,11 +79,15 @@ router.post('/getBirthChartInterpretation', handleGetBirthChartInterpretation);
 router.post('/promptGeneration', handlePromptGeneration);
 // gpt
 router.post('/getPrompts', handlePromptGenerationGPT);
+router.post('/getDailyTransitInterpretation', handleDailyTransitInterpretation);
 router.post('/getBigFour', handleBigFour);
+router.post('/getDominance', handleDominance);
 router.post('/getPlanets', handlePlanets);
 router.post('/getPlanetsVer2', handlePlanetsVer2);
+router.post('/getGptResponseForFormattedUserTransits', handleGptResponseForFormattedUserTransits);
+router.post('/getGptResponseForWeeklyUserTransits', handleGptResponseForWeeklyUserTransits);
+router.post('/getGptPromptsForWeeklyCategoryTransits', handleGptPromptsForWeeklyCategoryTransits);
 
-
-
+router.post('/handleUserQuery', handleUserQuery);
 
 export default router;
