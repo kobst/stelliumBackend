@@ -146,11 +146,27 @@ functions:
           method: options
           cors: true
       - http:
+          path: /saveCompositeChartProfile
+          method: post
+          cors: true
+      - http:
+          path: /saveCompositeChartProfile
+          method: options
+          cors: true
+      - http:
           path: /getUsers
           method: post
           cors: true
       - http:
           path: /getUsers
+          method: options
+          cors: true
+      - http:
+          path: /getUser
+          method: post
+          cors: true
+      - http:
+          path: /getUser
           method: options
           cors: true
       - http:
@@ -170,79 +186,99 @@ functions:
           method: options
           cors: true
       - http:
-          path: /saveDailyTransitInterpretationData
+          path: /retrogradesForDateRange
           method: post
           cors: true
       - http:
-          path: /saveDailyTransitInterpretationData
+          path: /retrogradesForDateRange
           method: options
           cors: true
       - http:
-          path: /getDailyTransitInterpretationData
+          path: /findSynastryAspects
           method: post
           cors: true
       - http:
-          path: /getDailyTransitInterpretationData
+          path: /findSynastryAspects
           method: options
           cors: true
       - http:
-          path: /saveWeeklyTransitInterpretationData
+          path: /generateCompositeChart
           method: post
           cors: true
       - http:
-          path: /saveWeeklyTransitInterpretationData
+          path: /generateCompositeChart
           method: options
           cors: true
       - http:
-          path: /getWeeklyTransitInterpretationData
+          path: /promptGenerationSynastryChart
           method: post
           cors: true
       - http:
-          path: /getWeeklyTransitInterpretationData
+          path: /promptGenerationSynastryChart
           method: options
           cors: true
       - http:
-          path: /generateSummaryTransitsForUser
+          path: /promptGenerationCompositeChart
           method: post
           cors: true
       - http:
-          path: /dailyTransitInterpretation
-          method: post
-          cors: true
-      - http:
-          path: /dailyTransitInterpretation
+          path: /promptGenerationCompositeChart
           method: options
           cors: true
       - http:
-          path: /getGptResponseForFormattedUserTransits
+          path: /getCompositeCharts
           method: post
           cors: true
       - http:
-          path: /getGptResponseForFormattedUserTransits
+          path: /getCompositeCharts
           method: options
           cors: true
       - http:
-          path: /handleUserQuery
+          path: /saveCompositeChartInterpretation
           method: post
           cors: true
       - http:
-          path: /handleUserQuery
+          path: /saveCompositeChartInterpretation
           method: options
           cors: true
       - http:
-          path: /getGptPromptsForWeeklyCategoryTransits
+          path: /getCompositeChartInterpretation
           method: post
           cors: true
       - http:
-          path: /getGptPromptsForWeeklyCategoryTransits
+          path: /getCompositeChartInterpretation
           method: options
           cors: true
       - http:
-          path: /getDominance
+          path: /getSynastryChartInterpretation
           method: post
           cors: true
       - http:
-          path: /getDominance
+          path: /getSynastryChartInterpretation
+          method: options
+          cors: true
+      - http:
+          path: /getGptResponseForSynastryAspects
+          method: post
+          cors: true
+      - http:
+          path: /getGptResponseForSynastryAspects
+          method: options
+          cors: true
+      - http:
+          path: /getGptResponseForCompositeChart
+          method: post
+          cors: true
+      - http:
+          path: /getGptResponseForCompositeChart
+          method: options
+          cors: true
+      - http:
+          path: /getGptResponseForCompositeChartPlanet
+          method: post
+          cors: true
+      - http:
+          path: /getGptResponseForCompositeChartPlanet
           method: options
           cors: true
 

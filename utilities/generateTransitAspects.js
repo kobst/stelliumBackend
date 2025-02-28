@@ -406,7 +406,7 @@ const orbDegreesNatal = {
 };
 
 
-function calculateAspectObject(degree1, degree2, isRetro, transitName, isNatal) {
+export function calculateAspectObject(degree1, degree2, isRetro, transitName, isNatal) {
     // console.log("calculateAspectObject")
     let diff = Math.abs(degree1 - degree2);
     diff = diff > 180 ? 360 - diff : diff;

@@ -13,6 +13,11 @@ import {
     handleGptResponseForFormattedUserTransits,
     handleGptResponseForWeeklyUserTransits,
     handleGptPromptsForWeeklyCategoryTransits,
+    handlePromptGenerationCompositeChart,
+    handlePromptGenerationSynastryChart,
+    handleGptResponseForCompositeChart,
+    handleGptResponseForCompositeChartPlanet,
+    handleGptResponseForSynastryAspects,
     handleUserQuery
 } from '../controllers/gptController.js';
 import { handleDailyTransits, 
@@ -21,13 +26,22 @@ import { handleDailyTransits,
     generateSummaryTransitSignsForPeriod,
     generateSummaryTransitHousesforBirthChart,
     generatePeriodAspectsForChart, 
+    handleFindSynastryAspects,
+    handleGenerateCompositeChart,
     handleSingleTransitAspectsForChart, 
     handlePeriodAspects, 
     handleRetrogrades, 
+    handleRetrogradesForDateRange,
     handleSaveUserProfile, 
+    handleSaveCompositeChartProfile,
+    handleGetCompositeChartInterpretation,
     handleGetUsers,
+    handleGetUserSingle,
+    handleGetCompositeCharts,
+    handleGetSynastryChartInterpretation,
     handleSaveBirthChartInterpretation,
     handleGetBirthChartInterpretation,
+    handleSaveCompositeChartInterpretation,
     handleSaveDailyTransitInterpretationData,
     handleGetDailyTransitInterpretationData,
     handleSaveWeeklyTransitInterpretationData,
@@ -58,11 +72,12 @@ router.post('/saveWeeklyTransitInterpretationData', handleSaveWeeklyTransitInter
 router.post('/getWeeklyTransitInterpretationData', handleGetWeeklyTransitInterpretationData);
 
 router.post('/dailyRetrogrades', handleRetrogrades);
-
+router.post('/retrogradesForDateRange', handleRetrogradesForDateRange);
 // dbData: get all aspects/transits for a birthchart for a given date or period of dates
 router.post('/periodTransitsForChart', handleSingleTransitAspectsForChart);
 
 // user specific
+router.post('/getUser', handleGetUserSingle);
 router.post('/getUsers', handleGetUsers);
 router.post('/saveUserProfile', handleSaveUserProfile);
 
@@ -73,10 +88,15 @@ router.post('/generateSummaryTransitHousesForBirthChart', generateSummaryTransit
 
 router.post('/saveBirthChartInterpretation', handleSaveBirthChartInterpretation);
 router.post('/getBirthChartInterpretation', handleGetBirthChartInterpretation);
-// router.post('/getPeriodAspectsForUser', generateSummaryTransitsForUser);
-// prompt generation
 
+
+// router.post('/getPeriodAspectsForUser', generateSummaryTransitsForUser);
+
+// prompt generation
+router.post('/promptGenerationCompositeChart', handlePromptGenerationCompositeChart);
+router.post('/promptGenerationSynastryChart', handlePromptGenerationSynastryChart);
 router.post('/promptGeneration', handlePromptGeneration);
+
 // gpt
 router.post('/getPrompts', handlePromptGenerationGPT);
 router.post('/getDailyTransitInterpretation', handleDailyTransitInterpretation);
@@ -87,7 +107,20 @@ router.post('/getPlanetsVer2', handlePlanetsVer2);
 router.post('/getGptResponseForFormattedUserTransits', handleGptResponseForFormattedUserTransits);
 router.post('/getGptResponseForWeeklyUserTransits', handleGptResponseForWeeklyUserTransits);
 router.post('/getGptPromptsForWeeklyCategoryTransits', handleGptPromptsForWeeklyCategoryTransits);
+router.post('/getGptResponseForSynastryAspects', handleGptResponseForSynastryAspects);
+router.post('/getGptResponseForCompositeChart', handleGptResponseForCompositeChart);
+router.post('/getGptResponseForCompositeChartPlanet', handleGptResponseForCompositeChartPlanet);
+router.post('/getGptResponseForSynastryAspects', handleGptResponseForSynastryAspects);
 
+// synastry
+router.post('/findSynastryAspects', handleFindSynastryAspects);
+router.post('/generateCompositeChart', handleGenerateCompositeChart);
+router.post('/getCompositeCharts', handleGetCompositeCharts);
+router.post('/saveCompositeChartProfile', handleSaveCompositeChartProfile);
+router.post('/getCompositeChartInterpretation', handleGetCompositeChartInterpretation);
+router.post('/getSynastryChartInterpretation', handleGetSynastryChartInterpretation);
+router.post('/saveCompositeChartInterpretation', handleSaveCompositeChartInterpretation);
+// user chat
 router.post('/handleUserQuery', handleUserQuery);
 
 export default router;

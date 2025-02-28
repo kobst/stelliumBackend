@@ -208,14 +208,10 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-<<<<<<< HEAD
-          "S3Key": "serverless/stellium-backend/dev/1725219090838-2024-09-01T19:31:30.838Z/stellium-backend.zip"
-=======
-          "S3Key": "serverless/stellium-backend/dev/1713044103751-2024-04-13T21:35:03.751Z/stellium-backend.zip"
->>>>>>> fetchingFromDB
+          "S3Key": "serverless/stellium-backend/dev/1736824692990-2025-01-14T03:18:12.990Z/stellium-backend.zip"
         },
         "Handler": "server.handler",
-        "Runtime": "nodejs14.x",
+        "Runtime": "nodejs18.x",
         "FunctionName": "stellium-backend-dev-app",
         "MemorySize": 1024,
         "Timeout": 30,
@@ -230,22 +226,14 @@
         "AppLogGroup"
       ]
     },
-<<<<<<< HEAD
-    "AppLambdaVersion7doIPo4ls6yKWnN8epCE4O0s5XQdOoXHrlFwGjGI7A": {
-=======
-    "AppLambdaVersionjz1fsWT0oJwlpe9TiT3G7EE6VLerkqjxtN9wgo": {
->>>>>>> fetchingFromDB
+    "AppLambdaVersiongYYCXXtEDqUeFCwWtZkKe9EzhPXxZW1hoe5LVCCn3E": {
       "Type": "AWS::Lambda::Version",
       "DeletionPolicy": "Retain",
       "Properties": {
         "FunctionName": {
           "Ref": "AppLambdaFunction"
         },
-<<<<<<< HEAD
-        "CodeSha256": "Ruu6i/bxKNtP7OmWYGDB9nu5Iv95uqsOTPIbOHAocS0="
-=======
-        "CodeSha256": "bj9orJ4NYn0awTZBB/iO7qSswj23oKzOIfjMvr51ToI="
->>>>>>> fetchingFromDB
+        "CodeSha256": "g95ALbKrlSne9Ew/EJDZji9kQ6UO6hrL9y5eDs4grgs="
       }
     },
     "ApiGatewayRestApi": {
@@ -305,11 +293,7 @@
         }
       }
     },
-<<<<<<< HEAD
     "ApiGatewayResourceInstanttransits": {
-=======
-    "ApiGatewayResourceDaytransits": {
->>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
         "ParentId": {
@@ -318,11 +302,7 @@
             "RootResourceId"
           ]
         },
-<<<<<<< HEAD
         "PathPart": "instantTransits",
-=======
-        "PathPart": "dayTransits",
->>>>>>> fetchingFromDB
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         }
@@ -373,7 +353,6 @@
         }
       }
     },
-<<<<<<< HEAD
     "ApiGatewayResourceGetprompts": {
       "Type": "AWS::ApiGateway::Resource",
       "Properties": {
@@ -569,8 +548,156 @@
         }
       }
     },
-=======
->>>>>>> fetchingFromDB
+    "ApiGatewayResourceSavedailytransitinterpretationdata": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "saveDailyTransitInterpretationData",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceGetdailytransitinterpretationdata": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getDailyTransitInterpretationData",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceSaveweeklytransitinterpretationdata": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "saveWeeklyTransitInterpretationData",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceGetweeklytransitinterpretationdata": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getWeeklyTransitInterpretationData",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceGeneratesummarytransitsforuser": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "generateSummaryTransitsForUser",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceDailytransitinterpretation": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "dailyTransitInterpretation",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceGetgptresponseforformattedusertransits": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getGptResponseForFormattedUserTransits",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceHandleuserquery": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "handleUserQuery",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceGetgptpromptsforweeklycategorytransits": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getGptPromptsForWeeklyCategoryTransits",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
+    "ApiGatewayResourceGetdominance": {
+      "Type": "AWS::ApiGateway::Resource",
+      "Properties": {
+        "ParentId": {
+          "Fn::GetAtt": [
+            "ApiGatewayRestApi",
+            "RootResourceId"
+          ]
+        },
+        "PathPart": "getDominance",
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        }
+      }
+    },
     "ApiGatewayMethodOptions": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -810,11 +937,7 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
-<<<<<<< HEAD
     "ApiGatewayMethodInstanttransitsOptions": {
-=======
-    "ApiGatewayMethodDaytransitsOptions": {
->>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "AuthorizationType": "NONE",
@@ -876,11 +999,7 @@
           }
         },
         "ResourceId": {
-<<<<<<< HEAD
           "Ref": "ApiGatewayResourceInstanttransits"
-=======
-          "Ref": "ApiGatewayResourceDaytransits"
->>>>>>> fetchingFromDB
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -1110,7 +1229,6 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
-<<<<<<< HEAD
     "ApiGatewayMethodGetpromptsOptions": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -1202,7 +1320,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1219,15 +1337,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceDailytransits"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodPeriodtransitsOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1292,7 +1438,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1309,15 +1455,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceGenerateperiodaspectsforchart"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodGeneratesummarytransitsignsforperiodOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1337,7 +1511,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1354,15 +1528,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceGeneratesummarytransitsignsforperiod"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodGeneratesummarytransithousesforbirthchartOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1382,7 +1584,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1399,15 +1601,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceGeneratesummarytransithousesforbirthchart"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodPeriodtransitsforchartOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1427,7 +1657,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1444,15 +1674,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourcePeriodtransitsforchart"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodDailyaspectsOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1472,7 +1730,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1489,15 +1747,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceDailyaspects"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodDailyretrogradesOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1517,7 +1803,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1534,15 +1820,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceDailyretrogrades"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodSaveuserprofileOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1562,7 +1876,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1579,15 +1893,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceSaveuserprofile"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodGetusersOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1607,7 +1949,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1624,15 +1966,43 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceGetusers"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodSavebirthchartinterpretationOptions": {
       "Type": "AWS::ApiGateway::Method",
@@ -1652,7 +2022,7 @@
         ],
         "RequestParameters": {},
         "Integration": {
-          "Type": "MOCK",
+          "Type": "AWS_PROXY",
           "RequestTemplates": {
             "application/json": "{statusCode:200}"
           },
@@ -1669,17 +2039,410 @@
                 "application/json": ""
               }
             }
-          ]
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
         },
         "ResourceId": {
           "Ref": "ApiGatewayResourceSavebirthchartinterpretation"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
-        }
-      }
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
     },
     "ApiGatewayMethodGetperiodaspectsforuserOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetperiodaspectsforuser"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodSavedailytransitinterpretationdataOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSavedailytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetdailytransitinterpretationdataOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetdailytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodSaveweeklytransitinterpretationdataOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSaveweeklytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetweeklytransitinterpretationdataOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetweeklytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGeneratesummarytransitsforuserOptions": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "AuthorizationType": "NONE",
@@ -1717,15 +2480,378 @@
           ]
         },
         "ResourceId": {
-          "Ref": "ApiGatewayResourceGetperiodaspectsforuser"
+          "Ref": "ApiGatewayResourceGeneratesummarytransitsforuser"
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
         }
       }
     },
-=======
->>>>>>> fetchingFromDB
+    "ApiGatewayMethodDailytransitinterpretationOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceDailytransitinterpretation"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetgptresponseforformattedusertransitsOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetgptresponseforformattedusertransits"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodHandleuserqueryOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceHandleuserquery"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetgptpromptsforweeklycategorytransitsOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetgptpromptsforweeklycategorytransits"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetdominanceOptions": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "AuthorizationType": "NONE",
+        "HttpMethod": "OPTIONS",
+        "MethodResponses": [
+          {
+            "StatusCode": "200",
+            "ResponseParameters": {
+              "method.response.header.Access-Control-Allow-Origin": true,
+              "method.response.header.Access-Control-Allow-Headers": true,
+              "method.response.header.Access-Control-Allow-Methods": true
+            },
+            "ResponseModels": {}
+          }
+        ],
+        "RequestParameters": {},
+        "Integration": {
+          "Type": "AWS_PROXY",
+          "RequestTemplates": {
+            "application/json": "{statusCode:200}"
+          },
+          "ContentHandling": "CONVERT_TO_TEXT",
+          "IntegrationResponses": [
+            {
+              "StatusCode": "200",
+              "ResponseParameters": {
+                "method.response.header.Access-Control-Allow-Origin": "'*'",
+                "method.response.header.Access-Control-Allow-Headers": "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent,X-Amzn-Trace-Id'",
+                "method.response.header.Access-Control-Allow-Methods": "'OPTIONS,POST'"
+              },
+              "ResponseTemplates": {
+                "application/json": ""
+              }
+            }
+          ],
+          "IntegrationHttpMethod": "POST",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetdominance"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
     "ApiGatewayMethodAny": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -1913,21 +3039,13 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
-<<<<<<< HEAD
     "ApiGatewayMethodInstanttransitsPost": {
-=======
-    "ApiGatewayMethodDaytransitsPost": {
->>>>>>> fetchingFromDB
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
         "HttpMethod": "POST",
         "RequestParameters": {},
         "ResourceId": {
-<<<<<<< HEAD
           "Ref": "ApiGatewayResourceInstanttransits"
-=======
-          "Ref": "ApiGatewayResourceDaytransits"
->>>>>>> fetchingFromDB
         },
         "RestApiId": {
           "Ref": "ApiGatewayRestApi"
@@ -2105,7 +3223,6 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
-<<<<<<< HEAD
     "ApiGatewayMethodGetpromptsPost": {
       "Type": "AWS::ApiGateway::Method",
       "Properties": {
@@ -2704,10 +3821,467 @@
         "AppLambdaPermissionApiGateway"
       ]
     },
-    "ApiGatewayDeployment1725219082646": {
-=======
-    "ApiGatewayDeployment1713044097610": {
->>>>>>> fetchingFromDB
+    "ApiGatewayMethodSavedailytransitinterpretationdataPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSavedailytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetdailytransitinterpretationdataPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetdailytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodSaveweeklytransitinterpretationdataPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceSaveweeklytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetweeklytransitinterpretationdataPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetweeklytransitinterpretationdata"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGeneratesummarytransitsforuserPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGeneratesummarytransitsforuser"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodDailytransitinterpretationPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceDailytransitinterpretation"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetgptresponseforformattedusertransitsPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetgptresponseforformattedusertransits"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodHandleuserqueryPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceHandleuserquery"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetgptpromptsforweeklycategorytransitsPost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetgptpromptsforweeklycategorytransits"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayMethodGetdominancePost": {
+      "Type": "AWS::ApiGateway::Method",
+      "Properties": {
+        "HttpMethod": "POST",
+        "RequestParameters": {},
+        "ResourceId": {
+          "Ref": "ApiGatewayResourceGetdominance"
+        },
+        "RestApiId": {
+          "Ref": "ApiGatewayRestApi"
+        },
+        "ApiKeyRequired": false,
+        "AuthorizationType": "NONE",
+        "Integration": {
+          "IntegrationHttpMethod": "POST",
+          "Type": "AWS_PROXY",
+          "Uri": {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition"
+                },
+                ":apigateway:",
+                {
+                  "Ref": "AWS::Region"
+                },
+                ":lambda:path/2015-03-31/functions/",
+                {
+                  "Fn::GetAtt": [
+                    "AppLambdaFunction",
+                    "Arn"
+                  ]
+                },
+                "/invocations"
+              ]
+            ]
+          }
+        },
+        "MethodResponses": []
+      },
+      "DependsOn": [
+        "AppLambdaPermissionApiGateway"
+      ]
+    },
+    "ApiGatewayDeployment1736824684124": {
       "Type": "AWS::ApiGateway::Deployment",
       "Properties": {
         "RestApiId": {
@@ -2720,7 +4294,6 @@
         "ApiGatewayMethodProxyVarOptions",
         "ApiGatewayMethodBirthdataOptions",
         "ApiGatewayMethodProgressedchartOptions",
-<<<<<<< HEAD
         "ApiGatewayMethodInstanttransitsOptions",
         "ApiGatewayMethodGetbigfourOptions",
         "ApiGatewayMethodGetplanetsver2Options",
@@ -2738,49 +4311,74 @@
         "ApiGatewayMethodGetusersOptions",
         "ApiGatewayMethodSavebirthchartinterpretationOptions",
         "ApiGatewayMethodGetperiodaspectsforuserOptions",
-=======
-        "ApiGatewayMethodDaytransitsOptions",
-        "ApiGatewayMethodGetbigfourOptions",
-        "ApiGatewayMethodGetplanetsver2Options",
-        "ApiGatewayMethodPromptgenerationOptions",
->>>>>>> fetchingFromDB
+        "ApiGatewayMethodSavedailytransitinterpretationdataOptions",
+        "ApiGatewayMethodGetdailytransitinterpretationdataOptions",
+        "ApiGatewayMethodSaveweeklytransitinterpretationdataOptions",
+        "ApiGatewayMethodGetweeklytransitinterpretationdataOptions",
+        "ApiGatewayMethodGeneratesummarytransitsforuserOptions",
+        "ApiGatewayMethodDailytransitinterpretationOptions",
+        "ApiGatewayMethodGetgptresponseforformattedusertransitsOptions",
+        "ApiGatewayMethodHandleuserqueryOptions",
+        "ApiGatewayMethodGetgptpromptsforweeklycategorytransitsOptions",
+        "ApiGatewayMethodGetdominanceOptions",
         "ApiGatewayMethodAny",
         "ApiGatewayMethodProxyVarAny",
         "ApiGatewayMethodBirthdataPost",
         "ApiGatewayMethodBirthdataOptions",
         "ApiGatewayMethodProgressedchartPost",
         "ApiGatewayMethodProgressedchartOptions",
-<<<<<<< HEAD
         "ApiGatewayMethodInstanttransitsPost",
         "ApiGatewayMethodInstanttransitsOptions",
-=======
-        "ApiGatewayMethodDaytransitsPost",
-        "ApiGatewayMethodDaytransitsOptions",
->>>>>>> fetchingFromDB
         "ApiGatewayMethodGetbigfourPost",
         "ApiGatewayMethodGetbigfourOptions",
         "ApiGatewayMethodGetplanetsver2Post",
         "ApiGatewayMethodGetplanetsver2Options",
         "ApiGatewayMethodPromptgenerationPost",
-<<<<<<< HEAD
         "ApiGatewayMethodPromptgenerationOptions",
         "ApiGatewayMethodGetpromptsPost",
         "ApiGatewayMethodGetpromptsOptions",
         "ApiGatewayMethodDailytransitsPost",
+        "ApiGatewayMethodDailytransitsOptions",
         "ApiGatewayMethodPeriodtransitsPost",
         "ApiGatewayMethodGenerateperiodaspectsforchartPost",
+        "ApiGatewayMethodGenerateperiodaspectsforchartOptions",
         "ApiGatewayMethodGeneratesummarytransitsignsforperiodPost",
+        "ApiGatewayMethodGeneratesummarytransitsignsforperiodOptions",
         "ApiGatewayMethodGeneratesummarytransithousesforbirthchartPost",
+        "ApiGatewayMethodGeneratesummarytransithousesforbirthchartOptions",
         "ApiGatewayMethodPeriodtransitsforchartPost",
+        "ApiGatewayMethodPeriodtransitsforchartOptions",
         "ApiGatewayMethodDailyaspectsPost",
+        "ApiGatewayMethodDailyaspectsOptions",
         "ApiGatewayMethodDailyretrogradesPost",
+        "ApiGatewayMethodDailyretrogradesOptions",
         "ApiGatewayMethodSaveuserprofilePost",
+        "ApiGatewayMethodSaveuserprofileOptions",
         "ApiGatewayMethodGetusersPost",
+        "ApiGatewayMethodGetusersOptions",
         "ApiGatewayMethodSavebirthchartinterpretationPost",
-        "ApiGatewayMethodGetperiodaspectsforuserPost"
-=======
-        "ApiGatewayMethodPromptgenerationOptions"
->>>>>>> fetchingFromDB
+        "ApiGatewayMethodSavebirthchartinterpretationOptions",
+        "ApiGatewayMethodGetperiodaspectsforuserPost",
+        "ApiGatewayMethodGetperiodaspectsforuserOptions",
+        "ApiGatewayMethodSavedailytransitinterpretationdataPost",
+        "ApiGatewayMethodSavedailytransitinterpretationdataOptions",
+        "ApiGatewayMethodGetdailytransitinterpretationdataPost",
+        "ApiGatewayMethodGetdailytransitinterpretationdataOptions",
+        "ApiGatewayMethodSaveweeklytransitinterpretationdataPost",
+        "ApiGatewayMethodSaveweeklytransitinterpretationdataOptions",
+        "ApiGatewayMethodGetweeklytransitinterpretationdataPost",
+        "ApiGatewayMethodGetweeklytransitinterpretationdataOptions",
+        "ApiGatewayMethodGeneratesummarytransitsforuserPost",
+        "ApiGatewayMethodDailytransitinterpretationPost",
+        "ApiGatewayMethodDailytransitinterpretationOptions",
+        "ApiGatewayMethodGetgptresponseforformattedusertransitsPost",
+        "ApiGatewayMethodGetgptresponseforformattedusertransitsOptions",
+        "ApiGatewayMethodHandleuserqueryPost",
+        "ApiGatewayMethodHandleuserqueryOptions",
+        "ApiGatewayMethodGetgptpromptsforweeklycategorytransitsPost",
+        "ApiGatewayMethodGetgptpromptsforweeklycategorytransitsOptions",
+        "ApiGatewayMethodGetdominancePost",
+        "ApiGatewayMethodGetdominanceOptions"
       ]
     },
     "AppLambdaPermissionApiGateway": {
@@ -2929,11 +4527,7 @@
           "S3Bucket": {
             "Ref": "ServerlessDeploymentBucket"
           },
-<<<<<<< HEAD
-          "S3Key": "serverless/stellium-backend/dev/1725219090838-2024-09-01T19:31:30.838Z/custom-resources.zip"
-=======
-          "S3Key": "serverless/stellium-backend/dev/1713044103751-2024-04-13T21:35:03.751Z/custom-resources.zip"
->>>>>>> fetchingFromDB
+          "S3Key": "serverless/stellium-backend/dev/1736824692990-2025-01-14T03:18:12.990Z/custom-resources.zip"
         },
         "FunctionName": "stellium-backend-dev-custom-resource-apigw-cw-role",
         "Handler": "api-gateway-cloud-watch-role/handler.handler",
@@ -2975,11 +4569,7 @@
     "AppLambdaFunctionQualifiedArn": {
       "Description": "Current Lambda function version",
       "Value": {
-<<<<<<< HEAD
-        "Ref": "AppLambdaVersion7doIPo4ls6yKWnN8epCE4O0s5XQdOoXHrlFwGjGI7A"
-=======
-        "Ref": "AppLambdaVersionjz1fsWT0oJwlpe9TiT3G7EE6VLerkqjxtN9wgo"
->>>>>>> fetchingFromDB
+        "Ref": "AppLambdaVersiongYYCXXtEDqUeFCwWtZkKe9EzhPXxZW1hoe5LVCCn3E"
       },
       "Export": {
         "Name": "sls-stellium-backend-dev-AppLambdaFunctionQualifiedArn"

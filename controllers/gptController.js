@@ -6,10 +6,14 @@ import { getCompletionBigFour,
   getCompletionGptResponseForFormattedUserTransits,
   getCompletionWithRagResponse,
   getCompletionGptResponseForWeeklyUserTransits,
-  getGptPromptsForWeeklyTransits
+  getCompletionGptResponseForSynastryAspects,
+  getCompletionGptResponseForCompositeChart,
+  getCompletionGptResponseForCompositeChartPlanet,
+  getGptPromptsForWeeklyTransits,
+  getPromptGenerationCompositeChart,
+  getPromptGenerationSynastryChart
 } from '../services/gptService.js';
 import { processUserQuery } from '../utilities/vectorize.js';
-
 
 export async function handleDominance(req, res) {
   try {
@@ -167,6 +171,37 @@ export async function handleGptPromptsForWeeklyCategoryTransits(req, res) {
   }
 }
 
+
+
+export async function handlePromptGenerationCompositeChart(req, res) {
+  console.log("handlePromptGenerationCompositeChart")
+  try {
+    const { heading, descriptions } = req.body;
+    console.log("heading: ", heading)
+    console.log("descriptions: ", descriptions)
+    const response = await getPromptGenerationCompositeChart(heading, descriptions);
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.json({ response });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+}
+
+
+export async function handlePromptGenerationSynastryChart(req, res) {
+  console.log("handlePromptGenerationSynastryChart")
+  try {
+    const { heading, descriptions } = req.body;
+    const response = await getPromptGenerationSynastryChart(heading, descriptions);
+    res.json({ response });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+}
+
 export async function handleUserQuery(req, res) {
   try {
     const { userId, query } = req.body;
@@ -182,3 +217,48 @@ export async function handleUserQuery(req, res) {
     res.status(500).send('Server error');
   }
 }
+
+export async function handleGptResponseForSynastryAspects(req, res) {
+  console.log("handleGptResponseForSynastryAspects")
+  console.log("req.body handle gpt response for synastry aspects: ", req.body)
+  try {
+    const { heading, promptDescription } = req.body;
+    const response = await getCompletionGptResponseForSynastryAspects(heading, promptDescription);
+    res.json({ response });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+}
+
+export async function handleGptResponseForCompositeChart(req, res) {
+  console.log("handleGptResponseForCompositeChart")
+  try {
+    const { heading, promptDescription } = req.body;
+    const response = await getCompletionGptResponseForCompositeChart(heading, promptDescription);
+    res.json({ response });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+}
+
+export async function handleGptResponseForCompositeChartPlanet(req, res) {
+  console.log("handleGptResponseForCompositeChartPlanet")
+  try {
+    const { planet, promptDescription } = req.body;
+    const response = await getCompletionGptResponseForCompositeChartPlanet(planet, promptDescription);
+    res.json({ response });
+  } catch (error) {
+    res.status(500).send('Server error');
+  }
+}
+
+// export async function handleGptResponseForSynastryChart(req, res) {
+//   console.log("handleGptResponseForSynastryChart")
+//   try {
+//     const { heading, synastryChart } = req.body;
+//     const response = await getCompletionGptResponseForSynastryChart(heading, synastryChart);
+//     res.json({ response });
+//   } catch (error) {
+//     res.status(500).send('Server error');
+//   }
+// }

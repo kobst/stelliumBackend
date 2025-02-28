@@ -353,19 +353,34 @@ export async function handlePromptGeneration(req, res) {
 };
 
 
+async function handlePromptGenerationCompsiteChart(req, res) {
+  try {
+    console.log("handle prompt Generation")
+    // console.log(req)
+
+    const compositeChartData = req.body
+    console.log("composite chart data x x x")
+    console.log(compositeChartData)
+
+ // generate prompts for composite chart relationship areas
 
 
-    // Prompt descriptions mapping
     const promptDescriptionsMap =  {
-      'everything': '',
-      'personality': '',
-      'home': '',
-      'career': '',
-      'relationships': '',
-      'communication': '',
-      'unconscious': '',
-      'quadrants': '',
-      'elements': '',
-      'modalities': '',
-      'pattern': ''
-      };
+
+    };
+    
+    
+
+    
+    console.log("getPromptsCompositeChart")
+    // console.log(promptDescriptionsMap)
+    res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.json({ promptDescriptionsMap });
+  } catch (error) {
+    console.error('Error in handlePromptGeneration:', error);
+    res.status(500).send('Server error');
+  }
+}

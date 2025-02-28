@@ -333,6 +333,53 @@ export async function getGptPromptsForWeeklyTransits(heading, transitDescription
   }
 }
 
+export async function getPromptGenerationCompositeChart(heading, descriptions) {
+
+  const samplePrompt = "I will provide you a list of composite chart aspects and planetary positions, each followed by a code in parentheses. From this list, please return only those aspects and planetary positions that are relevant to the following area of the relationship: "
+
+  const additionalPrompt = "For each matching aspect, include the full original text and the code in parentheses exactly as it appears. Do not provide any interpretation or additional commentary." 
+
+  const modifiedInput = samplePrompt + heading + additionalPrompt + "here is the list: " + descriptions
+
+
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{
+      role: "system",
+      content: "StelliumAI is an astrological guide bot."
+    }, {
+      role: "user",
+      content: modifiedInput
+    }]
+  });
+  return response.choices[0].message.content;
+
+}
+
+export async function getPromptGenerationSynastryChart(heading, descriptions) {
+  const modifiedInput = `Here are some aspects and planet positions of a synastry chart relevant to the topic of ${heading}:
+
+  ${descriptions}
+  
+  Please select the most relevant aspects and positions from the list above focusing on the topic of ${heading}.
+  
+  Do not offer any interpretations of the aspects and positions, just select the most relevant ones.
+  
+  For every reference to a particular position, please also include the reference to the id of that position included in the parenthesis for each aspect or position.`;
+
+  const response = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{
+      role: "system",
+      content: "StelliumAI is an astrological guide bot."
+    }, {
+      role: "user",
+      content: modifiedInput
+    }]
+  });
+  return response.choices[0].message.content;
+}
+
 export async function getCompletionWithRagResponse(ragResponse, query) {
   try {
     const input = `Here are some existing information and interpretations about the user's birth chart:
@@ -366,3 +413,102 @@ export async function getCompletionWithRagResponse(ragResponse, query) {
     console.error('Error fetching response:', error);
   }
 }
+
+export async function getCompletionGptResponseForSynastryAspects(heading, promptDescription) {
+  try {
+    console.log("getCompletionGptResponseForSynastryAspects")
+    console.log("heading: ", heading)
+    console.log("promptDescription: ", promptDescription)
+
+    const modifiedInput = `Here are some aspects and planet positions of a synastry chart relevant to the topic of ${heading}:
+
+    ${promptDescription}
+    
+    Please write me a few paragraphs interpreting these aspects and positions focusing on the topic of ${heading}.
+    
+    Remember, this is a synastry chart, so the aspects and positions are not of the same person but rather the relationship between the two people.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{
+        role: "system",
+        content: "StelliumAI is an astrological guide bot."
+      }, {
+        role: "user",
+        content: modifiedInput
+      }]
+    });
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error fetching response:', error);
+  }
+} 
+
+export async function getCompletionGptResponseForCompositeChart(heading, promptDescription) {
+  try {
+    console.log("getCompletionGptResponseForCompositeChart")
+    console.log("heading: ", heading)
+    console.log("promptDescription: ", promptDescription)
+
+    const modifiedInput = `Here are some aspects and planet positions of a composite chart relevant to the topic of ${heading}:
+
+    ${promptDescription}
+    
+    Please write me a few paragraphs interpreting these aspects and positions focusing on the topic of ${heading}.
+    
+    Instead of writing an interpretation for each aspect or position a la carte, please provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 
+    
+    Please use supportive, friendly and direct language but avoid overly ornate phrasing.
+    
+    Remember, this is a composite chart, so the aspects and positions are not of the same person but rather the relationship between the two people.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{
+        role: "system",
+        content: "StelliumAI is an astrological guide bot."
+      }, {
+        role: "user",
+        content: modifiedInput
+      }]
+    });
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error fetching response:', error);
+  }
+} 
+
+export async function getCompletionGptResponseForCompositeChartPlanet(planet, promptDescription) {
+  try {
+    console.log("getCompletionGptResponseForCompositeChartPlanet")
+    console.log("planet: ", planet)
+    console.log("promptDescription: ", promptDescription)
+    const modifiedInput = `Here are the position and aspects of the planet ${planet} in a composite chart:
+
+    ${promptDescription}
+    
+    Please write me a few paragraphs interpreting this planet and its aspects in the context of the relationship.
+    
+    Instead of writing an interpretation for each aspect or position a la carte, please provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 
+    
+    Please use supportive, friendly and direct language but avoid overly ornate phrasing.
+    
+    Remember, this is a composite chart, so the aspects and positions are not of the same person but rather the relationship between the two people.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [{
+        role: "system",
+        content: "StelliumAI is an astrological guide bot."
+      }, {
+        role: "user",
+        content: modifiedInput
+      }]
+    });
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error fetching response:', error);
+  }
+}
+
+

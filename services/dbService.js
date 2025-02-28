@@ -14,6 +14,9 @@ const birthChartInterpretations = db.collection('user_birth_chart_interpretation
 const userTransitAspectsCollection = db.collection('user_transit_aspects');
 const dailyTransitInterpretations = db.collection('daily_transit_interpretations');
 const weeklyTransitInterpretations = db.collection('weekly_transit_interpretations');
+const compositeChartCollection = db.collection('composite_charts');
+const compositeChartInterpretations = db.collection('composite_chart_interpretations');
+const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
     try {
@@ -147,6 +150,39 @@ export async function getRetrogrades(date) {
     }
 };
 
+
+// get all retrogrades from the retrogrades collection for a given date range
+export async function getRetrogradesForDateRange(startDate, endDate) {
+    try {
+        const inputStartDate = new Date(startDate);
+        const inputEndDate = new Date(endDate);
+        console.log("Input Start Date:", inputStartDate);
+        console.log("Input End Date:", inputEndDate);
+        
+        const retrogrades = await retrogradesCollection.find({
+            $or: [
+                { $and: [
+                    { "date_range.0": { $gte: inputStartDate } },
+                    { "date_range.0": { $lte: inputEndDate } }
+                ] },
+                { $and: [
+                    { "date_range.1": { $gte: inputStartDate } },
+                    { "date_range.1": { $lte: inputEndDate } }
+                ] },
+                { $and: [
+                    { "date_range.0": { $lte: inputStartDate } },
+                    { "date_range.1": { $gte: inputEndDate } }
+                ] }
+            ]
+        }).toArray();
+        
+        return retrogrades;
+    } catch (error) {
+        console.error("Error fetching retrogrades for date range:", error);
+        throw new Error("Unable to fetch retrogrades for date range");
+    }
+};
+
 // get aspects from the general transit collection given a start and end date for the requested birthchart
 export async function getAspectsForChart(startDate, endDate, birthChartId) {
     const start = new Date(startDate);
@@ -205,8 +241,36 @@ export async function getUsers() {
 }
 
 
+export async function getUserSingle(userId) {
+    console.log("getUserSingle", { userId });
+    try {
+        const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+        return user;
+    } catch (error) {
+        console.error("Error in getUserSingle:", error);
+        throw error;
+    }
+}
+
+export async function getCompositeCharts() {
+    console.log("getCompositeCharts")
+    try {
+        const compositeCharts = await compositeChartCollection.find({}).toArray();
+        return compositeCharts;
+    } catch (error) {
+        console.error("Error in getCompositeCharts:", error);
+        throw error;
+    }
+}
+
 export async function saveUser(user) {
     const result = await userCollection.insertOne(user);
+    return result;
+}
+
+export async function saveCompositeChart(compositeChart) {
+    console.log("saveCompositeChart", compositeChart)
+    const result = await compositeChartCollection.insertOne(compositeChart);
     return result;
 }
 
@@ -295,6 +359,114 @@ export async function getBirthChartInterpretation(userId) {
         return document?.birthChartInterpretation|| {};
     } catch (error) {
         console.error("Error in getBirthChartInterpretation:", error);
+        throw error;
+    }
+}
+
+
+
+export async function saveCompositeChartInterpretation(compositeChartId, heading, promptDescription, interpretation, isCompositeChart) {
+    console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation, isCompositeChart });
+    try {
+        if (!ObjectId.isValid(compositeChartId)) {
+            throw new Error(`Invalid compositeChartId: ${compositeChartId}`);
+        }
+
+        const objectId = new ObjectId(compositeChartId);
+
+        // First, try to find the existing document
+        let document = await compositeChartInterpretations.findOne({ _id: objectId });
+
+        if (!document) {
+            // If no document exists, create a new one with empty objects for both interpretation types
+            document = { 
+                _id: objectId, 
+                compositeChartInterpretation: {},
+                synastryInterpretation: {}
+            };
+        } else {
+            // Ensure both interpretation objects exist
+            if (!document.compositeChartInterpretation) {
+                document.compositeChartInterpretation = {};
+            }
+            if (!document.synastryInterpretation) {
+                document.synastryInterpretation = {};
+            }
+        }
+
+        // Update the specific heading under the appropriate interpretation object
+        if (isCompositeChart) {
+            document.compositeChartInterpretation[heading] = { promptDescription, interpretation };
+        } else {
+            document.synastryInterpretation[heading] = { promptDescription, interpretation };
+        }
+
+        // Use replaceOne with upsert to either update the existing document or insert a new one
+        const result = await compositeChartInterpretations.replaceOne(
+            { _id: objectId },
+            document,
+            { upsert: true }
+        );
+
+        console.log("Update result:", JSON.stringify(result, null, 2));
+        return result;
+    } catch (error) {
+        console.error("Error in saveCompositeChartInterpretation:", error);
+        console.error("Error stack:", error.stack);
+        throw error;
+    }
+}
+
+
+export async function getCompositeChartInterpretation(compositeChartId) {
+    console.log("getCompositeChartInterpretation", { compositeChartId });
+    try {
+        if (!ObjectId.isValid(compositeChartId)) {
+            throw new Error(`Invalid compositeChartId: ${compositeChartId}`);
+        }
+
+        const document = await compositeChartInterpretations.findOne(
+            { _id: new ObjectId(compositeChartId) }
+        );
+
+        return document?.compositeChartInterpretation|| {};
+    } catch (error) {
+        console.error("Error in getCompositeChartInterpretation:", error);
+        throw error;
+    }
+}
+
+export async function getSynastryInterpretation(compositeChartId) {
+    console.log("getSynastryInterpretation", { compositeChartId });
+    try {
+        if (!ObjectId.isValid(compositeChartId)) {
+            throw new Error(`Invalid compositeChartId: ${compositeChartId}`);
+        }
+
+        const document = await compositeChartInterpretations.findOne(
+            { _id: new ObjectId(compositeChartId) }
+        );
+        
+        return document?.synastryInterpretation|| {};
+    } catch (error) {
+        console.error("Error in getSynastryInterpretation:", error);
+        throw error;
+    }
+}
+
+
+
+export async function getSynastryChartInterpretation(synastryChartId) {
+    console.log("getSynastryChartInterpretation", { synastryChartId });
+    try {
+        if (!ObjectId.isValid(synastryChartId)) {
+            throw new Error(`Invalid synastryChartId: ${synastryChartId}`);
+        }
+
+        const document = await synastryChartInterpretations.findOne({ _id: new ObjectId(synastryChartId) });
+        return document?.synastryChartInterpretation|| {};
+    } catch (error) {
+        console.error("Error in getSynastryChartInterpretation:", error);
         throw error;
     }
 }
