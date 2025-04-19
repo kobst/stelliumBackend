@@ -1,0 +1,370 @@
+{
+  "stats": {
+    "OVERALL_ATTRACTION_CHEMISTRY": {
+      "synastry": {
+        "count": 63,
+        "mean": 48.73,
+        "median": 48.75,
+        "min": 12,
+        "max": 97.5,
+        "stdDev": 18.16,
+        "p25": 36.5,
+        "p75": 62.75
+      },
+      "composite": {
+        "count": 58,
+        "mean": 22.31,
+        "median": 19.5,
+        "min": 4,
+        "max": 51.75,
+        "stdDev": 11.92,
+        "p25": 12,
+        "p75": 30.75
+      },
+      "synastryHousePlacements": {
+        "count": 62,
+        "mean": 44.27,
+        "median": 40,
+        "min": 10,
+        "max": 100,
+        "stdDev": 24.06,
+        "p25": 25,
+        "p75": 60
+      },
+      "compositeHousePlacements": {
+        "count": 63,
+        "mean": 26.59,
+        "median": 25,
+        "min": 5,
+        "max": 60,
+        "stdDev": 13.8,
+        "p25": 15,
+        "p75": 35
+      },
+      "overall": {
+        "count": 63,
+        "mean": 78.79,
+        "median": 81,
+        "min": 25,
+        "max": 131,
+        "stdDev": 20.41,
+        "p25": 60,
+        "p75": 93
+      }
+    },
+    "EMOTIONAL_SECURITY_CONNECTION": {
+      "synastry": {
+        "count": 63,
+        "mean": 17.91,
+        "median": 16,
+        "min": -24.25,
+        "max": 49,
+        "stdDev": 14.47,
+        "p25": 8,
+        "p75": 27.75
+      },
+      "composite": {
+        "count": 57,
+        "mean": 2.48,
+        "median": 3,
+        "min": -24.75,
+        "max": 22.75,
+        "stdDev": 9.4,
+        "p25": -3,
+        "p75": 9
+      },
+      "synastryHousePlacements": {
+        "count": 60,
+        "mean": 21.08,
+        "median": 20,
+        "min": -5,
+        "max": 65,
+        "stdDev": 15.44,
+        "p25": 10,
+        "p75": 30
+      },
+      "compositeHousePlacements": {
+        "count": 43,
+        "mean": 6.51,
+        "median": 5,
+        "min": -10,
+        "max": 20,
+        "stdDev": 7.51,
+        "p25": 5,
+        "p75": 10
+      },
+      "overall": {
+        "count": 63,
+        "mean": 25.46,
+        "median": 25,
+        "min": 3,
+        "max": 55,
+        "stdDev": 12.6,
+        "p25": 16,
+        "p75": 33
+      }
+    },
+    "SEX_AND_INTIMACY": {
+      "synastry": {
+        "count": 63,
+        "mean": 65.13,
+        "median": 64.5,
+        "min": 21.75,
+        "max": 121,
+        "stdDev": 21.7,
+        "p25": 52,
+        "p75": 75.25
+      },
+      "composite": {
+        "count": 42,
+        "mean": 9.83,
+        "median": 8,
+        "min": 3,
+        "max": 28.75,
+        "stdDev": 6.08,
+        "p25": 6,
+        "p75": 12.5
+      },
+      "synastryHousePlacements": {
+        "count": 63,
+        "mean": 25.79,
+        "median": 20,
+        "min": -10,
+        "max": 95,
+        "stdDev": 22.61,
+        "p25": 10,
+        "p75": 35
+      },
+      "compositeHousePlacements": {
+        "count": 43,
+        "mean": 11.98,
+        "median": 10,
+        "min": -10,
+        "max": 40,
+        "stdDev": 10.84,
+        "p25": 5,
+        "p75": 20
+      },
+      "overall": {
+        "count": 63,
+        "mean": 75.71,
+        "median": 73,
+        "min": 33,
+        "max": 161,
+        "stdDev": 23.6,
+        "p25": 59,
+        "p75": 88
+      }
+    },
+    "COMMUNICATION_AND_MENTAL_CONNECTION": {
+      "synastry": {
+        "count": 63,
+        "mean": 27.59,
+        "median": 28.5,
+        "min": -6,
+        "max": 65.5,
+        "stdDev": 17.21,
+        "p25": 13.25,
+        "p75": 40.5
+      },
+      "composite": {
+        "count": 63,
+        "mean": 17.13,
+        "median": 16,
+        "min": -5,
+        "max": 43.75,
+        "stdDev": 13.23,
+        "p25": 6,
+        "p75": 27
+      },
+      "synastryHousePlacements": {
+        "count": 58,
+        "mean": 28.53,
+        "median": 25,
+        "min": -10,
+        "max": 80,
+        "stdDev": 16.48,
+        "p25": 15,
+        "p75": 40
+      },
+      "compositeHousePlacements": {
+        "count": 45,
+        "mean": 14.44,
+        "median": 10,
+        "min": -5,
+        "max": 40,
+        "stdDev": 10.55,
+        "p25": 5,
+        "p75": 20
+      },
+      "overall": {
+        "count": 63,
+        "mean": 40.73,
+        "median": 45,
+        "min": 12,
+        "max": 69,
+        "stdDev": 15.05,
+        "p25": 28,
+        "p75": 53
+      }
+    },
+    "COMMITMENT_LONG_TERM_POTENTIAL": {
+      "synastry": {
+        "count": 63,
+        "mean": 33.39,
+        "median": 29,
+        "min": -7,
+        "max": 89.75,
+        "stdDev": 22.29,
+        "p25": 18,
+        "p75": 51.25
+      },
+      "composite": {
+        "count": 54,
+        "mean": 5.72,
+        "median": 6.5,
+        "min": -18.75,
+        "max": 27,
+        "stdDev": 11.06,
+        "p25": -3.75,
+        "p75": 15
+      },
+      "synastryHousePlacements": {
+        "count": 63,
+        "mean": 46.03,
+        "median": 45,
+        "min": 10,
+        "max": 90,
+        "stdDev": 18.46,
+        "p25": 35,
+        "p75": 60
+      },
+      "compositeHousePlacements": {
+        "count": 60,
+        "mean": 20.83,
+        "median": 20,
+        "min": 5,
+        "max": 35,
+        "stdDev": 7.7,
+        "p25": 15,
+        "p75": 25
+      },
+      "overall": {
+        "count": 63,
+        "mean": 46.59,
+        "median": 43,
+        "min": 17,
+        "max": 86,
+        "stdDev": 16.45,
+        "p25": 34,
+        "p75": 58
+      }
+    },
+    "KARMIC_LESSONS_GROWTH": {
+      "synastry": {
+        "count": 58,
+        "mean": 7.63,
+        "median": 8.5,
+        "min": -14,
+        "max": 48,
+        "stdDev": 11.76,
+        "p25": 1,
+        "p75": 14
+      },
+      "composite": {
+        "count": 51,
+        "mean": 1.98,
+        "median": 3,
+        "min": -11.25,
+        "max": 18.5,
+        "stdDev": 6.77,
+        "p25": -3,
+        "p75": 6
+      },
+      "synastryHousePlacements": {
+        "count": 63,
+        "mean": 41.19,
+        "median": 40,
+        "min": 5,
+        "max": 85,
+        "stdDev": 20.6,
+        "p25": 25,
+        "p75": 55
+      },
+      "compositeHousePlacements": {
+        "count": 61,
+        "mean": 18.69,
+        "median": 20,
+        "min": 5,
+        "max": 40,
+        "stdDev": 8.39,
+        "p25": 10,
+        "p75": 25
+      },
+      "overall": {
+        "count": 63,
+        "mean": 34.06,
+        "median": 31,
+        "min": 6,
+        "max": 81,
+        "stdDev": 14.13,
+        "p25": 25,
+        "p75": 46
+      }
+    },
+    "PRACTICAL_GROWTH_SHARED_GOALS": {
+      "synastry": {
+        "count": 62,
+        "mean": 34.25,
+        "median": 34.38,
+        "min": -1.25,
+        "max": 62.5,
+        "stdDev": 16.39,
+        "p25": 20,
+        "p75": 48.25
+      },
+      "composite": {
+        "count": 59,
+        "mean": 14.4,
+        "median": 13,
+        "min": -5,
+        "max": 56.25,
+        "stdDev": 11.17,
+        "p25": 7,
+        "p75": 18.75
+      },
+      "synastryHousePlacements": {
+        "count": 62,
+        "mean": 46.61,
+        "median": 45,
+        "min": 5,
+        "max": 100,
+        "stdDev": 18.55,
+        "p25": 35,
+        "p75": 60
+      },
+      "compositeHousePlacements": {
+        "count": 63,
+        "mean": 28.1,
+        "median": 25,
+        "min": 5,
+        "max": 55,
+        "stdDev": 11.7,
+        "p25": 20,
+        "p75": 40
+      },
+      "overall": {
+        "count": 63,
+        "mean": 56.84,
+        "median": 56,
+        "min": 17,
+        "max": 98,
+        "stdDev": 14.89,
+        "p25": 44,
+        "p75": 67
+      }
+    }
+  },
+  "sampleSize": 63,
+  "generatedAt": "2025-04-18T02:36:51.307Z"
+}

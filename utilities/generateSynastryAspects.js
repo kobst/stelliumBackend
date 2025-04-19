@@ -1,4 +1,4 @@
-import { calculateAspectObject, findAspectsForBirthChart } from './generateTransitAspects.js';
+import { calculateAspectObject, findAspectsForBirthChartV2 } from './generateTransitAspects.js';
 import { sortOrder } from './constants.js';
 
 function getProperty(object, camelCase, snake_case) {
@@ -11,8 +11,8 @@ export const findSynastryAspects = (birthChart1, birthChart2) => {
     console.log("findSynastryAspects");
     birthChart1.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
     birthChart2.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
-    console.log("birthChart1: ", birthChart1[0])
-    console.log("birthChart2: ", birthChart2[0])
+    // console.log("birthChart1: ", birthChart1[0])
+    // console.log("birthChart2: ", birthChart2[0])
     const synastryAspects = [];
 
     for (let i = 0; i < birthChart1.length; i++) {
@@ -25,7 +25,7 @@ export const findSynastryAspects = (birthChart1, birthChart2) => {
             const planet1IsRetro = getProperty(planet1, 'isRetro', 'is_retro');
             const planet2IsRetro = getProperty(planet2, 'isRetro', 'is_retro');
             const aspectObject = calculateAspectObject(planet1FullDegree, planet2FullDegree, planet1IsRetro, planet1.name, true);
-            console.log("aspectObject: ", aspectObject)
+            // console.log("aspectObject: ", aspectObject)
             if (aspectObject) {
                 const synastryAspect = {
                     'planet1': planet1['name'],
@@ -41,7 +41,7 @@ export const findSynastryAspects = (birthChart1, birthChart2) => {
             }
         }
     }
-    console.log("synastryAspects: ", synastryAspects)
+    // console.log("synastryAspects: ", synastryAspects)
     return synastryAspects;
 };
 
@@ -85,10 +85,14 @@ export const generateCompositeChart = (birthChart1, birthChart2) => {
 
     console.log("compositeChart.planets: ", compositeChart.planets)
     // Calculate midpoint for Ascendant and MC
-    const ascendant1 = planets1.find((p) => p.name === 'Ascendant');
-    const ascendant2 = planets2.find((p) => p.name === 'Ascendant');
-    const mc1 = planets1.find((p) => p.name === 'Midheaven' || p.name === 'MC');
-    const mc2 = planets2.find((p) => p.name === 'Midheaven' || p.name === 'MC');
+    // const ascendant1 = planets1.find((p) => p.name === 'Ascendant');
+    // const ascendant2 = planets2.find((p) => p.name === 'Ascendant');
+    // const mc1 = planets1.find((p) => p.name === 'Midheaven' || p.name === 'MC');
+    // const mc2 = planets2.find((p) => p.name === 'Midheaven' || p.name === 'MC');
+    const ascendant1 = planets1.find((p) => p.name === 'ascendant');
+    const ascendant2 = planets2.find((p) => p.name === 'ascendant');
+    const mc1 = planets1.find((p) => p.name === 'midheaven' || p.name === 'MC');
+    const mc2 = planets2.find((p) => p.name === 'midheaven' || p.name === 'MC');
 
     const ascendantMidpoint = calculateMidpoint(
         getProperty(ascendant1, 'fullDegree', 'full_degree'),
@@ -125,10 +129,9 @@ export const generateCompositeChart = (birthChart1, birthChart2) => {
         }
     });
 
-    const aspectsComputed = findAspectsForBirthChart(compositeChart.planets);
+    const aspectsComputed = findAspectsForBirthChartV2(compositeChart.planets);
     compositeChart.aspects = aspectsComputed;
 
-    console.log("compositeChart: ", compositeChart)
     return compositeChart;
 };
 

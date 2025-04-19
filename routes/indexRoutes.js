@@ -1,7 +1,13 @@
 import express from 'express';
 const router = express.Router();
 
-import { handleBirthData, handleProgressedChart, handleinstantTransits, handleGeneralPeriodTransits, handlePromptGeneration,
+import { 
+    handleProgressedChart, 
+    handleinstantTransits, 
+    handleGeneralPeriodTransits, 
+    handlePromptGeneration, 
+    handleUserCreation, 
+    handleCreateRelationship
 } from '../controllers/astroDataController.js';
 import { 
     handleDominance,
@@ -18,7 +24,8 @@ import {
     handleGptResponseForCompositeChart,
     handleGptResponseForCompositeChartPlanet,
     handleGptResponseForSynastryAspects,
-    handleUserQuery
+    handleUserQuery,
+    handleShortOverviewResponse
 } from '../controllers/gptController.js';
 import { handleDailyTransits, 
     handlePeriodTransits,
@@ -34,6 +41,7 @@ import { handleDailyTransits,
     handleRetrogradesForDateRange,
     handleSaveUserProfile, 
     handleSaveCompositeChartProfile,
+    handleSaveSynastryChartInterpretation,
     handleGetCompositeChartInterpretation,
     handleGetUsers,
     handleGetUserSingle,
@@ -46,10 +54,11 @@ import { handleDailyTransits,
     handleGetDailyTransitInterpretationData,
     handleSaveWeeklyTransitInterpretationData,
     handleGetWeeklyTransitInterpretationData,
+    handleGetRelationshipScore,
     generateSummaryTransitsForUser } from '../controllers/dbDataController.js';
 
 // astroData: get fresh astrological data from the astrological API
-router.post('/birthData', handleBirthData);
+// router.post('/birthData', handleBirthData);
 router.post('/progressedChart', handleProgressedChart);
 router.post('/instantTransits', handleinstantTransits);
 
@@ -80,6 +89,7 @@ router.post('/periodTransitsForChart', handleSingleTransitAspectsForChart);
 router.post('/getUser', handleGetUserSingle);
 router.post('/getUsers', handleGetUsers);
 router.post('/saveUserProfile', handleSaveUserProfile);
+router.post('/getShortOverview', handleShortOverviewResponse);
 
 // generate summaries of transits and aspects for user
 router.post('/generatePeriodAspectsForChart', generatePeriodAspectsForChart);
@@ -120,7 +130,16 @@ router.post('/saveCompositeChartProfile', handleSaveCompositeChartProfile);
 router.post('/getCompositeChartInterpretation', handleGetCompositeChartInterpretation);
 router.post('/getSynastryChartInterpretation', handleGetSynastryChartInterpretation);
 router.post('/saveCompositeChartInterpretation', handleSaveCompositeChartInterpretation);
+router.post('/saveSynastryChartInterpretation', handleSaveSynastryChartInterpretation);
+router.post('/getRelationshipScore', handleGetRelationshipScore);
+
 // user chat
 router.post('/handleUserQuery', handleUserQuery);
+
+
+
+// using sweph/ephemeris
+router.post('/createUser', handleUserCreation);
+router.post('/createRelationship', handleCreateRelationship);
 
 export default router;

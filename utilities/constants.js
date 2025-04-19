@@ -1,5 +1,9 @@
 
 export const relevantPromptAspects = {
+  "shortOverall": {
+    "planets": ["Sun", "Moon", "Ascendant", "Mercury", "Venus", "Mars"],
+    "houses": [1]
+  },
     "personality": {
       "planets": ["Sun", "Moon", "Ascendant"],
       "houses": [1]
@@ -12,7 +16,7 @@ export const relevantPromptAspects = {
         "Mars",
         "Ascendant",
       ],
-      "houses": [5, 7, 11]
+      "houses": [1, 5, 7, 11]
     },
     "career": {
       "planets": ["Sun", "Saturn", "Jupiter", "Midheaven", "Part of Fortune"],
@@ -128,6 +132,12 @@ export const ignorePlanets = [
 ]
 export const ignorePoints = ["Chiron", "Part of Fortune", "South Node"]
 
+export const ignorePointsForDominance = ["Chiron", "Part of Fortune", "South Node", "Node"]
+
+export const ignorePointsForModalities = ["Chiron", "Part of Fortune", "South Node", "Node", "Ascendant", "Midheaven"]
+
+export const ignorePointsForElements = ["Chiron", "Part of Fortune", "South Node", "Node", "Midheaven", "true Node"]
+
 export const retroCodes = {
     "retrograde": "r",
     "": "p"
@@ -199,5 +209,34 @@ export const transitCodes = {
     'Saturn': 7,
     'Uranus': 8,
     'Neptune': 9,
-    'Pluto': 10
+    'Pluto': 10,
+    'Ascendant': 11,
+    'Midheaven': 12,
+    'Node': 13,
   };
+
+  export const orbDegreesTransit = {
+    'Moon': 8,
+    'Mercury': 5,
+    'Venus': 5,
+    'Sun': 5,
+    'Mars': 3,
+    'Jupiter': 3,
+    'Saturn': 3,
+    'Uranus': 3,
+    'Neptune': 3,
+    'Pluto': 3
+};
+
+export const orbDegreesNatal = {
+    'Moon': 7,
+    'Mercury': 7,
+    'Venus': 7,
+    'Sun': 7,
+    'Mars': 5,
+    'Jupiter': 5,
+    'Saturn': 5,
+    'Uranus': 5,
+    'Neptune': 5,
+    'Pluto': 5
+};

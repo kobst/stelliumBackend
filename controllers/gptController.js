@@ -11,9 +11,12 @@ import { getCompletionBigFour,
   getCompletionGptResponseForCompositeChartPlanet,
   getGptPromptsForWeeklyTransits,
   getPromptGenerationCompositeChart,
-  getPromptGenerationSynastryChart
+  getPromptGenerationSynastryChart,
+  getCompletionShortOverview,
+  getCompletionShortOverviewRelationships
 } from '../services/gptService.js';
 import { processUserQuery } from '../utilities/vectorize.js';
+import { generateNatalPrompts } from '../utilities/generateNatalPrompts.js';
 
 export async function handleDominance(req, res) {
   try {
@@ -262,3 +265,18 @@ export async function handleGptResponseForCompositeChartPlanet(req, res) {
 //     res.status(500).send('Server error');
 //   }
 // }
+
+
+export async function handleShortOverviewResponse(req, res) {
+
+  try {
+    const { birthData } = req.body
+    const birthDataDescriptions = generateNatalPrompts('shortOverall', birthData)
+    console.log("birthDataDescriptions: ", birthDataDescriptions)
+    const response = await getCompletionShortOverviewRelationships(birthDataDescriptions)
+    return res.json({ response })
+  } catch (error) { 
+    res.status(500).send('Server error');         
+  }
+
+}

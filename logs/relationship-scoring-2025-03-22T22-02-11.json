@@ -1,0 +1,1368 @@
+{
+  "timestamp": "2025-03-22T22:02:11.278Z",
+  "inputSummary": {
+    "synastryAspectsCount": 48,
+    "compositeAspectsCount": 29,
+    "birthChart1Summary": {
+      "name": "Unknown",
+      "planetCount": 16,
+      "houseCount": 12,
+      "planets": [
+        {
+          "name": "Moon",
+          "sign": "Virgo",
+          "house": 3
+        },
+        {
+          "name": "Mercury",
+          "sign": "Virgo",
+          "house": 3
+        },
+        {
+          "name": "Venus",
+          "sign": "Cancer",
+          "house": 12
+        },
+        {
+          "name": "Sun",
+          "sign": "Leo",
+          "house": 2
+        },
+        {
+          "name": "Mars",
+          "sign": "Gemini",
+          "house": 12
+        },
+        {
+          "name": "Jupiter",
+          "sign": "Gemini",
+          "house": 12
+        },
+        {
+          "name": "Saturn",
+          "sign": "Leo",
+          "house": 2
+        },
+        {
+          "name": "Uranus",
+          "sign": "Scorpio",
+          "house": 5
+        },
+        {
+          "name": "Neptune",
+          "sign": "Sagittarius",
+          "house": 5
+        },
+        {
+          "name": "Pluto",
+          "sign": "Libra",
+          "house": 4
+        },
+        {
+          "name": "Ascendant",
+          "sign": "Cancer",
+          "house": 1
+        },
+        {
+          "name": "Midheaven",
+          "sign": "Pisces",
+          "house": 10
+        },
+        {
+          "name": "Node",
+          "sign": "Libra",
+          "house": 4
+        },
+        {
+          "name": "South Node",
+          "sign": "Aries",
+          "house": 10
+        },
+        {
+          "name": "Chiron",
+          "sign": "Taurus",
+          "house": 11
+        },
+        {
+          "name": "Part of Fortune",
+          "sign": "Gemini",
+          "house": 12
+        }
+      ]
+    },
+    "birthChart2Summary": {
+      "name": "Unknown",
+      "planetCount": 16,
+      "houseCount": 12,
+      "planets": [
+        {
+          "name": "Moon",
+          "sign": "Scorpio",
+          "house": 2
+        },
+        {
+          "name": "Mercury",
+          "sign": "Libra",
+          "house": 12
+        },
+        {
+          "name": "Venus",
+          "sign": "Libra",
+          "house": 12
+        },
+        {
+          "name": "Sun",
+          "sign": "Virgo",
+          "house": 11
+        },
+        {
+          "name": "Mars",
+          "sign": "Leo",
+          "house": 10
+        },
+        {
+          "name": "Jupiter",
+          "sign": "Libra",
+          "house": 12
+        },
+        {
+          "name": "Saturn",
+          "sign": "Libra",
+          "house": 12
+        },
+        {
+          "name": "Uranus",
+          "sign": "Scorpio",
+          "house": 2
+        },
+        {
+          "name": "Neptune",
+          "sign": "Sagittarius",
+          "house": 3
+        },
+        {
+          "name": "Pluto",
+          "sign": "Libra",
+          "house": 1
+        },
+        {
+          "name": "Ascendant",
+          "sign": "Libra",
+          "house": 1
+        },
+        {
+          "name": "Midheaven",
+          "sign": "Cancer",
+          "house": 10
+        },
+        {
+          "name": "Node",
+          "sign": "Leo",
+          "house": 10
+        },
+        {
+          "name": "South Node",
+          "sign": "Aquarius",
+          "house": 4
+        },
+        {
+          "name": "Chiron",
+          "sign": "Taurus",
+          "house": 8
+        },
+        {
+          "name": "Part of Fortune",
+          "sign": "Sagittarius",
+          "house": 3
+        }
+      ]
+    }
+  },
+  "categories": {
+    "OVERALL_ATTRACTION_CHEMISTRY": {
+      "AtoB": {
+        "matchedAspects": [
+          {
+            "aspect": "Venus sextile Sun",
+            "orb": 4.5,
+            "score": 7.5,
+            "rule": "Venus to Sun"
+          },
+          {
+            "aspect": "Venus square Ascendant",
+            "orb": 3.8,
+            "score": -5,
+            "rule": "Venus to Ascendant"
+          },
+          {
+            "aspect": "Sun square Moon",
+            "orb": 3.2,
+            "score": -5,
+            "rule": "Sun to Moon"
+          },
+          {
+            "aspect": "Sun sextile Ascendant",
+            "orb": 3.8,
+            "score": 7.5,
+            "rule": "Sun to Ascendant"
+          },
+          {
+            "aspect": "Mars trine Venus",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Mars to Venus"
+          },
+          {
+            "aspect": "Mars trine Ascendant",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Mars to Ascendant"
+          }
+        ],
+        "houseOverlays": [
+          {
+            "planet": "Moon",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Mercury",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Venus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Sun",
+            "house": 1,
+            "points": 15,
+            "reason": "Energizes and recognizes the house person"
+          },
+          {
+            "planet": "Mars",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Jupiter",
+            "house": 1,
+            "points": 15,
+            "reason": "Boosts optimism and confidence"
+          },
+          {
+            "planet": "Saturn",
+            "house": 1,
+            "points": -5,
+            "reason": "Creates self-consciousness"
+          },
+          {
+            "planet": "Uranus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Neptune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Pluto",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Ascendant",
+            "house": 1,
+            "points": 15,
+            "reason": "Strong physical attraction"
+          },
+          {
+            "planet": "Midheaven",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "South Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Chiron",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Part of Fortune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          }
+        ],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Leo",
+              "Libra",
+              "Taurus"
+            ],
+            "score": 70,
+            "maxPossible": 120,
+            "details": {
+              "chart1": {
+                "Leo": [
+                  "Sun",
+                  "Saturn"
+                ],
+                "Libra": [
+                  "Pluto",
+                  "Node"
+                ],
+                "Taurus": [
+                  "Chiron"
+                ]
+              },
+              "chart2": {
+                "Leo": [
+                  "Mars",
+                  "Node"
+                ],
+                "Libra": [
+                  "Mercury",
+                  "Venus",
+                  "Jupiter",
+                  "Saturn",
+                  "Pluto",
+                  "Ascendant"
+                ],
+                "Taurus": [
+                  "Chiron"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "BtoA": {
+        "matchedAspects": [
+          {
+            "aspect": "Venus trine Moon",
+            "orb": 4.5,
+            "score": 7.5,
+            "rule": "Venus to Moon"
+          },
+          {
+            "aspect": "Venus square Pluto",
+            "orb": 6.2,
+            "score": -5,
+            "rule": "Venus to Pluto"
+          },
+          {
+            "aspect": "Sun sextile Venus",
+            "orb": 3.8,
+            "score": 7.5,
+            "rule": "Sun to Venus"
+          }
+        ],
+        "houseOverlays": [
+          {
+            "planet": "Moon",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Mercury",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Venus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Sun",
+            "house": 1,
+            "points": 15,
+            "reason": "Energizes and recognizes the house person"
+          },
+          {
+            "planet": "Mars",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Jupiter",
+            "house": 1,
+            "points": 15,
+            "reason": "Boosts optimism and confidence"
+          },
+          {
+            "planet": "Saturn",
+            "house": 1,
+            "points": -5,
+            "reason": "Creates self-consciousness"
+          },
+          {
+            "planet": "Uranus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Neptune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Pluto",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Ascendant",
+            "house": 1,
+            "points": 15,
+            "reason": "Strong physical attraction"
+          },
+          {
+            "planet": "Midheaven",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "South Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Chiron",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Part of Fortune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          }
+        ],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Leo",
+              "Libra",
+              "Taurus"
+            ],
+            "score": 70,
+            "maxPossible": 120,
+            "details": {
+              "chart1": {
+                "Leo": [
+                  "Sun",
+                  "Saturn"
+                ],
+                "Libra": [
+                  "Pluto",
+                  "Node"
+                ],
+                "Taurus": [
+                  "Chiron"
+                ]
+              },
+              "chart2": {
+                "Leo": [
+                  "Mars",
+                  "Node"
+                ],
+                "Libra": [
+                  "Mercury",
+                  "Venus",
+                  "Jupiter",
+                  "Saturn",
+                  "Pluto",
+                  "Ascendant"
+                ],
+                "Taurus": [
+                  "Chiron"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "composite": {
+        "matchedAspects": [
+          {
+            "aspect": "Venus conjunction Sun",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Venus to Sun (composite)"
+          },
+          {
+            "aspect": "Venus conjunction Sun",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Sun to Venus (composite)"
+          },
+          {
+            "aspect": "Venus conjunction Ascendant",
+            "orb": 3,
+            "score": 15,
+            "rule": "Venus to Ascendant (composite)"
+          },
+          {
+            "aspect": "Venus conjunction Ascendant",
+            "orb": 3,
+            "score": 15,
+            "rule": "Ascendant to Venus (composite)"
+          },
+          {
+            "aspect": "Sun conjunction Ascendant",
+            "orb": 3.3,
+            "score": 7.5,
+            "rule": "Sun to Ascendant (composite)"
+          },
+          {
+            "aspect": "Sun conjunction Ascendant",
+            "orb": 3.3,
+            "score": 7.5,
+            "rule": "Ascendant to Sun (composite)"
+          },
+          {
+            "aspect": "Mars sextile Ascendant",
+            "orb": 4.7,
+            "score": 7.5,
+            "rule": "Mars to Ascendant (composite)"
+          },
+          {
+            "aspect": "Mars sextile Ascendant",
+            "orb": 4.7,
+            "score": 7.5,
+            "rule": "Ascendant to Mars (composite)"
+          }
+        ]
+      }
+    },
+    "EMOTIONAL_SECURITY_CONNECTION": {
+      "AtoB": {
+        "matchedAspects": [
+          {
+            "aspect": "Moon sextile Moon",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Moon to Moon"
+          },
+          {
+            "aspect": "Saturn square Moon",
+            "orb": 0,
+            "score": -10,
+            "rule": "Saturn to Moon"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Cancer",
+              "Scorpio",
+              "Pisces"
+            ],
+            "score": 35,
+            "maxPossible": 120,
+            "details": {
+              "chart1": {
+                "Cancer": [
+                  "Venus",
+                  "Ascendant"
+                ],
+                "Scorpio": [
+                  "Uranus"
+                ],
+                "Pisces": [
+                  "Midheaven"
+                ]
+              },
+              "chart2": {
+                "Cancer": [
+                  "Midheaven"
+                ],
+                "Scorpio": [
+                  "Moon",
+                  "Uranus"
+                ],
+                "Pisces": []
+              }
+            }
+          }
+        ]
+      },
+      "BtoA": {
+        "matchedAspects": [
+          {
+            "aspect": "Moon sextile Moon",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Moon to Moon"
+          },
+          {
+            "aspect": "Moon trine Chiron",
+            "orb": 2.2,
+            "score": 15,
+            "rule": "Moon to Chiron"
+          },
+          {
+            "aspect": "Venus trine Moon",
+            "orb": 4.5,
+            "score": 7.5,
+            "rule": "Venus to Moon"
+          },
+          {
+            "aspect": "Sun square Chiron",
+            "orb": 1.2,
+            "score": -10,
+            "rule": "Sun to Chiron"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Cancer",
+              "Scorpio",
+              "Pisces"
+            ],
+            "score": 35,
+            "maxPossible": 120,
+            "details": {
+              "chart1": {
+                "Cancer": [
+                  "Venus",
+                  "Ascendant"
+                ],
+                "Scorpio": [
+                  "Uranus"
+                ],
+                "Pisces": [
+                  "Midheaven"
+                ]
+              },
+              "chart2": {
+                "Cancer": [
+                  "Midheaven"
+                ],
+                "Scorpio": [
+                  "Moon",
+                  "Uranus"
+                ],
+                "Pisces": []
+              }
+            }
+          }
+        ]
+      },
+      "composite": {
+        "matchedAspects": [
+          {
+            "aspect": "Moon sextile Jupiter",
+            "orb": 0.1,
+            "score": 15,
+            "rule": "Moon to Jupiter (composite)"
+          },
+          {
+            "aspect": "Moon sextile Jupiter",
+            "orb": 0.1,
+            "score": 15,
+            "rule": "Jupiter to Moon (composite)"
+          },
+          {
+            "aspect": "Moon quincunx Chiron",
+            "orb": 6.5,
+            "score": 2.5,
+            "rule": "Chiron to Moon (composite)"
+          },
+          {
+            "aspect": "Moon quincunx Chiron",
+            "orb": 6.5,
+            "score": 2.5,
+            "rule": "Moon to Chiron (composite)"
+          }
+        ]
+      }
+    },
+    "SEX_AND_INTIMACY": {
+      "AtoB": {
+        "matchedAspects": [
+          {
+            "aspect": "Venus square Pluto",
+            "orb": 6.2,
+            "score": -5,
+            "rule": "Venus to Pluto"
+          },
+          {
+            "aspect": "Mars trine Venus",
+            "orb": 0.3,
+            "score": 15,
+            "rule": "Mars to Venus"
+          },
+          {
+            "aspect": "Mars trine Pluto",
+            "orb": 2.1,
+            "score": 15,
+            "rule": "Mars to Pluto"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Scorpio"
+            ],
+            "score": 15,
+            "maxPossible": 40,
+            "details": {
+              "chart1": {
+                "Scorpio": [
+                  "Uranus"
+                ]
+              },
+              "chart2": {
+                "Scorpio": [
+                  "Moon",
+                  "Uranus"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "BtoA": {
+        "matchedAspects": [
+          {
+            "aspect": "Sun sextile Pluto",
+            "orb": 1.4,
+            "score": 15,
+            "rule": "Sun to Pluto"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Scorpio"
+            ],
+            "score": 15,
+            "maxPossible": 40,
+            "details": {
+              "chart1": {
+                "Scorpio": [
+                  "Uranus"
+                ]
+              },
+              "chart2": {
+                "Scorpio": [
+                  "Moon",
+                  "Uranus"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "composite": {
+        "matchedAspects": []
+      }
+    },
+    "COMMUNICATION_AND_MENTAL_CONNECTION": {
+      "AtoB": {
+        "matchedAspects": [
+          {
+            "aspect": "Jupiter square Mercury",
+            "orb": 3.1,
+            "score": -5,
+            "rule": "Jupiter to Mercury"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Gemini",
+              "Libra",
+              "Aquarius"
+            ],
+            "score": 60,
+            "maxPossible": 120,
+            "details": {
+              "chart1": {
+                "Gemini": [
+                  "Mars",
+                  "Jupiter",
+                  "Part of Fortune"
+                ],
+                "Libra": [
+                  "Pluto",
+                  "Node"
+                ],
+                "Aquarius": []
+              },
+              "chart2": {
+                "Gemini": [],
+                "Libra": [
+                  "Mercury",
+                  "Venus",
+                  "Jupiter",
+                  "Saturn",
+                  "Pluto",
+                  "Ascendant"
+                ],
+                "Aquarius": [
+                  "South Node"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "BtoA": {
+        "matchedAspects": [
+          {
+            "aspect": "Jupiter square Mercury",
+            "orb": 3.1,
+            "score": -5,
+            "rule": "Jupiter to Mercury"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": [
+          {
+            "signs": [
+              "Gemini",
+              "Libra",
+              "Aquarius"
+            ],
+            "score": 60,
+            "maxPossible": 120,
+            "details": {
+              "chart1": {
+                "Gemini": [
+                  "Mars",
+                  "Jupiter",
+                  "Part of Fortune"
+                ],
+                "Libra": [
+                  "Pluto",
+                  "Node"
+                ],
+                "Aquarius": []
+              },
+              "chart2": {
+                "Gemini": [],
+                "Libra": [
+                  "Mercury",
+                  "Venus",
+                  "Jupiter",
+                  "Saturn",
+                  "Pluto",
+                  "Ascendant"
+                ],
+                "Aquarius": [
+                  "South Node"
+                ]
+              }
+            }
+          }
+        ]
+      },
+      "composite": {
+        "matchedAspects": []
+      }
+    },
+    "COMMITMENT_LONG_TERM_POTENTIAL": {
+      "AtoB": {
+        "matchedAspects": [
+          {
+            "aspect": "Saturn square Moon",
+            "orb": 0,
+            "score": -10,
+            "rule": "Saturn to Moon"
+          },
+          {
+            "aspect": "Saturn sextile Venus",
+            "orb": 0.7,
+            "score": 15,
+            "rule": "Saturn to Venus"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": []
+      },
+      "BtoA": {
+        "matchedAspects": [
+          {
+            "aspect": "Venus square Jupiter",
+            "orb": 4.1,
+            "score": -5,
+            "rule": "Venus to Jupiter"
+          }
+        ],
+        "houseOverlays": [],
+        "signEmphasis": []
+      },
+      "composite": {
+        "matchedAspects": []
+      }
+    },
+    "KARMIC_LESSONS_GROWTH": {
+      "AtoB": {
+        "matchedAspects": [
+          {
+            "aspect": "Saturn sextile Pluto",
+            "orb": 1.8,
+            "score": 15,
+            "rule": "Saturn to Pluto"
+          }
+        ],
+        "houseOverlays": [
+          {
+            "planet": "Moon",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Mercury",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Venus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Sun",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Mars",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Jupiter",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Saturn",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Uranus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Neptune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Pluto",
+            "house": 1,
+            "points": -5,
+            "reason": "Power struggles over identity"
+          },
+          {
+            "planet": "Ascendant",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Midheaven",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "South Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Chiron",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Part of Fortune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          }
+        ],
+        "signEmphasis": []
+      },
+      "BtoA": {
+        "matchedAspects": [
+          {
+            "aspect": "Moon trine Chiron",
+            "orb": 2.2,
+            "score": 15,
+            "rule": "Moon to Chiron"
+          },
+          {
+            "aspect": "Sun sextile Pluto",
+            "orb": 1.4,
+            "score": 15,
+            "rule": "Sun to Pluto"
+          },
+          {
+            "aspect": "Sun square Chiron",
+            "orb": 1.2,
+            "score": -10,
+            "rule": "Sun to Chiron"
+          },
+          {
+            "aspect": "Pluto conjunction Saturn",
+            "orb": 3.2,
+            "score": 7.5,
+            "rule": "Pluto to Saturn"
+          }
+        ],
+        "houseOverlays": [
+          {
+            "planet": "Moon",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Mercury",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Venus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Sun",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Mars",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Jupiter",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Saturn",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Uranus",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Neptune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Pluto",
+            "house": 1,
+            "points": -5,
+            "reason": "Power struggles over identity"
+          },
+          {
+            "planet": "Ascendant",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Midheaven",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "South Node",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Chiron",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          },
+          {
+            "planet": "Part of Fortune",
+            "house": 1,
+            "points": 5,
+            "reason": "General house placement"
+          }
+        ],
+        "signEmphasis": []
+      },
+      "composite": {
+        "matchedAspects": [
+          {
+            "aspect": "Moon conjunction Pluto",
+            "orb": 3.3,
+            "score": 7.5,
+            "rule": "Pluto to Moon (composite)"
+          },
+          {
+            "aspect": "Moon conjunction Pluto",
+            "orb": 3.3,
+            "score": 7.5,
+            "rule": "Moon to Pluto (composite)"
+          },
+          {
+            "aspect": "Moon quincunx Chiron",
+            "orb": 6.5,
+            "score": 2.5,
+            "rule": "Chiron to Moon (composite)"
+          },
+          {
+            "aspect": "Moon quincunx Chiron",
+            "orb": 6.5,
+            "score": 2.5,
+            "rule": "Moon to Chiron (composite)"
+          },
+          {
+            "aspect": "Venus conjunction Node",
+            "orb": 5.2,
+            "score": 7.5,
+            "rule": "Node to Venus (composite)"
+          },
+          {
+            "aspect": "Venus conjunction Node",
+            "orb": 5.2,
+            "score": 7.5,
+            "rule": "Venus to Node (composite)"
+          },
+          {
+            "aspect": "Sun conjunction Node",
+            "orb": 5.6,
+            "score": 7.5,
+            "rule": "Node to Sun (composite)"
+          },
+          {
+            "aspect": "Sun conjunction Node",
+            "orb": 5.6,
+            "score": 7.5,
+            "rule": "Sun to Node (composite)"
+          },
+          {
+            "aspect": "Mars sextile Node",
+            "orb": 2.5,
+            "score": 15,
+            "rule": "Node to Mars (composite)"
+          },
+          {
+            "aspect": "Mars sextile Node",
+            "orb": 2.5,
+            "score": 15,
+            "rule": "Mars to Node (composite)"
+          }
+        ]
+      }
+    }
+  },
+  "normalizedScores": {
+    "OVERALL_ATTRACTION_CHEMISTRY": {
+      "AtoB": {
+        "raw": 205,
+        "maxPossible": 320,
+        "normalized": 64.0625
+      },
+      "BtoA": {
+        "raw": 180,
+        "maxPossible": 275,
+        "normalized": 65.45454545454545
+      },
+      "composite": {
+        "raw": 90,
+        "maxPossible": 120,
+        "normalized": 75
+      },
+      "synastryTotal": 64.75852272727272,
+      "overall": 69
+    },
+    "EMOTIONAL_SECURITY_CONNECTION": {
+      "AtoB": {
+        "raw": 40,
+        "maxPossible": 150,
+        "normalized": 26.666666666666668
+      },
+      "BtoA": {
+        "raw": 62.5,
+        "maxPossible": 180,
+        "normalized": 34.72222222222222
+      },
+      "composite": {
+        "raw": 35,
+        "maxPossible": 60,
+        "normalized": 58.333333333333336
+      },
+      "synastryTotal": 30.694444444444443,
+      "overall": 45
+    },
+    "SEX_AND_INTIMACY": {
+      "AtoB": {
+        "raw": 40,
+        "maxPossible": 85,
+        "normalized": 47.05882352941176
+      },
+      "BtoA": {
+        "raw": 30,
+        "maxPossible": 55,
+        "normalized": 54.54545454545454
+      },
+      "composite": {
+        "raw": 0,
+        "maxPossible": 0,
+        "normalized": 0
+      },
+      "synastryTotal": 50.80213903743315,
+      "overall": 36
+    },
+    "COMMUNICATION_AND_MENTAL_CONNECTION": {
+      "AtoB": {
+        "raw": 55,
+        "maxPossible": 135,
+        "normalized": 40.74074074074074
+      },
+      "BtoA": {
+        "raw": 55,
+        "maxPossible": 135,
+        "normalized": 40.74074074074074
+      },
+      "composite": {
+        "raw": 0,
+        "maxPossible": 0,
+        "normalized": 0
+      },
+      "synastryTotal": 40.74074074074074,
+      "overall": 16
+    },
+    "COMMITMENT_LONG_TERM_POTENTIAL": {
+      "AtoB": {
+        "raw": 5,
+        "maxPossible": 30,
+        "normalized": 16.666666666666664
+      },
+      "BtoA": {
+        "raw": -5,
+        "maxPossible": 15,
+        "normalized": 0
+      },
+      "composite": {
+        "raw": 0,
+        "maxPossible": 0,
+        "normalized": 0
+      },
+      "synastryTotal": 8.333333333333332,
+      "overall": 2
+    },
+    "KARMIC_LESSONS_GROWTH": {
+      "AtoB": {
+        "raw": 85,
+        "maxPossible": 95,
+        "normalized": 89.47368421052632
+      },
+      "BtoA": {
+        "raw": 97.5,
+        "maxPossible": 140,
+        "normalized": 69.64285714285714
+      },
+      "composite": {
+        "raw": 80,
+        "maxPossible": 150,
+        "normalized": 53.333333333333336
+      },
+      "synastryTotal": 79.55827067669173,
+      "overall": 66
+    }
+  }
+}

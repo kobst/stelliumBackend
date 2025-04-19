@@ -193,6 +193,44 @@ export const findAspectsForBirthChart = (birthChart) => {
 
 
 
+export const findAspectsForBirthChartV2 = (birthChart) => {
+    console.log("findAspectsForBirthChart")
+    birthChart.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
+    const aspects = [];
+
+    for (let i = 0; i < birthChart.length; i++) {
+        const aspectingPlanet = birthChart[i]
+        for (let j = i + 1; j < birthChart.length; j++) {
+            const aspectedPlanet = birthChart[j]
+            if (!aspectedPlanet) {
+                console.log(j)
+                console.log(birthChart)
+            }
+
+            const aspectingPlanetFullDegree = getProperty(aspectingPlanet, 'fullDegree', 'full_degree');
+            const aspectedPlanetFullDegree = getProperty(aspectedPlanet, 'fullDegree', 'full_degree');
+            const aspectingPlanetIsRetro = getProperty(aspectingPlanet, 'isRetro', 'is_retro');
+
+            const aspectObject = calculateAspectObject(aspectingPlanetFullDegree, aspectedPlanetFullDegree, aspectingPlanetIsRetro, aspectingPlanet.name, true);
+            if (aspectObject) {
+                const transit_object = {
+                    'aspectingPlanet': aspectingPlanet['name'],
+                    'aspectingPlanetDegree': aspectingPlanetFullDegree,
+                    'aspectedPlanet': aspectedPlanet['name'],
+                    'aspectedPlanetDegree': aspectedPlanetFullDegree,
+                    'aspectType': aspectObject['aspectType'],
+                    'orb': aspectObject['orb'],
+                  }
+                aspects.push(transit_object)
+            } 
+        };
+    };
+    return aspects;
+}
+
+
+
+
 export const findAspectsBetweenTwoBirthCharts = (birthChart1, birthChart2) => {
     console.log("findAspectsForBirthChart")
     birthChart.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);

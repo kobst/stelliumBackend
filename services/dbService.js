@@ -16,7 +16,8 @@ const dailyTransitInterpretations = db.collection('daily_transit_interpretations
 const weeklyTransitInterpretations = db.collection('weekly_transit_interpretations');
 const compositeChartCollection = db.collection('composite_charts');
 const compositeChartInterpretations = db.collection('composite_chart_interpretations');
-const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
+const relationshipLogCollection = db.collection('relationship_logs');
+// const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
     try {
@@ -231,7 +232,7 @@ export async function getBirthChart(userId) {
 export async function getUsers() {
     try {
         const users = await userCollection.find({})
-            .limit(20)
+            .limit(50)
             .toArray();
         return users;
     } catch (error) {
@@ -269,11 +270,15 @@ export async function saveUser(user) {
 }
 
 export async function saveCompositeChart(compositeChart) {
-    console.log("saveCompositeChart", compositeChart)
+    // console.log("saveCompositeChart", compositeChart)
     const result = await compositeChartCollection.insertOne(compositeChart);
     return result;
 }
 
+export async function saveRelationshipLog(relationshipLog) {
+    const result = await relationshipLogCollection.insertOne(relationshipLog);
+    return result;
+}
 
 export async function saveUserTransitAspects(groupedAspects, userId) {
     const savePromises = groupedAspects.map(aspect => 
@@ -365,8 +370,8 @@ export async function getBirthChartInterpretation(userId) {
 
 
 
-export async function saveCompositeChartInterpretation(compositeChartId, heading, promptDescription, interpretation, isCompositeChart) {
-    console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation, isCompositeChart });
+export async function saveCompositeChartInterpretation(compositeChartId, heading, promptDescription, interpretation) {
+    console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation});
     try {
         if (!ObjectId.isValid(compositeChartId)) {
             throw new Error(`Invalid compositeChartId: ${compositeChartId}`);
@@ -378,29 +383,21 @@ export async function saveCompositeChartInterpretation(compositeChartId, heading
         let document = await compositeChartInterpretations.findOne({ _id: objectId });
 
         if (!document) {
-            // If no document exists, create a new one with empty objects for both interpretation types
+            // If no document exists, create a new one with only compositeChartInterpretation
             document = { 
                 _id: objectId, 
-                compositeChartInterpretation: {},
-                synastryInterpretation: {}
+                compositeChartInterpretation: {}
             };
         } else {
-            // Ensure both interpretation objects exist
             if (!document.compositeChartInterpretation) {
                 document.compositeChartInterpretation = {};
             }
-            if (!document.synastryInterpretation) {
-                document.synastryInterpretation = {};
-            }
+            // Preserve any existing synastryInterpretation if it exists
         }
 
         // Update the specific heading under the appropriate interpretation object
-        if (isCompositeChart) {
-            document.compositeChartInterpretation[heading] = { promptDescription, interpretation };
-        } else {
-            document.synastryInterpretation[heading] = { promptDescription, interpretation };
-        }
-
+        document.compositeChartInterpretation[heading] = { promptDescription, interpretation };
+      
         // Use replaceOne with upsert to either update the existing document or insert a new one
         const result = await compositeChartInterpretations.replaceOne(
             { _id: objectId },
@@ -416,6 +413,52 @@ export async function saveCompositeChartInterpretation(compositeChartId, heading
         throw error;
     }
 }
+
+// save synastry chart interpretation
+export async function saveSynastryChartInterpretation(compositeChartId, heading, promptDescription, interpretation) {
+    console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation});
+    try {
+        if (!ObjectId.isValid(compositeChartId)) {
+            throw new Error(`Invalid compositeChartId: ${compositeChartId}`);
+        }
+
+        const objectId = new ObjectId(compositeChartId);
+
+        // First, try to find the existing document
+        let document = await compositeChartInterpretations.findOne({ _id: objectId });
+
+        if (!document) {
+            // If no document exists, create a new one with only compositeChartInterpretation
+            document = { 
+                _id: objectId, 
+                synastryInterpretation: {}
+            };
+        } else {
+            if (!document.synastryInterpretation) {
+                document.synastryInterpretation = {};
+            }
+            // Preserve any existing synastryInterpretation if it exists
+        }
+
+        // Update the specific heading under the appropriate interpretation object
+        document.synastryInterpretation[heading] = { promptDescription, interpretation };
+      
+        // Use replaceOne with upsert to either update the existing document or insert a new one
+        const result = await compositeChartInterpretations.replaceOne(
+            { _id: objectId },
+            document,
+            { upsert: true }
+        );
+
+        console.log("Update result:", JSON.stringify(result, null, 2));
+        return result;
+    } catch (error) {
+        console.error("Error in saveCompositeChartInterpretation:", error);
+        console.error("Error stack:", error.stack);
+        throw error;
+    }
+}
+
 
 
 export async function getCompositeChartInterpretation(compositeChartId) {

@@ -4,14 +4,25 @@ import { encoding_for_model } from '@dqbd/tiktoken';
 import OpenAI from "openai";
 import { Pinecone } from '@pinecone-database/pinecone';  
 import pkg from '@pinecone-database/pinecone';
+import dotenv from 'dotenv';
 
+// Load environment variables from .env file
+dotenv.config();
+
+// Check for required environment variables
+if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY environment variable is not set');
+}
+
+if (!process.env.PINECONE_API_KEY) {
+    throw new Error('PINECONE_API_KEY environment variable is not set');
+}
 
 // const { PineconeClient } = pkg;
 // import { PineconeClient } from '@pinecone-database/pinecone';
 
   // Initialize OpenAI
-const apiKey = process.env.OPENAI_API_KEY_2
-const openAiClient = new OpenAI({ apiKey: apiKey})
+const openAiClient = new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
 
 // Initialize Pinecone
 // const pinecone = new PineconeClient();
@@ -21,7 +32,8 @@ const openAiClient = new OpenAI({ apiKey: apiKey})
 // });
 
 const pinecone = new Pinecone({
-    apiKey: 'eb2d55da-cbe1-4eff-af1b-6f1f59e238f1'
+    apiKey: process.env.PINECONE_API_KEY,
+    environment: process.env.PINECONE_ENVIRONMENT || 'us-east-1-aws' // Optional default
 });
 const index = pinecone.index('stellium-test-index');
 
@@ -62,7 +74,7 @@ async function getEmbedding(text, model = 'text-embedding-ada-002') {
   // Process each section and interpretation
 
 
-  export async function processInterpretationSection(userId, heading, promptDescription, interpretation) {
+export async function processInterpretationSection(userId, heading, promptDescription, interpretation) {
     try {
       const chunks = await splitText(interpretation);
       const records = [];
@@ -225,3 +237,188 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
 }
 
 
+
+
+
+export async function processCompositeChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation) {
+  try {
+    const chunks = await splitText(interpretation);
+    const records = [];
+
+    for (let idx = 0; idx < chunks.length; idx++) {
+      const chunkText = chunks[idx];
+      const embedding = await getEmbedding(chunkText);
+      const id = `${compositeChartId}-composite-${heading}-${idx}`.replace(/\s+/g, '-').toLowerCase();
+      
+      records.push({
+        id: id,
+        values: embedding,
+        metadata: {
+          compositeChartId: compositeChartId,
+          type: 'composite',
+          section: heading,
+          relevantAspects: promptDescription,
+          chunk_index: idx,
+          text: chunkText,
+        }
+      });
+    }
+
+    // Upsert all records at once
+    await index.upsert(records, { namespace: compositeChartId });
+
+    console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
+  } catch (error) {
+    console.error("Error in processInterpretationSection:", error);
+    throw error;
+  }
+}
+
+
+export async function processSynastryChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation) {
+  try {
+    const chunks = await splitText(interpretation);
+    const records = [];
+
+    for (let idx = 0; idx < chunks.length; idx++) {
+      const chunkText = chunks[idx];
+      const embedding = await getEmbedding(chunkText);
+      const id = `${compositeChartId}-synastry-${heading}-${idx}`.replace(/\s+/g, '-').toLowerCase();
+      
+      records.push({
+        id: id,
+        values: embedding,
+        metadata: {
+          compositeChartId: compositeChartId,
+          type: 'synastry',
+          section: heading,
+          relevantAspects: promptDescription,
+          chunk_index: idx,
+          text: chunkText,
+        }
+      });
+    }
+
+    // Upsert all records at once
+    await index.upsert(records, { namespace: compositeChartId });
+
+    console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
+  } catch (error) {
+    console.error("Error in processInterpretationSection:", error);
+    throw error;
+  }
+}
+
+
+
+
+  export async function processCompositeChartTransitInterpretations(compositeChartId, date, promptDescription, interpretation) {
+  try {
+    const chunks = await splitText(interpretation);
+    const records = [];
+
+    for (let idx = 0; idx < chunks.length; idx++) {
+      const chunkText = chunks[idx];
+      const embedding = await getEmbedding(chunkText);
+      const id = `${compositeChartId}-composite-transit-${date}-${idx}`.replace(/\s+/g, '-').toLowerCase();
+      
+      records.push({
+        id: id,
+        values: embedding,
+        metadata: {
+          compositeChartId: compositeChartId,
+          type: 'composite',
+          date: date,
+          relevantAspects: promptDescription,
+          chunk_index: idx,
+          text: chunkText,
+        }
+      });
+    }
+
+    // Upsert all records at once
+    await index.upsert(records, { namespace: compositeChartId });
+
+    console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
+  } catch (error) {
+    console.error("Error in processInterpretationSection:", error);
+    throw error;
+  }
+} 
+
+
+
+
+export async function processUserQuerySynastry(compositeChartId, query) {
+  console.log("Processing user query:", query);
+  console.log("User ID:", compositeChartId);
+  try{
+    const questionQueryEmbedding = await getEmbedding(query);
+    const results = await index.query({
+      vector: questionQueryEmbedding,
+      topK: 5,
+      includeMetadata: true,
+      filter: {
+        compositeChartId: compositeChartId,
+        type: 'synastry'
+      }
+    });
+    // Extract relevantAspects and text from each match
+    const extractedData = results.matches.map((match, index) => {
+      console.log(`Match ${index + 1} metadata:`, match.metadata);
+      return {
+        relevantAspects: match.metadata.relevantAspects,
+        text: match.metadata.text
+      };
+    });
+
+    console.log("Extracted data:", extractedData);
+
+    // If you want to return a single string with all the information
+    const combinedText = extractedData.map(data => 
+      `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
+    ).join('\n\n');
+    console.log("Combined text:", combinedText);
+    return combinedText;
+  } catch (error) {
+    console.error("Error in processUserQuery:", error);
+    throw error;
+  }
+}
+
+export async function processUserQueryComposite(compositeChartId, query) {
+  console.log("Processing user query:", query);
+  console.log("User ID:", compositeChartId);
+  try{
+    const questionQueryEmbedding = await getEmbedding(query);
+    const results = await index.query({
+      vector: questionQueryEmbedding,
+      topK: 5,
+      includeMetadata: true,
+      filter: {
+        compositeChartId: compositeChartId,
+        type: 'composite'
+      }
+    });
+    // Extract relevantAspects and text from each match
+    const extractedData = results.matches.map((match, index) => {
+      console.log(`Match ${index + 1} metadata:`, match.metadata);
+      return {
+        relevantAspects: match.metadata.relevantAspects,
+        text: match.metadata.text
+      };
+    });
+
+    console.log("Extracted data:", extractedData);
+
+    // If you want to return a single string with all the information
+    const combinedText = extractedData.map(data => 
+      `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
+    ).join('\n\n');
+    console.log("Combined text:", combinedText);
+    return combinedText;
+  } catch (error) {
+    console.error("Error in processUserQuery:", error);
+    throw error;
+  }
+}

@@ -12,6 +12,7 @@ import {
     getCompositeCharts,
     getCompositeChartInterpretation,
     saveCompositeChartInterpretation,
+    saveSynastryChartInterpretation,
     getSynastryInterpretation,
     getUsers,
     getUserSingle,
@@ -30,9 +31,13 @@ import { findDailyTransitAspectsForBirthChart,
     findAspectsForBirthChart,
     trackPlanetaryTransits,
     trackPlanetaryHouses,
+    
     } from '../utilities/generateTransitAspects.js'
 
+import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.js';
+
 import { findSynastryAspects, generateCompositeChart } from '../utilities/generateSynastryAspects.js';
+import { processInterpretationSection, processCompositeChartInterpretationSection, processSynastryChartInterpretationSection } from '../utilities/vectorize.js';
 
 // all GENERAL DAILY ASPECTS/TRANSITS 
 export async function handleDailyTransits (req, res) {
@@ -336,8 +341,21 @@ export async function handleSaveBirthChartInterpretation(req, res) {
 export async function handleSaveCompositeChartInterpretation(req, res) {
     console.log("handleSaveCompositeChartInterpretation")
     try {
-        const { compositeChartId, heading, promptDescription, interpretation, isCompositeChart } = req.body;
-        const result = await saveCompositeChartInterpretation(compositeChartId, heading, promptDescription, interpretation, isCompositeChart);
+        const { compositeChartId, heading, promptDescription, interpretation } = req.body;
+        const result = await saveCompositeChartInterpretation(compositeChartId, heading, promptDescription, interpretation);
+        await processCompositeChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation);
+        res.status(200).json(result);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export async function handleSaveSynastryChartInterpretation(req, res) {
+    console.log("handleSaveSynastryChartInterpretation")
+    try {
+        const { compositeChartId, heading, promptDescription, interpretation} = req.body;
+        const result = await saveSynastryChartInterpretation(compositeChartId, heading, promptDescription, interpretation);
+        await processSynastryChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation);
         res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });
@@ -373,6 +391,7 @@ export async function handleGetSynastryChartInterpretation(req, res) {
         res.status(500).json({ error: error.message });
     }
 };
+
 
 
 export async function handleSaveDailyTransitInterpretationData(req, res) {
@@ -448,6 +467,17 @@ export async function handleGenerateCompositeChart(req, res) {
         console.log("birthChart2: ", birthChart2.planets[0])
         const compositeChart = await generateCompositeChart(birthChart1, birthChart2);
         res.status(200).json(compositeChart);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+}
+
+export async function handleGetRelationshipScore(req, res) {
+    console.log("handleGetRelationshipScore")
+    try {
+        const { synastryAspects, compositeChart, userA, userB, compositeChartId } = req.body;
+        const relationshipScore = await scoreRelationshipCompatibility(synastryAspects, compositeChart, userA, userB, compositeChartId);
+        res.status(200).json(relationshipScore);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

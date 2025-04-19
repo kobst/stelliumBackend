@@ -90,6 +90,10 @@ functions:
           method: post
           cors: true
       - http:
+          path: /periodTransits
+          method: options
+          cors: true
+      - http:
           path: /generatePeriodAspectsForChart
           method: post
           cors: true
@@ -242,6 +246,14 @@ functions:
           method: options
           cors: true
       - http:
+          path: /saveSynastryChartInterpretation
+          method: post
+          cors: true
+      - http:
+          path: /saveSynastryChartInterpretation
+          method: options
+          cors: true
+      - http:
           path: /getCompositeChartInterpretation
           method: post
           cors: true
@@ -279,6 +291,38 @@ functions:
           cors: true
       - http:
           path: /getGptResponseForCompositeChartPlanet
+          method: options
+          cors: true
+      - http:
+          path: /getRelationshipScore
+          method: post
+          cors: true
+      - http:
+          path: /getRelationshipScore
+          method: options
+          cors: true
+      - http:
+          path: /getShortOverview
+          method: post
+          cors: true
+      - http:
+          path: /getShortOverview
+          method: options
+          cors: true
+      - http:
+          path: /createUser
+          method: post
+          cors: true
+      - http:
+          path: /createUser
+          method: options
+          cors: true
+      - http:
+          path: /createRelationship
+          method: post
+          cors: true
+      - http:
+          path: /createRelationship
           method: options
           cors: true
 

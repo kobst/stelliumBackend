@@ -4,6 +4,8 @@ import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRul
 
 
 const apiKey = process.env.OPENAI_API_KEY
+
+
 const client = new OpenAI({ apiKey: apiKey})
 
 
@@ -106,6 +108,92 @@ export async function getCompletionBigFour(heading, description) {
     Instead of writing an interpretation for each aspect or position a la carte, please provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 
     
     For every reference to a particular position, please also include the reference to the id of that position included in the parenthesis for each aspect or position.`;
+    
+    console.log("Modified input: ", modifiedInput);
+    
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini", // Make sure this is the correct model ID
+      messages: [{
+        role: "system",
+        content: "StelliumAI is an astrological guide bot."
+      }, {
+        role: "user",
+        content: modifiedInput
+      }]
+    });
+
+    console.log("GPT response:", response.choices[0].message.content);
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error fetching response:', error);
+    throw error;
+  }
+}
+
+
+
+export async function getCompletionShortOverview(description) {
+  try {
+    console.log("getCompletionBigFour");
+    console.log("description: ", description)
+
+    // Construct the new modified input
+    const modifiedInput = `Below are some of the core aspects and planet positions of a birth chart.
+
+    Please write me a couple of paragraphs interpreting these aspects and positions, focusing on the core themes of these aspects and positions.
+    
+    Instead of writing an interpretation for each aspect or position a la carte, please provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 
+
+    Please use supportive, friendly and direct language but avoid overly ornate phrasing.
+    
+    For every reference to a particular position, please also include the reference to the id of that position included in the parenthesis for each aspect or position.
+    
+     ${description}
+    `;
+    
+    console.log("Modified input: ", modifiedInput);
+    
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini", // Make sure this is the correct model ID
+      messages: [{
+        role: "system",
+        content: "StelliumAI is an astrological guide bot."
+      }, {
+        role: "user",
+        content: modifiedInput
+      }]
+    });
+
+    console.log("GPT response:", response.choices[0].message.content);
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error('Error fetching response:', error);
+    throw error;
+  }
+}
+
+
+
+export async function getCompletionShortOverviewRelationships(description) {
+  try {
+    console.log("getCompletionShortOverviewRelationships");
+    console.log("description: ", description)
+
+    // Construct the new modified input
+    const modifiedInput = `Below are some of the core aspects and planet positions of a birth chart.
+
+    Please write me a couple of paragraphs interpreting these aspects and positions, focusing on the theme of relationship and romance.
+    
+    Instead of writing an interpretation for each aspect or position a la carte, please provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another as they may affect this individual's romantic life. 
+
+    Please use supportive, friendly and direct language but avoid overly ornate phrasing.
+    
+    For every reference to a particular position, please also include the reference to the id of that position included in the parenthesis for each aspect or position.
+    
+     ${description}
+    `;
     
     console.log("Modified input: ", modifiedInput);
     
