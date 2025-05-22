@@ -143,8 +143,8 @@ export async function handleGptResponseForWeeklyUserTransits(req, res) {
   console.log("handleGptResponseForWeeklyUserTransits")
   try {
     const { transitsWithinNextSevenDays, transitsWithinCurrentDateRange } = req.body;
-    console.log("everythingData: " + everythingData)
-    console.log("formattedUserTransits: " + formattedUserTransits)
+    console.log("transitsWithinNextSevenDays:", transitsWithinNextSevenDays)
+    console.log("transitsWithinCurrentDateRange:", transitsWithinCurrentDateRange)
     const response = await getCompletionGptResponseForWeeklyUserTransits(transitsWithinNextSevenDays, transitsWithinCurrentDateRange);
     res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
