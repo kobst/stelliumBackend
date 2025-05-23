@@ -116,9 +116,6 @@ export async function handleSaveSynastryChartInterpretation(req, res) {
 
 
 
-}
-
-
 
 
 
