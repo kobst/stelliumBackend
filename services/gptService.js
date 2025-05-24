@@ -793,3 +793,29 @@ Be specific and use the provided astrological details and individual contexts to
 Aim for a response of at least 300-500 words for this category.
 `;
 }
+
+
+
+
+
+export async function expandPrompt(prompt) {
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert astrology assistant. Your primary task is to take a user's question about astrology, which might be brief or vague, and expand it into a more detailed and semantically rich description. This expanded description will be used by a vector search system to find the most relevant astrological information. Ensure your expansion clarifies the original query, incorporates relevant astrological keywords and concepts, and faithfully represents the user's original intent. The output should be a coherent piece of text suitable for semantic matching.`
+      },
+      {
+        role: "user",
+        content: `Expand this query for astrology vector search:\n\n"${prompt}"`
+      }
+    ],
+    temperature: 0.5,
+    max_tokens: 150
+  });
+
+  return completion.choices[0].message.content.trim();
+}
+
+

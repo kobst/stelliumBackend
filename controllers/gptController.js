@@ -10,7 +10,7 @@ import {
   getCompletionPlanets,
   getCompletionGptResponseGeneral
 } from '../services/gptService.js';
-import { processUserQuery } from '../services/vectorize.js';
+// import { processUserQueryAndAnswer } from '../services/vectorize.js';
 import { 
   generateRelevantNatalPositions, 
   generateNatalPromptsShortOverview,
@@ -35,11 +35,14 @@ import {
   fetchRelationshipAnalysisByCompositeId
 } from '../services/dbService.js';
 
+
+/// not working, stub
 export async function handleUserQuery(req, res) {
   try {
     const { userId, query } = req.body;
-    const ragResponse = await processUserQuery(userId, query);
-    const gptResponse = await getCompletionWithRagResponse(ragResponse, query);
+    // const ragResponse = await processUserQueryAndAnswer(userId, query);
+    console.log(userId)
+    const gptResponse = await getCompletionWithRagResponse(query);
 
     res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
@@ -871,18 +874,27 @@ export async function handleVectorizeRelationshipAnalysis(req, res) {
       }
 
       // Process the current category
-      if (relationshipAnalysis.analysis && relationshipAnalysis.analysis[category]) {
-          const analysisText = relationshipAnalysis.analysis[category];
+      if (
+          relationshipAnalysis.analysis &&
+          relationshipAnalysis.analysis[category] &&
+          typeof relationshipAnalysis.analysis[category] === 'object' && // Ensure it's the new object structure
+          relationshipAnalysis.analysis[category].interpretation // Check for the interpretation text
+      ) {
+          const categoryData = relationshipAnalysis.analysis[category];
+          const interpretationText = categoryData.interpretation; // Get the interpretation text
+          const relevantPositionData = categoryData.relevantPosition; // Get the relevant astrological positions
+
           const { userAName, userBName } = relationshipAnalysis.debug.inputSummary;
           
           const description = `Relationship Analysis - ${RelationshipCategoriesEnum[category].label} between ${userAName} and ${userBName}`;
           
           // Process the text and create vector embeddings
           const categoryRecords = await processTextSectionRelationship(
-              analysisText,
-              compositeChartId, // Using compositeChartId instead of userId
+              interpretationText,     // Pass the interpretation text
+              compositeChartId,
               description,
-              category
+              category,
+              relevantPositionData  // Pass the relevant astrological positions
           );
           
           // Save the vector records

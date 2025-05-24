@@ -19,6 +19,8 @@ const compositeChartInterpretations = db.collection('composite_chart_interpretat
 const relationshipLogCollection = db.collection('relationship_logs');
 const birthChartAnalysisCollection = db.collection('birth_chart_analysis');
 const relationshipAnalysisCollection = db.collection('relationship_analysis');
+const chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth_chart_analysis');
+const chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
 // const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
@@ -934,6 +936,171 @@ export async function updateRelationshipVectorizationStatus(compositeChartId, an
         };
     } catch (error) {
         console.error(`Error updating vectorization status for compositeChartId ${compositeChartId}:`, error);
+        throw error;
+    }
+}
+
+
+// chat
+
+export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartId, userQuery, response) {
+    const timestamp = new Date();
+
+    const userMessage = {
+        role: "user",
+        content: userQuery,
+        timestamp: timestamp
+    };
+
+    const assistantMessage = {
+        role: "StelliumAi",
+        content: response,
+        timestamp: new Date() // Using new Date() to ensure it's current
+    };
+
+    const filter = {
+        userId: userId,
+        birthChartId: birthChartId
+    };
+
+    const updateDoc = {
+        $push: {
+            messages: { $each: [userMessage, assistantMessage] }
+        },
+        $set: {
+            updatedAt: new Date() // Always update the last modified time
+        },
+        $setOnInsert: {
+            // userId and birthChartId are part of the filter, so they'll be in the doc if inserted.
+            // MongoDB will automatically generate an _id.
+            createdAt: timestamp // Set only when the document is first created
+        }
+    };
+
+    const options = {
+        upsert: true, // Create the document if it doesn't exist
+        returnDocument: 'after' // Return the modified document
+    };
+
+    try {
+        const result = await chatThreadCollectionBirthChartAnalysis.findOneAndUpdate(filter, updateDoc, options);
+        return result
+    } catch (error) {
+        console.error(`Error saving chat history for userId ${userId} and birthChartId ${birthChartId}:`, error);
+        throw error;
+    }
+}
+
+export async function saveChatHistoryForRelationshipAnalysis(userId, compositeChartId, userQuery, response) {
+    const timestamp = new Date();
+
+    const userMessage = {
+        role: "user",
+        content: userQuery,
+        timestamp: timestamp
+    };
+
+    const assistantMessage = {
+        role: "StelliumAi",
+        content: response,
+        timestamp: new Date() // Ensure current timestamp for assistant message
+    };
+
+    const filter = {
+        userId: userId,
+        compositeChartId: compositeChartId
+    };
+
+    const updateDoc = {
+        $push: {
+            messages: { $each: [userMessage, assistantMessage] }
+        },
+        $set: {
+            updatedAt: new Date() // Always update the last modified time
+        },
+        $setOnInsert: {
+            // userId and compositeChartId are part of the filter,
+            // so they'll be in the doc if inserted.
+            // MongoDB will automatically generate an _id.
+            createdAt: timestamp // Set only when the document is first created
+        }
+    };
+
+    const options = {
+        upsert: true, // Create the document if it doesn't exist
+        returnDocument: 'after' // Return the modified document
+    };
+
+    try {
+        const result = await chatThreadRelationshipAnalysisCollection.findOneAndUpdate(filter, updateDoc, options);
+        return result.value ? result.value : result;
+    } catch (error) {
+        console.error(`Error saving chat history for relationship analysis (userId: ${userId}, compositeChartId: ${compositeChartId}):`, error);
+        throw error;
+    }
+}
+
+export async function getChatHistoryForBirthChartAnalysis(userId, birthChartId, numPairs = 5) {
+    const filter = {
+        userId: userId,
+        birthChartId: birthChartId
+    };
+
+    // We want to retrieve 'numPairs' of (user + assistant) messages.
+    // So, we need to get the last (numPairs * 2) messages from the array.
+    const numberOfMessagesToRetrieve = numPairs * 2;
+
+    const projection = {
+        // Slice the messages array to get the last 'numberOfMessagesToRetrieve' elements.
+        // A negative value for $slice takes elements from the end of the array.
+        messages: { $slice: -numberOfMessagesToRetrieve },
+        // You can include other fields if needed, like _id, userId, birthChartId
+        _id: 0 // Exclude _id if you only want the messages
+    };
+
+    try {
+        const chatThread = await chatThreadCollectionBirthChartAnalysis.findOne(filter, { projection });
+
+        if (chatThread && chatThread.messages) {
+            return chatThread.messages; // Returns an array of message objects
+        } else {
+            return []; // Return an empty array if no thread or messages are found
+        }
+    } catch (error) {
+        console.error(`Error fetching chat history for birth chart (userId: ${userId}, birthChartId: ${birthChartId}):`, error);
+        throw error;
+    }
+}
+
+export async function getChatHistoryForRelationshipAnalysis(userId, compositeChartId, numPairs = 5) {
+    const filter = {
+        userId: userId,
+        compositeChartId: compositeChartId
+    };
+
+    // We want to retrieve 'numPairs' of (user + assistant) messages.
+    // So, we need to get the last (numPairs * 2) messages from the array.
+    const numberOfMessagesToRetrieve = numPairs * 2;
+
+    const projection = {
+        // Slice the messages array to get the last 'numberOfMessagesToRetrieve' elements.
+        // A negative value for $slice takes elements from the end of the array.
+        messages: { $slice: -numberOfMessagesToRetrieve },
+        // You can include other fields if needed, like _id, userId, compositeChartId
+        _id: 0 // Exclude _id if you only want the messages
+    };
+
+    try {
+        // Assuming your collection for relationship chat threads is named 'chatThreadRelationshipAnalysisCollection'
+        const chatThread = await chatThreadRelationshipAnalysisCollection.findOne(filter, { projection });
+
+        if (chatThread && chatThread.messages) {
+            return chatThread.messages; // Returns an array of message objects
+        } else {
+            return []; // Return an empty array if no thread or messages are found
+        }
+    } catch (error) {
+        console.error(`Error fetching chat history for relationship analysis (userId: ${userId}, compositeChartId: ${compositeChartId}):`, error);
         throw error;
     }
 }

@@ -9,7 +9,7 @@ import {
     saveRelationshipAnalysis
 } from '../services/dbService.js';
 
-import { processSynastryChartInterpretationSection, getRelationshipCategoryContextForUser } from '../services/vectorize.js';
+import { getRelationshipCategoryContextForUser } from '../services/vectorize.js';
 import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.js';
 import { generateRelationshipPrompt, getCompletionGptResponseGeneral } from '../services/gptService.js';
 import { RELATIONSHIP_CATEGORIES } from '../utilities/relationshipScoringConstants.js';
@@ -185,10 +185,7 @@ export async function handleGenerateRelationshipAnalysis(req, res) {
             const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
             const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
             
-            // Note: generateRelationshipPrompt might be async or not.
-            // If it's not async, you don't need await here. If it is, you do.
-            // Based on previous discussion, it might have been made non-async.
-            const promptString = await generateRelationshipPrompt( // Or just generateRelationshipPrompt(...) if it's not async
+            const promptString = await generateRelationshipPrompt( 
                 userAName, 
                 userBName, 
                 categoryDisplayName, 
@@ -199,41 +196,45 @@ export async function handleGenerateRelationshipAnalysis(req, res) {
             );
 
             console.log(`--- PROMPT FOR CATEGORY: ${categoryDisplayName} ---`);
-            // console.log(promptString); // Keep this for debugging if needed
+            // console.log(promptString); 
 
-            // Add the promise to the array, but don't await it yet
             promises.push(
                 getCompletionGptResponseGeneral(promptString)
-                    .then(analysis => {
+                    .then(interpretation => {
                         console.log(`[LLM SUCCESS] Received analysis for ${categoryDisplayName}`);
-                        return { categoryValue, analysis }; // Return an object to map back
+                        // Return an object containing the category, interpretation, and the formattedAstrology
+                        return { categoryValue, interpretation, formattedAstrology }; 
                     })
                     .catch(error => {
                         console.error(`[LLM ERROR] Failed to get analysis for ${categoryDisplayName}:`, error.message);
-                        return { categoryValue, analysis: `Error generating analysis for this category: ${error.message}` };
+                        // Still return the structure, with an error message for the interpretation
+                        return { 
+                            categoryValue, 
+                            interpretation: `Error generating analysis for this category: ${error.message}`, 
+                            formattedAstrology // Include formattedAstrology even on error
+                        };
                     })
             );
         }
 
         console.log(`[handleGenerateRelationshipAnalysis] All ${promises.length} LLM calls initiated. Waiting for all to complete...`);
         
-        // Wait for all promises to settle
         const results = await Promise.all(promises);
 
         console.log("[handleGenerateRelationshipAnalysis] All LLM calls completed.");
 
-        // Populate allGeneratedAnalyses from the results
         results.forEach(result => {
-            if (result) { // Check if result is not undefined (e.g. if a promise was malformed, though .catch should prevent this)
-                allGeneratedAnalyses[result.categoryValue] = result.analysis;
+            if (result) { 
+                allGeneratedAnalyses[result.categoryValue] = {
+                    relevantPosition: result.formattedAstrology, // Store formattedAstrology
+                    interpretation: result.interpretation      // Store the LLM's interpretation
+                };
             }
         });
 
-        // After all LLM calls are completed and allGeneratedAnalyses is populated
         console.log("[handleGenerateRelationshipAnalysis] All categories processed. About to save analysis.");
 
         try {
-            // Save the analysis to the database
             const saveResult = await saveRelationshipAnalysis(compositeChartId, allGeneratedAnalyses);
             console.log("[handleGenerateRelationshipAnalysis] Analysis saved:", saveResult);
 

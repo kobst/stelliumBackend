@@ -114,75 +114,41 @@ export async function processInterpretationSection(userId, heading, promptDescri
   }
 
 
-  export async function processTransitInterpretations(userId, date, promptDescription, interpretation) {
-    try {
-      const chunks = await splitText(interpretation);
-      const records = [];
+  // export async function processTransitInterpretations(userId, date, promptDescription, interpretation) {
+  //   try {
+  //     const chunks = await splitText(interpretation);
+  //     const records = [];
   
-      for (let idx = 0; idx < chunks.length; idx++) {
-        const chunkText = chunks[idx];
-        const embedding = await getEmbedding(chunkText);
-        const id = `${userId}-${date}-${idx}`.replace(/\s+/g, '-').toLowerCase();
+  //     for (let idx = 0; idx < chunks.length; idx++) {
+  //       const chunkText = chunks[idx];
+  //       const embedding = await getEmbedding(chunkText);
+  //       const id = `${userId}-${date}-${idx}`.replace(/\s+/g, '-').toLowerCase();
         
-        records.push({
-          id: id,
-          values: embedding,
-          metadata: {
-            userId: userId,
-            date: date,
-            relevantAspects: promptDescription,
-            chunk_index: idx,
-            text: chunkText,
-          }
-        });
-      }
+  //       records.push({
+  //         id: id,
+  //         values: embedding,
+  //         metadata: {
+  //           userId: userId,
+  //           date: date,
+  //           relevantAspects: promptDescription,
+  //           chunk_index: idx,
+  //           text: chunkText,
+  //         }
+  //       });
+  //     }
   
-      // Upsert all records at once
-      await index.upsert(records, { namespace: userId });
+  //     // Upsert all records at once
+  //     await index.upsert(records, { namespace: userId });
   
-      console.log(`Successfully processed and upserted ${chunks.length} chunks for user ${userId}, heading ${heading}`);
-    } catch (error) {
-      console.error("Error in processInterpretationSection:", error);
-      throw error;
-    }
-  } 
+  //     console.log(`Successfully processed and upserted ${chunks.length} chunks for user ${userId}, heading ${heading}`);
+  //   } catch (error) {
+  //     console.error("Error in processInterpretationSection:", error);
+  //     throw error;
+  //   }
+  // } 
 
 
-export async function processUserQuery(userId, query) {
-  console.log("Processing user query:", query);
-  console.log("User ID:", userId);
-  try{
-    const questionQueryEmbedding = await getEmbedding(query);
-    const results = await index.query({
-      vector: questionQueryEmbedding,
-      topK: 5,
-      includeMetadata: true,
-      filter: {
-        userId: userId
-      }
-    });
-    // Extract relevantAspects and text from each match
-    const extractedData = results.matches.map((match, index) => {
-      console.log(`Match ${index + 1} metadata:`, match.metadata);
-      return {
-        relevantAspects: match.metadata.relevantAspects,
-        text: match.metadata.text
-      };
-    });
 
-    console.log("Extracted data:", extractedData);
-
-    // If you want to return a single string with all the information
-    const combinedText = extractedData.map(data => 
-      `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
-    ).join('\n\n');
-    console.log("Combined text:", combinedText);
-    return combinedText;
-  } catch (error) {
-    console.error("Error in processUserQuery:", error);
-    throw error;
-  }
-}
 
 function generateConversationId(userId) {
   const timestamp = Date.now();
@@ -208,7 +174,6 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
         metadata: {
           userId: userId,
           date: date,
-          relevantAspects: promptDescription,
           chunk_index: idx,
           text: chunkText,
           conversationId: conversationId
@@ -228,7 +193,6 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
         metadata: {
           userId: userId,
           date: date,
-          relevantAspects: promptDescription,
           chunk_index: idx,
           text: chunkText,
           conversationId: conversationId
@@ -281,118 +245,45 @@ export async function processCompositeChartInterpretationSection(compositeChartI
 }
 
 
-export async function processSynastryChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation) {
-  try {
-    const chunks = await splitText(interpretation);
-    const records = [];
 
-    for (let idx = 0; idx < chunks.length; idx++) {
-      const chunkText = chunks[idx];
-      const embedding = await getEmbedding(chunkText);
-      const id = `${compositeChartId}-synastry-${heading}-${idx}`.replace(/\s+/g, '-').toLowerCase();
-      
-      records.push({
-        id: id,
-        values: embedding,
-        metadata: {
-          compositeChartId: compositeChartId,
-          type: 'synastry',
-          section: heading,
-          relevantAspects: promptDescription,
-          chunk_index: idx,
-          text: chunkText,
-        }
-      });
-    }
+// export async function processUserQuerySynastry(compositeChartId, query) {
+//   console.log("Processing user query:", query);
+//   console.log("User ID:", compositeChartId);
+//   try{
+//     const questionQueryEmbedding = await getEmbedding(query);
+//     const results = await index.query({
+//       vector: questionQueryEmbedding,
+//       topK: 5,
+//       includeMetadata: true,
+//       filter: {
+//         compositeChartId: compositeChartId,
+//         type: 'synastry'
+//       }
+//     });
+//     // Extract relevantAspects and text from each match
+//     const extractedData = results.matches.map((match, index) => {
+//       console.log(`Match ${index + 1} metadata:`, match.metadata);
+//       return {
+//         relevantAspects: match.metadata.relevantAspects,
+//         text: match.metadata.text
+//       };
+//     });
 
-    // Upsert all records at once
-    await index.upsert(records, { namespace: compositeChartId });
+//     console.log("Extracted data:", extractedData);
 
-    console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
-  } catch (error) {
-    console.error("Error in processInterpretationSection:", error);
-    throw error;
-  }
-}
+//     // If you want to return a single string with all the information
+//     const combinedText = extractedData.map(data => 
+//       `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
+//     ).join('\n\n');
+//     console.log("Combined text:", combinedText);
+//     return combinedText;
+//   } catch (error) {
+//     console.error("Error in processUserQuery:", error);
+//     throw error;
+//   }
+// }
 
-
-
-
-  export async function processCompositeChartTransitInterpretations(compositeChartId, date, promptDescription, interpretation) {
-  try {
-    const chunks = await splitText(interpretation);
-    const records = [];
-
-    for (let idx = 0; idx < chunks.length; idx++) {
-      const chunkText = chunks[idx];
-      const embedding = await getEmbedding(chunkText);
-      const id = `${compositeChartId}-composite-transit-${date}-${idx}`.replace(/\s+/g, '-').toLowerCase();
-      
-      records.push({
-        id: id,
-        values: embedding,
-        metadata: {
-          compositeChartId: compositeChartId,
-          type: 'composite',
-          date: date,
-          relevantAspects: promptDescription,
-          chunk_index: idx,
-          text: chunkText,
-        }
-      });
-    }
-
-    // Upsert all records at once
-    await index.upsert(records, { namespace: compositeChartId });
-
-    console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
-  } catch (error) {
-    console.error("Error in processInterpretationSection:", error);
-    throw error;
-  }
-} 
-
-
-
-
-export async function processUserQuerySynastry(compositeChartId, query) {
-  console.log("Processing user query:", query);
-  console.log("User ID:", compositeChartId);
-  try{
-    const questionQueryEmbedding = await getEmbedding(query);
-    const results = await index.query({
-      vector: questionQueryEmbedding,
-      topK: 5,
-      includeMetadata: true,
-      filter: {
-        compositeChartId: compositeChartId,
-        type: 'synastry'
-      }
-    });
-    // Extract relevantAspects and text from each match
-    const extractedData = results.matches.map((match, index) => {
-      console.log(`Match ${index + 1} metadata:`, match.metadata);
-      return {
-        relevantAspects: match.metadata.relevantAspects,
-        text: match.metadata.text
-      };
-    });
-
-    console.log("Extracted data:", extractedData);
-
-    // If you want to return a single string with all the information
-    const combinedText = extractedData.map(data => 
-      `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
-    ).join('\n\n');
-    console.log("Combined text:", combinedText);
-    return combinedText;
-  } catch (error) {
-    console.error("Error in processUserQuery:", error);
-    throw error;
-  }
-}
-
-export async function processUserQueryComposite(compositeChartId, query) {
+export async function processUserQueryRelationship(compositeChartId, query) {
   console.log("Processing user query:", query);
   console.log("User ID:", compositeChartId);
   try{
@@ -465,7 +356,7 @@ export async function processTextSection(text, userId, description = null) {
 }
 
 
-export async function processTextSectionRelationship(text, compositeChartId, description = null, category = null) {
+export async function processTextSectionRelationship(text, compositeChartId, description = null, category = null, relevantPositionData = null) {
   try {
       const chunks = await splitText(text);
       const records = [];
@@ -484,6 +375,7 @@ export async function processTextSectionRelationship(text, compositeChartId, des
                   compositeChartId: compositeChartId,
                   description: description,
                   relationshipCategory: category,
+                  relevantPositionData: relevantPositionData,
                   chunk_index: idx,
                   text: chunkText,
               }
@@ -642,4 +534,108 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
         console.error(`Error in getRelationshipCategoryContextForUser for category ${relationshipCategory}, user ${userId}:`, error);
         throw error;
     }
+}
+
+
+
+
+// CHAT QUERY
+
+
+export async function processUserQueryForBirthChartAnalysis(userId, query, numResults = 5) {
+  console.log("Processing user query:", query);
+  console.log("User ID:", userId);
+  try{
+    const questionQueryEmbedding = await getEmbedding(query);
+    const results = await index.query({
+      vector: questionQueryEmbedding,
+      topK: numResults, // Consider making this configurable or tuning it
+      includeMetadata: true,
+      filter: {
+        userId: userId
+      }
+    });
+
+    // Extract relevant data from each match
+    const extractedData = results.matches.map((match, index) => {
+      console.log(`Match ${index + 1} metadata:`, match.metadata);
+      // Ensure metadata and its properties exist before accessing
+      const text = match.metadata?.text || "";     // Default to empty string if text undefined
+      const description = match.metadata?.description || ""; // Optionally include description
+
+      return {
+        text: text,
+        description: description // You might want to include this as well
+      };
+    });
+
+    console.log("Extracted data:", extractedData);
+
+    // Combine the extracted data into a single string for context
+    const combinedText = extractedData.map(data => {
+      // Format topics nicely if it's an array
+      let contextEntry = "";
+      if (data.description) { // Optionally add the general description
+        contextEntry += `Relevant Astrological Positions: ${data.description}\n`;
+      }
+
+      contextEntry += `Text: ${data.text}`;
+      return contextEntry;
+    }).join('\n\n---\n\n'); // Added a separator for clarity between chunks
+
+    console.log("Combined text for RAG:", combinedText);
+    return combinedText;
+  } catch (error) {
+    console.error("Error in processUserQuery:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
+
+export async function processUserQueryForRelationshipAnalysis(compositeChartId, query, numResults = 5) {
+  console.log("Processing user query:", query);
+  console.log("Composite Chart ID:", compositeChartId);
+  try{
+    const questionQueryEmbedding = await getEmbedding(query);
+    const results = await index.query({
+      vector: questionQueryEmbedding,
+      topK: numResults, // Consider making this configurable or tuning it
+      includeMetadata: true,
+      filter: {
+        compositeChartId: compositeChartId
+      }
+    });
+
+    // Extract relevant data from each match
+    const extractedData = results.matches.map((match, index) => {
+      console.log(`Match ${index + 1} metadata:`, match.metadata);
+      // Ensure metadata and its properties exist before accessing
+      const text = match.metadata?.text || "";     // Default to empty string if text undefined
+      const description = match.metadata?.description || ""; // Optionally include description
+
+      return {
+        text: text,
+        description: description // You might want to include this as well
+      };
+    });
+
+    console.log("Extracted data:", extractedData);
+
+    // Combine the extracted data into a single string for context
+    const combinedText = extractedData.map(data => {
+      // Format topics nicely if it's an array
+      let contextEntry = "";
+      if (data.description) { // Optionally add the general description
+        contextEntry += `Relevant Astrological Positions: ${data.description}\n`;
+      }
+
+      contextEntry += `Text: ${data.text}`;
+      return contextEntry;
+    }).join('\n\n---\n\n'); // Added a separator for clarity between chunks
+
+    console.log("Combined text for RAG:", combinedText);
+    return combinedText;
+  } catch (error) {
+    console.error("Error in processUserQuery:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
 }
