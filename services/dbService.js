@@ -1,7 +1,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 
-const connection_string = process.env.MONGO_CONNECTION_STRING
+const connection_string = process.env.MONGODB_URI
 const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });
 
 client.connect();
@@ -777,6 +777,7 @@ export async function getAllAnalysisByUserId(userId) {
         }
 
         return {
+            birthChartAnalysisId: document._id,
             interpretation: document.interpretation || {},
             vectorizationStatus: document.vectorizationStatus || {
                 overview: false,
@@ -943,8 +944,12 @@ export async function updateRelationshipVectorizationStatus(compositeChartId, an
 
 // chat
 
-export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartId, userQuery, response) {
+export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId, userQuery, response) {
     const timestamp = new Date();
+
+    // Ensure consistent data types
+    const normalizedUserId = typeof userId === 'string' ? userId : userId.toString();
+    const normalizedBirthChartAnalysisId = typeof birthChartAnalysisId === 'string' ? birthChartAnalysisId : birthChartAnalysisId.toString();
 
     const userMessage = {
         role: "user",
@@ -953,14 +958,14 @@ export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartId,
     };
 
     const assistantMessage = {
-        role: "StelliumAi",
+        role: "assistant",
         content: response,
-        timestamp: new Date() // Using new Date() to ensure it's current
+        timestamp: new Date()
     };
 
     const filter = {
-        userId: userId,
-        birthChartId: birthChartId
+        userId: normalizedUserId,
+        birthChartAnalysisId: normalizedBirthChartAnalysisId
     };
 
     const updateDoc = {
@@ -968,25 +973,25 @@ export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartId,
             messages: { $each: [userMessage, assistantMessage] }
         },
         $set: {
-            updatedAt: new Date() // Always update the last modified time
+            updatedAt: new Date()
         },
         $setOnInsert: {
-            // userId and birthChartId are part of the filter, so they'll be in the doc if inserted.
-            // MongoDB will automatically generate an _id.
-            createdAt: timestamp // Set only when the document is first created
+            userId: normalizedUserId,
+            birthChartAnalysisId: normalizedBirthChartAnalysisId,
+            createdAt: timestamp
         }
     };
 
     const options = {
-        upsert: true, // Create the document if it doesn't exist
-        returnDocument: 'after' // Return the modified document
+        upsert: true,
+        returnDocument: 'after'
     };
 
     try {
         const result = await chatThreadCollectionBirthChartAnalysis.findOneAndUpdate(filter, updateDoc, options);
-        return result
+        return result;
     } catch (error) {
-        console.error(`Error saving chat history for userId ${userId} and birthChartId ${birthChartId}:`, error);
+        console.error(`Error saving chat history for userId ${userId} and birthChartAnalysisId ${birthChartAnalysisId}:`, error);
         throw error;
     }
 }
@@ -1001,7 +1006,7 @@ export async function saveChatHistoryForRelationshipAnalysis(userId, compositeCh
     };
 
     const assistantMessage = {
-        role: "StelliumAi",
+        role: "assistant",
         content: response,
         timestamp: new Date() // Ensure current timestamp for assistant message
     };
@@ -1040,10 +1045,13 @@ export async function saveChatHistoryForRelationshipAnalysis(userId, compositeCh
     }
 }
 
-export async function getChatHistoryForBirthChartAnalysis(userId, birthChartId, numPairs = 5) {
+export async function getChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId, numPairs = 5) {
+    console.log("getChatHistoryForBirthChartAnalysis")
+    console.log("userId: ", userId)
+    console.log("birthChartAnalysisId: ", birthChartAnalysisId)
     const filter = {
         userId: userId,
-        birthChartId: birthChartId
+        birthChartAnalysisId: birthChartAnalysisId
     };
 
     // We want to retrieve 'numPairs' of (user + assistant) messages.
@@ -1067,7 +1075,7 @@ export async function getChatHistoryForBirthChartAnalysis(userId, birthChartId, 
             return []; // Return an empty array if no thread or messages are found
         }
     } catch (error) {
-        console.error(`Error fetching chat history for birth chart (userId: ${userId}, birthChartId: ${birthChartId}):`, error);
+        console.error(`Error fetching chat history for birth chart (userId: ${userId}, birthChartAnalysisId: ${birthChartAnalysisId}):`, error);
         throw error;
     }
 }

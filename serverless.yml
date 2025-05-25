@@ -413,6 +413,26 @@ functions:
           timeout: 300
           method: options
           cors: true
+      - http:
+          path: /userChatBirthChartAnalysis
+          timeout: 300
+          method: post
+          cors: true
+      - http:
+          path: /userChatBirthChartAnalysis
+          timeout: 300
+          method: options
+          cors: true
+      - http:
+          path: /fetchUserChatBirthChartAnalysis
+          timeout: 300
+          method: post
+          cors: true
+      - http:
+          path: /fetchUserChatBirthChartAnalysis
+          timeout: 300
+          method: options
+          cors: true
 custom:
   serverless-offline:
     httpPort: 3001

@@ -8,7 +8,8 @@ import {
   getCompletionShortOverview,
   getCompletionShortOverviewRelationships,
   getCompletionPlanets,
-  getCompletionGptResponseGeneral
+  getCompletionGptResponseGeneral,
+  getCompletionGptResponseChatThread
 } from '../services/gptService.js';
 // import { processUserQueryAndAnswer } from '../services/vectorize.js';
 import { 
@@ -21,8 +22,15 @@ import {
 
 import { generateDominancePrompt, generatePlanetPrompt } from '../utilities/birthChartAnalysis.js';
 import { BroadTopicsEnum } from '../utilities/constants.js';
-import { retrieveTopicContext, upsertRecords, processTextSection, processTextSectionRelationship } from '../services/vectorize.js';
-import { getCompletionShortOverviewForTopic } from '../services/gptService.js';
+import { 
+  retrieveTopicContext, 
+  upsertRecords, 
+  processTextSection, 
+  processTextSectionRelationship,
+  processUserQueryForBirthChartAnalysis,
+  processUserQueryForRelationshipAnalysis
+} from '../services/vectorize.js';
+import { getCompletionShortOverviewForTopic, expandPrompt } from '../services/gptService.js';
 import {
   saveBasicAnalysis,
   saveTopicAnalysis,
@@ -32,11 +40,12 @@ import {
   getTopicAnalysisByUserId,
   updateVectorizationStatus,
   updateRelationshipVectorizationStatus,
-  fetchRelationshipAnalysisByCompositeId
+  fetchRelationshipAnalysisByCompositeId,
+  getChatHistoryForBirthChartAnalysis,
+  saveChatHistoryForBirthChartAnalysis
 } from '../services/dbService.js';
 
 
-/// not working, stub
 export async function handleUserQuery(req, res) {
   try {
     const { userId, query } = req.body;
@@ -166,6 +175,7 @@ export async function handleFetchAnalysis(req, res) {
 
         return res.json({
             success: true,
+            birthChartAnalysisId: analysis.birthChartAnalysisId,  
             interpretation: analysis.interpretation,
             vectorizationStatus: analysis.vectorizationStatus
         });
@@ -938,4 +948,52 @@ export async function handleVectorizeRelationshipAnalysis(req, res) {
           error: error.message
       });
   }
+}
+
+export const handleProcessUserQueryForBirthChartAnalysis = async (req, res) => {
+    console.log("handleProcessUserQueryForBirthChartAnalysis");
+    
+    try {
+        const { userId, birthChartAnalysisId, query } = req.body;
+        
+        // Validate required parameters
+        if (!userId || !birthChartAnalysisId || !query) {
+            return res.status(400).json({ 
+                success: false, 
+                error: "Missing required parameters: userId, birthChartAnalysisId, and query are required" 
+            });
+        }
+        
+        console.log("userId: ", userId);
+        console.log("birthChartAnalysisId: ", birthChartAnalysisId);
+        console.log("query: ", query);
+        
+        const expandedQuery = await expandPrompt(query);
+        const chatHistory = await getChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId);
+
+        console.log("expandedQuery: ", expandedQuery);
+        const contextFromAnalysis = await processUserQueryForBirthChartAnalysis(userId, expandedQuery);
+        console.log("expandedQueryWithContext: ", contextFromAnalysis);
+        
+        const answer = await getCompletionGptResponseChatThread(query, contextFromAnalysis, chatHistory);
+        const result = await saveChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId, query, answer);
+        
+        console.log("result: ", result);
+        res.json({ success: true, result, answer });
+        
+    } catch (error) {
+        console.error("Error in handleProcessUserQueryForBirthChartAnalysis:", error);
+        res.status(500).json({ 
+            success: false, 
+            error: error.message,
+            details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        });
+    }
+}
+
+export const handleFetchUserChatBirthChartAnalysis = async (req, res) => {
+    console.log("handleFetchUserChatBirthChartAnalysis");
+    const { userId, birthChartAnalysisId } = req.body;
+    const chatHistory = await getChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId);
+    res.json({ success: true, chatHistory });
 }

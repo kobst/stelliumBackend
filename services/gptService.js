@@ -2,9 +2,10 @@ import OpenAI from "openai";
 import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRulerCode } from "../utilities/archive/decoder.js"
 import { BroadTopicsEnum } from "../utilities/constants.js"
 
+
+
 const apiKey = process.env.OPENAI_API_KEY
 const client = new OpenAI({ apiKey: apiKey})
-
 
 
 export async function getCompletionPrompts(heading, description) {
@@ -704,6 +705,67 @@ export async function getCompletionGptResponseGeneral(prompt) {
   return response.choices[0].message.content;
 }
 
+export async function getCompletionGptResponseChatThread(query, contextFromAnalysis, chatHistory) {
+  console.log("getCompletionGptResponseChatThread");
+  console.log("query: ", query);
+  console.log("contextFromAnalysis: ", contextFromAnalysis);
+  console.log("chatHistory: ", chatHistory);
+  
+  try {
+    // Start with the system message
+    const messages = [{
+      role: "system",
+      content: "You are an expert astrological guide and counselor. You provide insightful, personalized astrological guidance based on birth chart data, relationship analysis, and astrological context. Your responses are thoughtful, supportive, and grounded in astrological knowledge while being accessible to users of all experience levels. Please adhere to these guidelines: 1) When you answer, assume you are already in a conversation and the user has some context about their birth chart. Do not preface your answer with any unnecessary filler or preamble. Be direct and avoid overly elaborate phrasing. 2) Also, avoid just listing off positions and explaining them in a laundry list manner. Instead, provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 3) When you reference the birth chart, please use the id of the aspect or position in parenthesis. 4) Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 5) Focus on answering the user's specific question using the provided astrological context as supporting information."
+    }];
+
+    // Add chat history messages if provided
+    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+      chatHistory.forEach(message => {
+        if (message.role && message.content) {
+          // Validate that role is acceptable for OpenAI API
+          if (['assistant', 'user'].includes(message.role)) {
+            messages.push({
+              role: message.role,
+              content: message.content
+            });
+          } else {
+            console.warn(`Skipping message with invalid role: ${message.role}`);
+          }
+        }
+      });
+    }
+
+    // Construct the user message with the original query and context
+    const userMessage = `${query}
+
+--- Relevant Astrological Context ---
+${contextFromAnalysis}
+
+Please answer my question using the relevant astrological information provided above.`;
+
+    // Add the constructed user message
+    messages.push({
+      role: "user",
+      content: userMessage
+    });
+
+    console.log(`Sending ${messages.length} messages to GPT (1 system + ${chatHistory?.length || 0} history + 1 current)`);
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("Error in getCompletionGptResponseChatThread:", error);
+    throw error;
+  }
+}
+
+
 
 export async function getCompletionShortOverviewForTopic(topic, relevantNatalPositions, RAGResponse) {
     console.log("getCompletionShortOverviewForTopic");
@@ -799,6 +861,8 @@ Aim for a response of at least 300-500 words for this category.
 
 
 export async function expandPrompt(prompt) {
+  console.log("expandPrompt")
+  console.log("prompt: ", prompt)
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
