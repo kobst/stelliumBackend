@@ -1025,10 +1025,36 @@ export const handleProcessUserQueryForRelationshipAnalysis = async (req, res) =>
       const chatHistory = await getChatHistoryForRelationshipAnalysis(userId, compositeChartId);
 
       console.log("expandedQuery: ", expandedQuery);
-      const contextFromAnalysis = await processUserQueryForRelationshipAnalysis(compositeChartId, expandedQuery);
-      console.log("expandedQueryWithContext: ", contextFromAnalysis);
-      
-      const answer = await getCompletionGptResponseRelationshipChatThread(query, contextFromAnalysis, chatHistory);
+
+      const relationshipAnalysis = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
+      if (!relationshipAnalysis || !relationshipAnalysis.debug || !relationshipAnalysis.debug.inputSummary) {
+          return res.status(404).json({
+              success: false,
+              error: "Relationship analysis not found for this compositeChartId"
+          });
+      }
+
+      const { userAId, userBId, userAName, userBName } = relationshipAnalysis.debug.inputSummary;
+
+      const [contextFromAnalysis, contextFromUserA, contextFromUserB] = await Promise.all([
+          processUserQueryForRelationshipAnalysis(compositeChartId, expandedQuery),
+          processUserQueryForBirthChartAnalysis(userAId, expandedQuery),
+          processUserQueryForBirthChartAnalysis(userBId, expandedQuery)
+      ]);
+
+      console.log("relationship RAG context: ", contextFromAnalysis);
+      console.log("userA RAG context: ", contextFromUserA);
+      console.log("userB RAG context: ", contextFromUserB);
+
+      const answer = await getCompletionGptResponseRelationshipChatThread(
+          query,
+          contextFromAnalysis,
+          contextFromUserA,
+          contextFromUserB,
+          chatHistory,
+          userAName,
+          userBName
+      );
       const result = await saveChatHistoryForRelationshipAnalysis(userId, compositeChartId, query, answer);
       
       console.log("result: ", result);

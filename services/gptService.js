@@ -767,10 +767,20 @@ Please answer my question using the relevant astrological information provided a
 
 
 
-export async function getCompletionGptResponseRelationshipChatThread(query, contextFromAnalysis, chatHistory) {
+export async function getCompletionGptResponseRelationshipChatThread(
+  query,
+  contextFromRelationship,
+  contextFromUserA,
+  contextFromUserB,
+  chatHistory,
+  userAName = 'User A',
+  userBName = 'User B'
+) {
   console.log("getCompletionGptResponseRelationshipChatThread");
   console.log("query: ", query);
-  console.log("contextFromAnalysis: ", contextFromAnalysis);
+  console.log("contextFromRelationship: ", contextFromRelationship);
+  console.log("contextFromUserA: ", contextFromUserA);
+  console.log("contextFromUserB: ", contextFromUserB);
   console.log("chatHistory: ", chatHistory);
   
   try {
@@ -800,8 +810,14 @@ export async function getCompletionGptResponseRelationshipChatThread(query, cont
     // Construct the user message with the original query and context
     const userMessage = `${query}
 
---- Relevant Astrological Context ---
-${contextFromAnalysis}
+--- Relationship Analysis Context ---
+${contextFromRelationship}
+
+--- ${userAName}'s Birth Chart Context ---
+${contextFromUserA}
+
+--- ${userBName}'s Birth Chart Context ---
+${contextFromUserB}
 
 Please answer my question about my relationship using the relevant astrological information provided above.`;
 
