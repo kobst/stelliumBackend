@@ -591,3 +591,121 @@ const calculateMidpoint = (degree1, degree2) => {
 //     const pattern = identifyBirthChartPattern(chartData)
 //     return pattern
 // }
+// ------------------------------------------------------------
+// Transit utilities
+// ------------------------------------------------------------
+const TRANSIT_BODIES = [
+  { id: sweph.constants.SE_SUN, name: 'Sun' },
+  { id: sweph.constants.SE_MOON, name: 'Moon' },
+  { id: sweph.constants.SE_MERCURY, name: 'Mercury' },
+  { id: sweph.constants.SE_VENUS, name: 'Venus' },
+  { id: sweph.constants.SE_MARS, name: 'Mars' },
+  { id: sweph.constants.SE_JUPITER, name: 'Jupiter' },
+  { id: sweph.constants.SE_SATURN, name: 'Saturn' },
+  { id: sweph.constants.SE_URANUS, name: 'Uranus' },
+  { id: sweph.constants.SE_NEPTUNE, name: 'Neptune' },
+  { id: sweph.constants.SE_PLUTO, name: 'Pluto' }
+];
+
+const ASPECTS = [
+  { angle: 0,   orb: 8, name: 'conjunction' },
+  { angle: 60,  orb: 6, name: 'sextile' },
+  { angle: 90,  orb: 6, name: 'square' },
+  { angle: 120, orb: 6, name: 'trine' },
+  { angle: 150, orb: 3, name: 'quincunx' },
+  { angle: 180, orb: 8, name: 'opposition' }
+];
+
+/**
+ * Generate a daily ephemeris series between two dates.
+ * Dates should be JavaScript Date objects in UTC.
+ */
+export function generateTransitSeries(fromDate, toDate) {
+  initializeEphemeris();
+  const flags = sweph.FLG_SWIEPH | sweph.FLG_SPEED;
+  const series = [];
+  for (let d = new Date(fromDate); d <= toDate; d.setUTCDate(d.getUTCDate() + 1)) {
+    const jd = sweph.julday(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), 0, 1);
+    const planets = TRANSIT_BODIES.map(({ id, name }) => {
+      const { data } = sweph.calc_ut(jd, id, flags);
+      const [lon,, , speed] = data;
+      return { name, lon, speed };
+    });
+    series.push({ date: new Date(d), planets });
+  }
+  return series;
+}
+
+function angularDifference(a, b) {
+  return Math.abs(((a - b + 180) % 360) - 180);
+}
+
+/**
+ * Generator yielding every transit aspect hit for a series.
+ */
+export function* scanTransitSeries(transitSeries, natalPoints) {
+  for (const { date, planets } of transitSeries) {
+    for (const t of planets) {
+      for (const n of natalPoints) {
+        const delta = angularDifference(t.lon, n.lon);
+        for (const a of ASPECTS) {
+          if (delta <= a.orb) {
+            yield {
+              date,
+              transitingPlanet: t.name,
+              natalPlanet: n.name,
+              aspect: a.name,
+              orb: +(delta.toFixed(2)),
+              approaching: t.speed * ((t.lon - n.lon + 360) % 360) > 0
+            };
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Collapse raw scan results into start/exact/end windows.
+ */
+export function mergeTransitWindows(events, stepMs = 86400000) {
+  const byKey = {};
+  for (const e of events) {
+    const key = `${e.transitingPlanet}|${e.natalPlanet}|${e.aspect}`;
+    if (!byKey[key]) byKey[key] = [];
+    byKey[key].push(e);
+  }
+
+  const windows = [];
+  for (const key of Object.keys(byKey)) {
+    const rows = byKey[key].sort((a, b) => a.date - b.date);
+    let chunk = [rows[0]];
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i].date - rows[i - 1].date === stepMs) {
+        chunk.push(rows[i]);
+      } else {
+        windows.push(buildWindow(chunk));
+        chunk = [rows[i]];
+      }
+    }
+    windows.push(buildWindow(chunk));
+  }
+  return windows;
+}
+
+function buildWindow(chunk) {
+  const start = chunk[0].date;
+  const end = chunk[chunk.length - 1].date;
+  let exact = chunk[0];
+  for (const c of chunk) {
+    if (c.orb < exact.orb) exact = c;
+  }
+  return {
+    start,
+    exact: exact.date,
+    end,
+    transiting: exact.transitingPlanet,
+    natal: exact.natalPlanet,
+    aspect: exact.aspect
+  };
+}

@@ -60,3 +60,33 @@ This will expose the API endpoints defined in `serverless.yml`.
 
 This project is licensed under the ISC license. See [`package.json`](package.json) for details.
 
+
+## Transit Tracking
+
+The service now provides utilities for computing planetary transits to any birth chart.
+
+1. **Generate an ephemeris series**
+
+   ```javascript
+   import { generateTransitSeries } from './services/ephemerisDataService.js';
+
+   const from = new Date('2025-07-01T00:00:00Z');
+   const to   = new Date('2025-07-31T00:00:00Z');
+   const series = generateTransitSeries(from, to);
+   ```
+
+2. **Scan the series against natal positions**
+
+   ```javascript
+   import { scanTransitSeries, mergeTransitWindows } from './services/ephemerisDataService.js';
+
+   const natal = user.birthChart.planets.map(p => ({ name: p.name, lon: p.full_degree }));
+   const rawEvents = Array.from(scanTransitSeries(series, natal));
+   const windows = mergeTransitWindows(rawEvents);
+   ```
+
+   `windows` contains objects with `start`, `exact` and `end` dates describing
+   when a transiting planet forms a specific aspect to a natal point.
+
+These helper functions work independently of any route handlers so you can use
+them in scripts or new API endpoints as needed.
