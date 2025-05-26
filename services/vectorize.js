@@ -610,7 +610,7 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId, 
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Ensure metadata and its properties exist before accessing
       const text = match.metadata?.text || "";     // Default to empty string if text undefined
-      const description = match.metadata?.description || ""; // Optionally include description
+      const description = match.metadata?.relevantPositionData || ""; // Optionally include description
 
       return {
         text: text,

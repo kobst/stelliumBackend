@@ -9,7 +9,11 @@ import {
   getCompletionShortOverviewRelationships,
   getCompletionPlanets,
   getCompletionGptResponseGeneral,
-  getCompletionGptResponseChatThread
+  getCompletionGptResponseChatThread,
+  getCompletionShortOverviewForTopic, 
+  expandPrompt, 
+  expandPromptRelationship,
+  getCompletionGptResponseRelationshipChatThread
 } from '../services/gptService.js';
 // import { processUserQueryAndAnswer } from '../services/vectorize.js';
 import { 
@@ -30,7 +34,6 @@ import {
   processUserQueryForBirthChartAnalysis,
   processUserQueryForRelationshipAnalysis
 } from '../services/vectorize.js';
-import { getCompletionShortOverviewForTopic, expandPrompt } from '../services/gptService.js';
 import {
   saveBasicAnalysis,
   saveTopicAnalysis,
@@ -42,9 +45,10 @@ import {
   updateRelationshipVectorizationStatus,
   fetchRelationshipAnalysisByCompositeId,
   getChatHistoryForBirthChartAnalysis,
-  saveChatHistoryForBirthChartAnalysis
+  saveChatHistoryForBirthChartAnalysis,
+  getChatHistoryForRelationshipAnalysis,
+  saveChatHistoryForRelationshipAnalysis
 } from '../services/dbService.js';
-
 
 export async function handleUserQuery(req, res) {
   try {
@@ -996,4 +1000,54 @@ export const handleFetchUserChatBirthChartAnalysis = async (req, res) => {
     const { userId, birthChartAnalysisId } = req.body;
     const chatHistory = await getChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId);
     res.json({ success: true, chatHistory });
+}
+
+
+export const handleProcessUserQueryForRelationshipAnalysis = async (req, res) => {
+  console.log("handleProcessUserQueryForRelationshipAnalysis");
+  
+  try {
+      const { userId, compositeChartId, query } = req.body;
+      
+      // Validate required parameters
+      if (!userId || !compositeChartId || !query) {
+          return res.status(400).json({ 
+              success: false, 
+              error: "Missing required parameters: userId, compositeChartId, and query are required" 
+          });
+      }
+      
+      console.log("userId: ", userId);
+      console.log("compositeChartId: ", compositeChartId);
+      console.log("query: ", query);
+      
+      const expandedQuery = await expandPromptRelationship(query);
+      const chatHistory = await getChatHistoryForRelationshipAnalysis(userId, compositeChartId);
+
+      console.log("expandedQuery: ", expandedQuery);
+      const contextFromAnalysis = await processUserQueryForRelationshipAnalysis(compositeChartId, expandedQuery);
+      console.log("expandedQueryWithContext: ", contextFromAnalysis);
+      
+      const answer = await getCompletionGptResponseRelationshipChatThread(query, contextFromAnalysis, chatHistory);
+      const result = await saveChatHistoryForRelationshipAnalysis(userId, compositeChartId, query, answer);
+      
+      console.log("result: ", result);
+      res.json({ success: true, result, answer });
+      
+  } catch (error) {
+      console.error("Error in handleProcessUserQueryForBirthChartAnalysis:", error);
+      res.status(500).json({ 
+          success: false, 
+          error: error.message,
+          details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+  }
+}
+
+
+export const handleFetchUserChatRelationshipAnalysis = async (req, res) => {
+  console.log("handleFetchUserChatRelationshipAnalysis");
+  const { userId, compositeChartId } = req.body;
+  const chatHistory = await getChatHistoryForRelationshipAnalysis(userId, compositeChartId);
+  res.json({ success: true, chatHistory });
 }

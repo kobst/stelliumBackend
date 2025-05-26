@@ -715,7 +715,7 @@ export async function getCompletionGptResponseChatThread(query, contextFromAnaly
     // Start with the system message
     const messages = [{
       role: "system",
-      content: "You are an expert astrological guide and counselor. You provide insightful, personalized astrological guidance based on birth chart data, relationship analysis, and astrological context. Your responses are thoughtful, supportive, and grounded in astrological knowledge while being accessible to users of all experience levels. Please adhere to these guidelines: 1) When you answer, assume you are already in a conversation and the user has some context about their birth chart. Do not preface your answer with any unnecessary filler or preamble. Be direct and avoid overly elaborate phrasing. 2) Also, avoid just listing off positions and explaining them in a laundry list manner. Instead, provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 3) When you reference the birth chart, please use the id of the aspect or position in parenthesis. 4) Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 5) Focus on answering the user's specific question using the provided astrological context as supporting information."
+      content: "You are an expert astrological guide and counselor. You provide insightful, personalized astrological guidance based on birth chart data, relationship analysis, and astrological context. Your responses are thoughtful, supportive, and grounded in astrological knowledge while being accessible to users of all experience levels. Please adhere to these guidelines: 1) When you answer, assume you are already in a conversation and the user has some context about their birth chart. Do not preface your answer with any unnecessary filler or preamble. Be direct and avoid overly elaborate phrasing. 2) Also, avoid just listing off positions and explaining them in a laundry list manner. Instead, provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 3) When you reference the birth chart, please use the id of the aspect or position in parenthesis. 4) Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 5) Focus on answering the user's specific question using the provided astrological context as supporting information. Do not expand beyond the original scope of the question unless the extra context is relevant or neessary to answer the question"
     }];
 
     // Add chat history messages if provided
@@ -765,6 +765,67 @@ Please answer my question using the relevant astrological information provided a
   }
 }
 
+
+
+export async function getCompletionGptResponseRelationshipChatThread(query, contextFromAnalysis, chatHistory) {
+  console.log("getCompletionGptResponseRelationshipChatThread");
+  console.log("query: ", query);
+  console.log("contextFromAnalysis: ", contextFromAnalysis);
+  console.log("chatHistory: ", chatHistory);
+  
+  try {
+    // Start with the system message
+    const messages = [{
+      role: "system",
+      content: "You are an expert astrological guide and counselor. You provide insightful, personalized astrological guidance based on birth chart data, relationship analysis, and astrological context. Your responses are thoughtful, supportive, and grounded in astrological knowledge while being accessible to users of all experience levels. Please adhere to these guidelines: 1) When you answer, assume you are already in a conversation and the user has some context about their birth chart. Do not preface your answer with any unnecessary filler or preamble. Be direct and avoid overly elaborate phrasing. 2) Also, avoid just listing off positions and explaining them in a laundry list manner. Instead, provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 3) When you reference the birth chart, please use the id of the aspect or position in parenthesis. 4) Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 5) Focus on answering the user's specific question using the provided astrological context as supporting information. Do not expand beyond the original scope of the question unless the extra context is relevant or neessary to answer the question."
+    }];
+
+    // Add chat history messages if provided
+    if (chatHistory && Array.isArray(chatHistory) && chatHistory.length > 0) {
+      chatHistory.forEach(message => {
+        if (message.role && message.content) {
+          // Validate that role is acceptable for OpenAI API
+          if (['assistant', 'user'].includes(message.role)) {
+            messages.push({
+              role: message.role,
+              content: message.content
+            });
+          } else {
+            console.warn(`Skipping message with invalid role: ${message.role}`);
+          }
+        }
+      });
+    }
+
+    // Construct the user message with the original query and context
+    const userMessage = `${query}
+
+--- Relevant Astrological Context ---
+${contextFromAnalysis}
+
+Please answer my question about my relationship using the relevant astrological information provided above.`;
+
+    // Add the constructed user message
+    messages.push({
+      role: "user",
+      content: userMessage
+    });
+
+    console.log(`Sending ${messages.length} messages to GPT (1 system + ${chatHistory?.length || 0} history + 1 current)`);
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: messages,
+      temperature: 0.7,
+      max_tokens: 2000
+    });
+
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("Error in getCompletionGptResponseRelationshipChatThread:", error);
+    throw error;
+  }
+}
 
 
 export async function getCompletionShortOverviewForTopic(topic, relevantNatalPositions, RAGResponse) {
@@ -868,7 +929,7 @@ export async function expandPrompt(prompt) {
     messages: [
       {
         role: "system",
-        content: `You are an expert astrology assistant. Your primary task is to take a user's question about astrology, which might be brief or vague, and expand it into a more detailed and semantically rich description. This expanded description will be used by a vector search system to find the most relevant astrological information. Ensure your expansion clarifies the original query, incorporates relevant astrological keywords and concepts, and faithfully represents the user's original intent. The output should be a coherent piece of text suitable for semantic matching.`
+        content: `You are an expert astrology assistant. Your primary task is to take a user's question about astrology in context of a birthchart analysis, which might be brief or vague, and expand it into a more detailed and semantically rich description. This expanded description will be used by a vector search system to find the most relevant astrological information. Ensure your expansion clarifies the original query, incorporates relevant astrological keywords and concepts, and faithfully represents the user's original intent. The output should be a coherent piece of text suitable for semantic matching.`
       },
       {
         role: "user",
@@ -882,4 +943,25 @@ export async function expandPrompt(prompt) {
   return completion.choices[0].message.content.trim();
 }
 
+export async function expandPromptRelationship(prompt) {
+  console.log("expandPromptRelationship")
+  console.log("prompt: ", prompt)
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert astrology assistant. Your primary task is to take a user's question about astrology in the context of their relationship, which might be brief or vague, and expand it into a more detailed and semantically rich description. This expanded description will be used by a vector search system to find the most relevant astrological information. Ensure your expansion clarifies the original query, incorporates relevant astrological keywords and concepts, and faithfully represents the user's original intent. The output should be a coherent piece of text suitable for semantic matching.`
+      },
+      {
+        role: "user",
+        content: `Expand this query for astrology vector search:\n\n"${prompt}"`
+      }
+    ],
+    temperature: 0.5,
+    max_tokens: 150
+  });
+
+  return completion.choices[0].message.content.trim();
+}
 

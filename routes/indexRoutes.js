@@ -20,7 +20,9 @@ import {
     handleFetchAnalysis,
     handleVectorizeRelationshipAnalysis,
     handleProcessUserQueryForBirthChartAnalysis,
-    handleFetchUserChatBirthChartAnalysis
+    handleFetchUserChatBirthChartAnalysis,
+    handleProcessUserQueryForRelationshipAnalysis,
+    handleFetchUserChatRelationshipAnalysis
 } from '../controllers/gptController.js';
 import { 
     handleSaveCompositeChartProfile,
@@ -79,6 +81,9 @@ router.post('/processRelationshipAnalysis', handleVectorizeRelationshipAnalysis)
 router.post('/userChatBirthChartAnalysis', handleProcessUserQueryForBirthChartAnalysis);
 router.post('/fetchUserChatBirthChartAnalysis', handleFetchUserChatBirthChartAnalysis);
 
-//
+
+router.post('/userChatRelationshipAnalysis', handleProcessUserQueryForRelationshipAnalysis);
+
+router.post('/fetchUserChatRelationshipAnalysis',  handleFetchUserChatRelationshipAnalysis);
 
 export default router;
