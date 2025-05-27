@@ -981,3 +981,48 @@ export async function expandPromptRelationship(prompt) {
   return completion.choices[0].message.content.trim();
 }
 
+
+export async function expandPromptRelationshipUserA(prompt) {
+  console.log("expandPromptRelationshipUserA")
+  console.log("prompt: ", prompt)
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert astrology assistant. Your primary task is to take a user's question about astrology in the context of their relationship, which might be brief or vague, and expand it into a more detailed and semantically rich description. This expanded description will be used by a vector search system to find the most relevant astrological information from the person asking the question's birth chart analysis. Ensure your expansion clarifies the original query, incorporates relevant astrological keywords and concepts, and faithfully represents the user's original intent. The output should be a coherent piece of text suitable for semantic matching.`
+      },
+      {
+        role: "user",
+        content: `Expand this relationship query to find the person asking the question's own astrological traits that contribute to this relationship dynamic:\n\n"${prompt}"`
+      }
+    ],
+    temperature: 0.5,
+    max_tokens: 150
+  });
+
+  return completion.choices[0].message.content.trim();
+}
+
+export async function expandPromptRelationshipUserB(prompt) {
+  console.log("expandPromptRelationshipUserA")
+  console.log("prompt: ", prompt)
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [
+      {
+        role: "system",
+        content: `You are an expert astrology assistant. Your primary task is to take a user's question about astrology in the context of their relationship, which might be brief or vague, and expand it into a more detailed and semantically rich description. This expanded description will be used by a vector search system to find the most relevant astrological information from their partner's birth chart analysis. Ensure your expansion clarifies the original query, incorporates relevant astrological keywords and concepts, and faithfully represents the user's original intent. The output should be a coherent piece of text suitable for semantic matching.`
+      },
+      {
+        role: "user",
+        content: `Expand this relationship query to find the question-asker's partner's astrological traits that might explain what the question-asker is experiencing::\n\n"${prompt}"`
+      }
+    ],
+    temperature: 0.5,
+    max_tokens: 150
+  });
+
+  return completion.choices[0].message.content.trim();
+}
+

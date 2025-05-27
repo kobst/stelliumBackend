@@ -542,7 +542,7 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
 // CHAT QUERY
 
 
-export async function processUserQueryForBirthChartAnalysis(userId, query, numResults = 5) {
+export async function processUserQueryForBirthChartAnalysis(userId, query, numResults = 2) {
   console.log("Processing user query:", query);
   console.log("User ID:", userId);
   try{

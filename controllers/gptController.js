@@ -13,6 +13,8 @@ import {
   getCompletionShortOverviewForTopic, 
   expandPrompt, 
   expandPromptRelationship,
+  expandPromptRelationshipUserA,
+  expandPromptRelationshipUserB,
   getCompletionGptResponseRelationshipChatThread
 } from '../services/gptService.js';
 // import { processUserQueryAndAnswer } from '../services/vectorize.js';
@@ -1022,6 +1024,9 @@ export const handleProcessUserQueryForRelationshipAnalysis = async (req, res) =>
       console.log("query: ", query);
       
       const expandedQuery = await expandPromptRelationship(query);
+      
+      const expandedQueryUserA = await expandPromptRelationshipUserA(query);
+      const expandedQueryUserB = await expandPromptRelationshipUserB(query);
       const chatHistory = await getChatHistoryForRelationshipAnalysis(userId, compositeChartId);
 
       console.log("expandedQuery: ", expandedQuery);
@@ -1038,8 +1043,8 @@ export const handleProcessUserQueryForRelationshipAnalysis = async (req, res) =>
 
       const [contextFromAnalysis, contextFromUserA, contextFromUserB] = await Promise.all([
           processUserQueryForRelationshipAnalysis(compositeChartId, expandedQuery),
-          processUserQueryForBirthChartAnalysis(userAId, expandedQuery),
-          processUserQueryForBirthChartAnalysis(userBId, expandedQuery)
+          processUserQueryForBirthChartAnalysis(userAId, expandedQueryUserA),
+          processUserQueryForBirthChartAnalysis(userBId, expandedQueryUserB)
       ]);
 
       console.log("relationship RAG context: ", contextFromAnalysis);
