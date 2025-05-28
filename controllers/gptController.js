@@ -4,18 +4,19 @@ import { writeFileSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
 
 import {
-  getCompletionWithRagResponse,
   getCompletionShortOverview,
   getCompletionShortOverviewRelationships,
   getCompletionPlanets,
-  getCompletionGptResponseGeneral,
   getCompletionGptResponseChatThread,
   getCompletionShortOverviewForTopic, 
+  getCompletionForNatalPlanet,
+  getCompletionForDominancePattern,
   expandPrompt, 
   expandPromptRelationship,
   expandPromptRelationshipUserA,
   expandPromptRelationshipUserB,
-  getCompletionGptResponseRelationshipChatThread
+  getCompletionGptResponseRelationshipChatThread,
+  getCompletionForRelationshipCategory
 } from '../services/gptService.js';
 // import { processUserQueryAndAnswer } from '../services/vectorize.js';
 import { 
@@ -26,7 +27,6 @@ import {
   generateTopicMapping
 } from '../utilities/birthChartScoring.js';
 
-import { generateDominancePrompt, generatePlanetPrompt } from '../utilities/birthChartAnalysis.js';
 import { BroadTopicsEnum } from '../utilities/constants.js';
 import { 
   retrieveTopicContext, 
@@ -52,22 +52,22 @@ import {
   saveChatHistoryForRelationshipAnalysis
 } from '../services/dbService.js';
 
-export async function handleUserQuery(req, res) {
-  try {
-    const { userId, query } = req.body;
-    // const ragResponse = await processUserQueryAndAnswer(userId, query);
-    console.log(userId)
-    const gptResponse = await getCompletionWithRagResponse(query);
+// export async function handleUserQuery(req, res) {
+//   try {
+//     const { userId, query } = req.body;
+//     // const ragResponse = await processUserQueryAndAnswer(userId, query);
+//     console.log(userId)
+//     const gptResponse = await getCompletionWithRagResponse(query);
 
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-    res.setHeader('Access-Control-Allow-Credentials', true);
-    res.json({ gptResponse });
-  } catch (error) {
-    res.status(500).send('Server error');
-  }
-}
+//     res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
+//     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+//     res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+//     res.setHeader('Access-Control-Allow-Credentials', true);
+//     res.json({ gptResponse });
+//   } catch (error) {
+//     res.status(500).send('Server error');
+//   }
+// }
 
 
 // export async function handleGptResponseForSynastryChart(req, res) {
@@ -219,9 +219,7 @@ export async function handleBirthChartAnalysis(req, res) {
       try {
         const dominanceDescription = dominanceDescriptions[category];
         console.log("dominanceDescription: ", dominanceDescription)
-        const dominancePrompt = generateDominancePrompt(category, dominanceDescription, shortOverviewResponse);
-        console.log("dominancePrompt: ", dominancePrompt)
-        const response = await getCompletionGptResponseGeneral(dominancePrompt);
+        const response = await getCompletionForDominancePattern(category, dominanceDescription, shortOverviewResponse);
         console.log("dominance response: ", response)
         // return [category, response];
         return [category, {
@@ -239,9 +237,7 @@ export async function handleBirthChartAnalysis(req, res) {
       try {
         const planetDescriptions = getPlanetDescription(planet, birthData);
         console.log("planetDescriptions: ", planetDescriptions);
-        const planetPrompt = generatePlanetPrompt(planet, planetDescriptions, shortOverviewResponse);
-        console.log("planetPrompt: ", planetPrompt);
-        const response = await getCompletionGptResponseGeneral(planetPrompt);
+        const response  = await getCompletionForNatalPlanet(planet, planetDescriptions, shortOverviewResponse);
         console.log("planet response: ", response);
         return [planet, {
           description: planetDescriptions,
@@ -615,7 +611,6 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
 
 // Main endpoint that client calls first to initiate analysis
 
-//this times out, not usable
 export async function handleBirthChartTopicAnalysis(req, res) {
     const { userId, topic } = req.body;
     console.log("handleBirthChartTopicAnalysis for userId:", userId, "topic:", topic);

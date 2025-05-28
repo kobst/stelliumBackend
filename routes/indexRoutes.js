@@ -6,7 +6,6 @@ import {
     handleCreateRelationship
 } from '../controllers/astroDataController.js';
 import { 
-    handleUserQuery,
     // gpt
     handleShortOverviewResponse,
     handleShortOverviewRomanticResponse,
@@ -44,7 +43,6 @@ router.post('/saveCompositeChartProfile', handleSaveCompositeChartProfile);
 router.post('/saveSynastryChartInterpretation', handleSaveSynastryChartInterpretation);
 
 // user chat
-router.post('/handleUserQuery', handleUserQuery);
 
 
 
@@ -67,8 +65,8 @@ router.post('/getBirthChartAnalysis', handleBirthChartAnalysis);
 // maybe we make this into a cron job
 router.post('/processBasicAnalysis', handleVectorizeBirthChartAnalysisLog);
 
-// get user topic analysis all at once, timing out
-router.post('/getTopicAnalysis', handleBirthChartTopicAnalysis);
+// get user topic analysis all at once
+// router.post('/getTopicAnalysis', handleBirthChartTopicAnalysis);
 
 // get user subtopic analysis one at a time
 router.post('/getSubtopicAnalysis', handleSubtopicAnalysis);

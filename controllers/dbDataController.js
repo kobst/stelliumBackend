@@ -11,7 +11,7 @@ import {
 
 import { getRelationshipCategoryContextForUser } from '../services/vectorize.js';
 import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.js';
-import { generateRelationshipPrompt, getCompletionGptResponseGeneral } from '../services/gptService.js';
+import { generateRelationshipPrompt, getCompletionForRelationshipCategory } from '../services/gptService.js';
 import { RELATIONSHIP_CATEGORIES } from '../utilities/relationshipScoringConstants.js';
 
 // all GENERAL DAILY ASPECTS/TRANSITS 
@@ -199,7 +199,15 @@ export async function handleGenerateRelationshipAnalysis(req, res) {
             // console.log(promptString); 
 
             promises.push(
-                getCompletionGptResponseGeneral(promptString)
+                    getCompletionForRelationshipCategory(
+                        userAName, 
+                        userBName, 
+                        categoryDisplayName, 
+                        relationshipScores, 
+                        formattedAstrology, 
+                        contextA, 
+                        contextB
+                    )
                     .then(interpretation => {
                         console.log(`[LLM SUCCESS] Received analysis for ${categoryDisplayName}`);
                         // Return an object containing the category, interpretation, and the formattedAstrology
