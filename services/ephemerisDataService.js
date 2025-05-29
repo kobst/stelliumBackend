@@ -5,7 +5,7 @@ import { findPlanetsInElementsObjects, findPlanetsInModalitiesObjects, findPlane
 // Add initialization tracking
 let ephemerisInitialized = false;
 
-function initializeEphemeris() {
+export function initializeEphemeris() {
   if (!ephemerisInitialized) {
     sweph.set_ephe_path('./data');
     ephemerisInitialized = true;
@@ -594,7 +594,7 @@ const calculateMidpoint = (degree1, degree2) => {
 // ------------------------------------------------------------
 // Transit utilities
 // ------------------------------------------------------------
-const TRANSIT_BODIES = [
+export const TRANSIT_BODIES = [
   { id: sweph.constants.SE_SUN, name: 'Sun' },
   { id: sweph.constants.SE_MOON, name: 'Moon' },
   { id: sweph.constants.SE_MERCURY, name: 'Mercury' },
@@ -629,9 +629,12 @@ export function generateTransitSeries(fromDate, toDate) {
     const planets = TRANSIT_BODIES.map(({ id, name }) => {
       const { data } = sweph.calc_ut(jd, id, flags);
       const [lon,, , speed] = data;
-      return { name, lon, speed };
+      return { name, lon, speed, sign: getSignFromLon(lon)};
     });
-    series.push({ date: new Date(d), planets });
+    const sun = planets.find(p => p.name === 'Sun');
+    const moon = planets.find(p => p.name === 'Moon');  
+    const moonPhase = getMoonPhaseInfo(sun.lon, moon.lon);
+    series.push({ date: new Date(d), planets, moonPhase });
   }
   return series;
 }
@@ -646,17 +649,35 @@ function angularDifference(a, b) {
 export function* scanTransitSeries(transitSeries, natalPoints) {
   for (const { date, planets } of transitSeries) {
     for (const t of planets) {
+      if (t.speed === undefined || t.lon === undefined) continue; // Skip if essential data is missing
+
       for (const n of natalPoints) {
-        const delta = angularDifference(t.lon, n.lon);
+        if (n.lon === undefined) continue;
+
+        const relative_pos = (t.lon - n.lon + 360) % 360; // Angle from natal to transiting, CCW
+
         for (const a of ASPECTS) {
+          const delta = angularDifference(relative_pos, a.angle);
+
           if (delta <= a.orb) {
+            let approaching = false;
+            if (t.speed !== 0) {
+              // Normalized difference from transiting planet's relative position to the exact aspect angle
+              // Positive if transiting planet is CCW past the aspect point, negative if CW before it.
+              const norm_angle_diff_to_exact = (relative_pos - a.angle + 180 + 360) % 360 - 180;
+              // Approaching if the product of this difference and speed is negative
+              // (e.g., speed > 0 and diff < 0 => moving towards exact from behind)
+              // (e.g., speed < 0 and diff > 0 => moving towards exact from ahead)
+              approaching = (norm_angle_diff_to_exact * t.speed) < 0;
+            }
+
             yield {
-              date,
+              date, // This is a Date object
               transitingPlanet: t.name,
               natalPlanet: n.name,
               aspect: a.name,
               orb: +(delta.toFixed(2)),
-              approaching: t.speed * ((t.lon - n.lon + 360) % 360) > 0
+              approaching
             };
           }
         }
@@ -667,45 +688,159 @@ export function* scanTransitSeries(transitSeries, natalPoints) {
 
 /**
  * Collapse raw scan results into start/exact/end windows.
+ * Assumes events are generated from a transit series that has varying time steps.
  */
-export function mergeTransitWindows(events, stepMs = 86400000) {
+export function mergeTransitWindows(events) {
   const byKey = {};
   for (const e of events) {
+    // Ensure date is a Date object for proper sorting and comparison
+    const eventDate = e.date instanceof Date ? e.date : new Date(e.date);
     const key = `${e.transitingPlanet}|${e.natalPlanet}|${e.aspect}`;
     if (!byKey[key]) byKey[key] = [];
-    byKey[key].push(e);
+    byKey[key].push({ ...e, date: eventDate }); // Store with Date object
   }
 
   const windows = [];
   for (const key of Object.keys(byKey)) {
-    const rows = byKey[key].sort((a, b) => a.date - b.date);
-    let chunk = [rows[0]];
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i].date - rows[i - 1].date === stepMs) {
-        chunk.push(rows[i]);
-      } else {
-        windows.push(buildWindow(chunk));
-        chunk = [rows[i]];
-      }
+    // Sort events chronologically for this specific aspect combination
+    const eventGroup = byKey[key].sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    if (eventGroup.length > 0) {
+      // All events in eventGroup are considered part of the same continuous aspect occurrence
+      windows.push(buildWindowFromEventGroup(eventGroup));
     }
-    windows.push(buildWindow(chunk));
   }
   return windows;
 }
 
-function buildWindow(chunk) {
-  const start = chunk[0].date;
-  const end = chunk[chunk.length - 1].date;
-  let exact = chunk[0];
-  for (const c of chunk) {
-    if (c.orb < exact.orb) exact = c;
+/**
+ * Builds a single window object from a group of chronological events
+ * representing one continuous aspect.
+ * @param {Array<Object>} eventGroup - A sorted array of raw event objects.
+ */
+function buildWindowFromEventGroup(eventGroup) {
+  const startEvent = eventGroup[0];
+  const endEvent = eventGroup[eventGroup.length - 1];
+
+  let exactEvent = startEvent;
+  for (const currentEvent of eventGroup) {
+    if (currentEvent.orb < exactEvent.orb) {
+      exactEvent = currentEvent;
+    }
+    // If orbs are equal, prefer an approaching one if the current exact is not,
+    // or if both are approaching, or both separating, keep the earlier one (already handled by sort + initial exactEvent).
+    // This can be refined further if exactitude needs more precise rules for ties.
+    else if (currentEvent.orb === exactEvent.orb && currentEvent.approaching && !exactEvent.approaching) {
+        exactEvent = currentEvent;
+    }
   }
+
   return {
-    start,
-    exact: exact.date,
-    end,
-    transiting: exact.transitingPlanet,
-    natal: exact.natalPlanet,
-    aspect: exact.aspect
+    start: startEvent.date,
+    exact: exactEvent.date,
+    end: endEvent.date,
+    transiting: exactEvent.transitingPlanet,
+    natal: exactEvent.natalPlanet,
+    aspect: exactEvent.aspect,
+    minOrb: exactEvent.orb, // Orb at the point of exactitude
+    exactEventApproaching: exactEvent.approaching // Was it approaching at the exact point?
   };
 }
+
+export function getMoonPhaseInfo(sunLon, moonLon) {
+    const SIGNS = [
+      'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+      'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+    ];
+  
+    // Normalize angle difference to 0–360°
+    const angle = (moonLon - sunLon + 360) % 360;
+  
+    // Get Moon sign (0–360° → 12 signs)
+    const moonSign = SIGNS[Math.floor(moonLon / 30)];
+  
+    // Determine phase
+    let phase = '', waxing = true, description = '';
+  
+    if (angle < 22.5) {
+      phase = 'New Moon';
+      description = 'New beginnings, seeding intentions';
+    } else if (angle < 67.5) {
+      phase = 'Waxing Crescent';
+      description = 'Building momentum, setting plans in motion';
+    } else if (angle < 112.5) {
+      phase = 'First Quarter';
+      description = 'Tension and action, breaking inertia';
+    } else if (angle < 157.5) {
+      phase = 'Waxing Gibbous';
+      description = 'Refinement, anticipation, final growth';
+    } else if (angle < 202.5) {
+      phase = 'Full Moon';
+      description = 'Clarity, culmination, emotional illumination';
+      waxing = false;
+    } else if (angle < 247.5) {
+      phase = 'Waning Gibbous';
+      description = 'Dissemination, sharing insights, teaching';
+      waxing = false;
+    } else if (angle < 292.5) {
+      phase = 'Last Quarter';
+      description = 'Letting go, making peace, integration';
+      waxing = false;
+    } else if (angle < 337.5) {
+      phase = 'Waning Crescent';
+      description = 'Rest, release, retreat, dream time';
+      waxing = false;
+    } else {
+      phase = 'New Moon';
+      description = 'New beginnings, seeding intentions';
+    }
+  
+    return {
+      phase,              // "First Quarter", "Full Moon", etc.
+      angle: +angle.toFixed(2), // Angle in degrees
+      waxing,
+      moonSign,
+      description
+    };
+  }
+  
+  
+  function extractSignWindows(transitSeries) {
+    const windows = [];
+    const active = new Map(); // planet → { sign, start }
+  
+    for (const { date, planets } of transitSeries) {
+      for (const p of planets) {
+        const prev = active.get(p.name);
+  
+        if (!prev) {
+          active.set(p.name, { sign: p.sign, start: date });
+        } else if (prev.sign !== p.sign) {
+          windows.push({
+            transiting: p.name,
+            sign: prev.sign,
+            start: prev.start,
+            end: date
+          });
+          active.set(p.name, { sign: p.sign, start: date });
+        }
+      }
+    }
+  
+    // flush active windows
+    for (const [planet, { sign, start }] of active.entries()) {
+      windows.push({ transiting: planet, sign, start, end: null }); // still active
+    }
+  
+    return windows;
+  }
+  
+
+  const SIGNS = [
+    'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
+    'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
+  ];
+  
+  export function getSignFromLon(lon) {
+    return SIGNS[Math.floor(lon / 30)];
+  }

@@ -21,6 +21,7 @@ const birthChartAnalysisCollection = db.collection('birth_chart_analysis');
 const relationshipAnalysisCollection = db.collection('relationship_analysis');
 const chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth_chart_analysis');
 const chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
+const transitEphemerisCollection = db.collection('transit_ephemeris');
 // const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
@@ -1110,5 +1111,34 @@ export async function getChatHistoryForRelationshipAnalysis(userId, compositeCha
     } catch (error) {
         console.error(`Error fetching chat history for relationship analysis (userId: ${userId}, compositeChartId: ${compositeChartId}):`, error);
         throw error;
+    }
+}
+
+/**
+ * Fetches pre-generated transit series data from the database for a given date range.
+ * @param {string} startDateStr - The start date of the range (ISO string format).
+ * @param {string} endDateStr - The end date of the range (ISO string format).
+ * @returns {Promise<Array<Object>>} A promise that resolves to an array of transit series objects.
+ * Each object will have its 'date' property as a Date object.
+ */
+export async function getPreGeneratedTransitSeries(startDateStr, endDateStr) {
+    try {
+        const query = {
+            date: {
+                $gte: startDateStr, // MongoDB can compare ISO date strings
+                $lte: endDateStr
+            }
+        };
+        const seriesDocuments = await transitEphemerisCollection.find(query).sort({ date: 1 }).toArray();
+        console.log("seriesDocuments: ", seriesDocuments)
+        // Transform documents to ensure the 'date' field is a Date object,
+        // consistent with what scanTransitSeries might expect.
+        return seriesDocuments.map(doc => ({
+            ...doc,
+            date: new Date(doc.date) // Convert ISO string from DB to Date object
+        }));
+    } catch (error) {
+        console.error('Error fetching pre-generated transit series:', error);
+        throw error; // Re-throw to be handled by the caller
     }
 }

@@ -1,4 +1,5 @@
-import { generateTransitSeries, scanTransitSeries, mergeTransitWindows } from '../services/ephemerisDataService.js';
+import { scanTransitSeries, mergeTransitWindows, generateTransitSeries } from '../services/ephemerisDataService.js';
+import { getPreGeneratedTransitSeries } from '../services/dbService.js';
 
 export async function handleGetTransitWindows(req, res) {
   try {
@@ -7,10 +8,12 @@ export async function handleGetTransitWindows(req, res) {
       return res.status(400).json({ error: 'natalPlanets, from and to are required' });
     }
 
-    const fromDate = new Date(from);
-    const toDate = new Date(to);
+    const series = await getPreGeneratedTransitSeries(from, to);
+    // const series = await generateTransitSeries(from, to);
 
-    const series = generateTransitSeries(fromDate, toDate);
+    if (!series || series.length === 0) {
+        console.warn(`No pre-generated transit data found for range: ${from} to ${to}. Proceeding with empty series.`);
+    }
 
     const natal = natalPlanets.map(p => ({
       name: p.name,
