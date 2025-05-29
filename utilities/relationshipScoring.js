@@ -561,7 +561,7 @@ function getSign(degree) {
   };
 
   function getHouse(birthChartPlanets, planetName) {
-    const house = birthChartPlanets.find(planet => planet.name === planetName)?.house;
+    const house = birthChartPlanets.find(planet => planet.name.toLowerCase() === planetName.toLowerCase())?.house;
     return house;
   }
 
@@ -713,7 +713,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
     const userBName = userB.firstName;
     if (birthChart1 && birthChart1.planets && birthChart2 && birthChart2.houses) {
         console.log(`  Processing ${birthChart1.planets.length} planets from chart A in chart B's houses`);
-        
+
         birthChart1.planets.forEach(planet => {
             // Find where this planet falls in B's chart
             const houseInB = findHousePosition(planet.full_degree, birthChart2.houses);
