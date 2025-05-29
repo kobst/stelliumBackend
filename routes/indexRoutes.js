@@ -1,7 +1,7 @@
 import express from 'express';
 const router = express.Router();
 
-import { 
+import {
     handleUserCreation, 
     handleCreateRelationship
 } from '../controllers/astroDataController.js';
@@ -23,6 +23,9 @@ import {
     handleProcessUserQueryForRelationshipAnalysis,
     handleFetchUserChatRelationshipAnalysis
 } from '../controllers/gptController.js';
+import {
+    handleGetTransitWindows
+} from '../controllers/transitController.js';
 import { 
     handleSaveCompositeChartProfile,
     handleSaveSynastryChartInterpretation,
@@ -83,5 +86,7 @@ router.post('/fetchUserChatBirthChartAnalysis', handleFetchUserChatBirthChartAna
 router.post('/userChatRelationshipAnalysis', handleProcessUserQueryForRelationshipAnalysis);
 
 router.post('/fetchUserChatRelationshipAnalysis',  handleFetchUserChatRelationshipAnalysis);
+
+router.post('/getTransitWindows', handleGetTransitWindows);
 
 export default router;
