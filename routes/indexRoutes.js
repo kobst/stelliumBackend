@@ -3,7 +3,8 @@ const router = express.Router();
 
 import {
     handleUserCreation, 
-    handleCreateRelationship
+    handleCreateRelationship,
+    handleGetTransitWindows
 } from '../controllers/astroDataController.js';
 import { 
     // gpt
@@ -23,9 +24,7 @@ import {
     handleProcessUserQueryForRelationshipAnalysis,
     handleFetchUserChatRelationshipAnalysis
 } from '../controllers/gptController.js';
-import {
-    handleGetTransitWindows
-} from '../controllers/transitController.js';
+
 import { 
     handleSaveCompositeChartProfile,
     handleSaveSynastryChartInterpretation,
