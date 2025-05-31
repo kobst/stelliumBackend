@@ -13,13 +13,17 @@ try {
   statsData = JSON.parse(fs.readFileSync(fallbackPath, 'utf-8'));
 }
 
-import { 
+import {
     ALL_RELATIONSHIP_CATEGORIES,
-    categoryWeights, 
-    aspectScoringRules, 
+    categoryWeights,
+    aspectScoringRules,
     compositeAspectScoringRules,
     planetHouseScores
 } from './relationshipScoringConstants.js';
+
+function formatHouseNumber(house) {
+    return house && house > 0 ? `${house}` : 'unknown';
+}
 
 /**
  * Scores relationship compatibility with directional sensitivity and detailed logging
@@ -309,7 +313,7 @@ function scoreSynastryCategoryAspects(category, synastryAspects, userA, userB, d
                         const planet2House = getHouse(birthChartPlanets2, aspect.planet2);
 
                         result.debugInfo.matchedAspects.push({
-                            aspect: `${userAFirstName}'s ${aspect.planet1} in ${planet1Sign} their ${planet1House}th house is ${aspect.aspectType} ${userBFirstName}'s ${aspect.planet2} in ${planet2Sign} and their ${planet2House}th house`,
+                            aspect: `${userAFirstName}'s ${aspect.planet1} in ${planet1Sign} their ${formatHouseNumber(planet1House)} house is ${aspect.aspectType} ${userBFirstName}'s ${aspect.planet2} in ${planet2Sign} and their ${formatHouseNumber(planet2House)} house`,
                             orb: aspect.orb,
                             score: score,
                             pairKey: aspectPair,
@@ -571,7 +575,7 @@ function getSign(degree) {
 
   function getHouse(birthChartPlanets, planetName) {
     const house = birthChartPlanets.find(planet => planet.name.toLowerCase() === planetName.toLowerCase())?.house;
-    return house;
+    return house && house > 0 ? house : 0;
   }
 
 // function addMaxPossibleScore(aspectType) {
@@ -729,7 +733,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
             
             // Check if this house is in our relevant houses list
             if (relevantHouses.includes(houseInB)) {
-                console.log(`${userAName} ${planet.name} falls in chart ${userBName}'s house ${houseInB} (relevant)`);
+                console.log(`${userAName} ${planet.name} falls in chart ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`);
                 
                 // Look for specific planet-house combinations
                 let foundSpecific = false;
@@ -745,7 +749,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "A->B",
-                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${houseInB} (relevant)`
+                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`
                         });
                         
                         console.log(`      Matched positive rule: ${rule.points} points (${rule.reason})`);
@@ -764,7 +768,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "A->B",
-                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${houseInB} (relevant)`
+                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`
                         });
                         
                         console.log(`      Matched negative rule: ${rule.points} points (${rule.reason})`);
@@ -782,13 +786,13 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                         points: 5,
                         reason: "General house placement",
                         direction: "A->B",
-                        description: `${userAName}'s ${planet.name} in ${userBName}'s house ${houseInB} (relevant)`
+                        description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`
                     });
                     
                     console.log(`      No specific rule found, using default: 5 points`);
                 }
             } else {
-                console.log(`${userAName} ${planet.name} falls in chart ${userBName}'s house ${houseInB} (not relevant)`);
+                console.log(`${userAName} ${planet.name} falls in chart ${userBName}'s house ${formatHouseNumber(houseInB)} (not relevant)`);
             }
         });
     }
@@ -803,7 +807,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
             
             // Check if this house is in our relevant houses list
             if (relevantHouses.includes(houseInA)) {
-                console.log(`${userBName} ${planet.name} falls in chart ${userAName}'s house ${houseInA} (relevant)`);
+                console.log(`${userBName} ${planet.name} falls in chart ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`);
                 
                 // Look for specific planet-house combinations
                 let foundSpecific = false;
@@ -819,7 +823,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "B->A",
-                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${houseInA} (relevant)`
+                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`
                         });
                         
                         console.log(`      Matched positive rule: ${rule.points} points (${rule.reason})`);
@@ -838,7 +842,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "B->A",
-                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${houseInA} (relevant)`
+                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`
                         });
                         
                         console.log(`      Matched negative rule: ${rule.points} points (${rule.reason})`);
@@ -856,13 +860,13 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                         points: 5,
                         reason: "General house placement",
                         direction: "B->A",
-                        description: `${userBName}'s ${planet.name} in ${userAName}'s house ${houseInA} (relevant)`
+                        description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`
                     });
                     
                     console.log(`      No specific rule found, using default: 5 points`);
                 }
             } else {
-                console.log(`${userBName} ${planet.name} falls in chart ${userAName}'s house ${houseInA} (not relevant)`);
+                console.log(`${userBName} ${planet.name} falls in chart ${userAName}'s house ${formatHouseNumber(houseInA)} (not relevant)`);
             }
         });
     }
@@ -1012,7 +1016,7 @@ function scoreCompositeHousePlacements(compositeChart, category, debug = true) {
 function findHousePosition(degree, houses) {
     if (!houses || !Array.isArray(houses) || houses.length === 0) {
         console.warn("Invalid houses data provided to findHousePosition");
-        return 1; // Default to 1st house if houses data is invalid
+        return 0; // Unknown house if data is invalid
     }
     
     // Sort houses by degree to ensure proper order
@@ -1038,9 +1042,9 @@ function findHousePosition(degree, houses) {
         }
     }
     
-    // If we couldn't determine the house, return the first house
+    // If we couldn't determine the house, return 0
     console.warn(`Could not determine house for degree ${degree}`);
-    return 1;
+    return 0;
 }
 
 /**

@@ -16,8 +16,12 @@ import {
     ignorePointsForModalities,
     ignorePointsForElements,
     ignorePoints } from "./constants.js";
-  
+
   import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRulerCode } from "./archive/decoder.js";
+
+  function formatHouseNum(h) {
+    return h && h > 0 ? h : 'unknown';
+  }
 
   // Utility function to get the difference between degrees considering circular nature
 export function degreeDifference(deg1, deg2) {
@@ -313,8 +317,8 @@ function getConcentratedPattern(planets) {
         let lastIndex = index - 1 >=0 ? index - 1 : planets.length - 1
         // console.log(planets[index])
         // console.log(index + " index " + lastIndex + " lastIndex")
-        return `${patternName} with all planets within a ${angle} between your ${planets[index].name} in ${planets[index].sign} ` + 
-        `in your ${planets[index].house}th house and your ${planets[lastIndex].name} in ${planets[lastIndex].sign} in your ${planets[lastIndex].house}th house`
+        return `${patternName} with all planets within a ${angle} between your ${planets[index].name} in ${planets[index].sign} ` +
+        `in your ${formatHouseNum(planets[index].house)} house and your ${planets[lastIndex].name} in ${planets[lastIndex].sign} in your ${formatHouseNum(planets[lastIndex].house)} house`
     }
 
     const angles = [120, 180, 240];
@@ -363,7 +367,7 @@ function isSplayPattern(sortedPlanets) {
     // Function to create a descriptive string of the clusters
     function createDescription(clusters) {
         return clusters.map((cluster, index) => {
-            const planetDescriptions = cluster.map(planet => `${planet.name} in ${planet.sign} (house ${planet.house})`).join(',');
+            const planetDescriptions = cluster.map(planet => `${planet.name} in ${planet.sign} (house ${formatHouseNum(planet.house)})`).join(',');
             return `${index + 1}) ${planetDescriptions}`;
         }).join(' in one cluster \n ');
     }    
@@ -400,7 +404,7 @@ function isSeesawPattern(sortedPlanets) {
     console.log("isSeesawPattern")
     function createDescription(clusters) {
         return clusters.map((cluster, index) => {
-            const planetDescriptions = cluster.map(planet => `${planet.name} in ${planet.sign} (house ${planet.house})`).join(',');
+            const planetDescriptions = cluster.map(planet => `${planet.name} in ${planet.sign} (house ${formatHouseNum(planet.house)})`).join(',');
             return `${index + 1}) ${planetDescriptions}`;
         }).join(' in one cluster \n \n ')
     }
@@ -441,7 +445,7 @@ function isGrandTrine(planets) {
 
     function createVertexDescription(mainPlanet, conjunctions) {
         if (conjunctions.length === 0) {
-            return `${mainPlanet.name} in ${mainPlanet.sign} in your ${mainPlanet.house}th house`;
+            return `${mainPlanet.name} in ${mainPlanet.sign} in your ${formatHouseNum(mainPlanet.house)} house`;
         }
         const conjunctNames = conjunctions.map(p => p.name).join(' and ');
         return `${mainPlanet.name} and ${conjunctNames}`;
@@ -632,7 +636,7 @@ export function findPlanetsInQuadrant(planets) {
         return;
       }
       for (const [quadrant, houses] of Object.entries(quadrants)) {
-        if (houses.includes(planetData.house)) {
+        if (planetData.house && houses.includes(planetData.house)) {
           planetsInQuadrants[quadrant].push(planetData.name);
         }
       }
@@ -683,7 +687,7 @@ export function findPlanetsInQuadrantObjects(planets) {
             return;
         }
         for (const [quadrant, houses] of Object.entries(quadrants)) {
-            if (houses.includes(planetData.house)) {
+            if (planetData.house && houses.includes(planetData.house)) {
                 planetsInQuadrants[quadrant].push(planetData.name);
             }
         }
