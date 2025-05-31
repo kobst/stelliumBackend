@@ -3,12 +3,11 @@ import path from 'path';
 import fs from 'fs';
 let statsData;
 try {
-  statsData = JSON.parse(
-    fs.readFileSync(new URL('../relationship_scoring_stats.json', import.meta.url), 'utf-8')
-  );
-} catch {
-  const fallbackPath = path.join(process.cwd(), 'relationship_scoring_stats.json');
-  statsData = JSON.parse(fs.readFileSync(fallbackPath, 'utf-8'));
+    statsData = JSON.parse(fs.readFileSync(new URL('../relationship_scoring_stats.json', import.meta.url), 'utf-8'));
+}
+catch {
+    const fallbackPath = path.join(process.cwd(), 'relationship_scoring_stats.json');
+    statsData = JSON.parse(fs.readFileSync(fallbackPath, 'utf-8'));
 }
 import { ALL_RELATIONSHIP_CATEGORIES, categoryWeights, aspectScoringRules, compositeAspectScoringRules, planetHouseScores } from './relationshipScoringConstants.js';
 /**

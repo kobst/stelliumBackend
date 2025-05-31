@@ -2,7 +2,7 @@
 // loop through existing composite charts
 // for each chart, get the relationship score
 import { MongoClient, ObjectId } from 'mongodb';
-import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.js';
+import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.ts';
 const connection_string = process.env.MONGO_CONNECTION_STRING;
 async function generateRelationshipScores() {
     const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });
