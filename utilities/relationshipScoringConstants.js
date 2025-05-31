@@ -106,12 +106,9 @@ export const ALL_RELATIONSHIP_CATEGORIES = Object.values(RELATIONSHIP_CATEGORIES
         DREAMY_OR_CONFUSING:           { conjunction: 10, trine: 10, sextile: 8, square: -10, opposition: -8, quincunx: -2 },
         DESTINED_MENTAL_PATH:          { conjunction: 12, trine: 10, sextile: 8, square: 0, opposition: 0, quincunx: 2 },
         DEEP_TRANSFORMATIVE_THOUGHT:   { conjunction: 12, trine: 10, sextile: 8, square: -8, opposition: -6, quincunx: -1 },
-        MENTAL_ASSERTIVENESS:        { conjunction: 15, trine: 10, sextile: 8, square: -5, opposition: -3, quincunx: 1 },
         SERIOUS_MIND_BLOCKS:           { conjunction: 10, trine: 5, sextile: 5, square: -10, opposition: -8, quincunx: -3 },
         UNCONVENTIONAL_IDEAS:          { conjunction: 15, trine: 12, sextile: 10, square: -5, opposition: -3, quincunx: 2 },
         EMOTIONAL_HARMONY_MIND:        { conjunction: 15, trine: 15, sextile: 10, square: -5, opposition: -3, quincunx: 1 },
-        MENTAL_ASSERTIVENESS:              { conjunction: 15, trine: 10, sextile: 8, square: -5, opposition: -3, quincunx: 2 },
-        MENTAL_ASSERTIVENESS:         { conjunction: 15, trine: 10, sextile: 8, square: -5, opposition: -3, quincunx: 2 },
 
         // 🧱 Commitment & Structure
         SERIOUS_BUT_INHIBITING:        { conjunction: 5, trine: 12, sextile: 10, square: -5, opposition: -8, quincunx: -3 },
@@ -547,7 +544,6 @@ export const compositeAspectScoringRules = {
         'mars_venus': aspectScoringProfiles.STABLE_PASSIONATE_BOND,
         'jupiter_saturn': aspectScoringProfiles.GROWTH_BALANCES_REALITY,
         'saturn_sun': aspectScoringProfiles.RELIABLE_IDENTITY_ANCHOR,
-        'saturn_venus': aspectScoringProfiles.STRUCTURED_LOVE_KARMA,
 
       },
       
@@ -580,14 +576,9 @@ export const compositeAspectScoringRules = {
         'node_moon': aspectScoringProfiles.KARMIC_EMOTIONAL_PATH,
         'node_venus': aspectScoringProfiles.KARMIC_LOVE_PATH,
         'node_mars': aspectScoringProfiles.KARMIC_DRIVE_PATH,
-        'node_moon': aspectScoringProfiles.KARMIC_EMOTIONAL_PATH,
-        'node_venus': aspectScoringProfiles.KARMIC_LOVE_PATH,
-        'node_mars': aspectScoringProfiles.KARMIC_DRIVE_PATH,
         'jupiter_sun': aspectScoringProfiles.PURPOSEFUL_ENCOURAGEMENT,
         'jupiter_venus': aspectScoringProfiles.LUCKY_ROMANTIC_STABILITY,
         'jupiter_saturn': aspectScoringProfiles.GROWTH_BALANCES_REALITY,
-        'jupiter_sun': aspectScoringProfiles.PURPOSEFUL_ENCOURAGEMENT,
-        'jupiter_venus': aspectScoringProfiles.LUCKY_ROMANTIC_STABILITY,
         'saturn_jupiter': aspectScoringProfiles.GROWTH_BALANCES_REALITY,
         'uranus_sun': aspectScoringProfiles.INNOVATIVE_AUTHENTICITY,
         'pluto_sun': aspectScoringProfiles.TRANSFORMATIVE_IDENTITY,
