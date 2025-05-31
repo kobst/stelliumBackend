@@ -168,6 +168,21 @@ export async function getRawChartDataEphemeris(data) {
   return rawResponse;
 }
 
+export function getRawChartDataEphemerisNoTime(base) {
+  if (!base || !Array.isArray(base.planets)) {
+    return base;
+  }
+
+  const planets = base.planets
+    .filter(p => {
+      const name = p.name?.toLowerCase();
+      return name !== 'ascendant' && name !== 'midheaven';
+    })
+    .map(p => ({ ...p, house: 0 }));
+
+  return { ...base, planets };
+}
+
 
 function generatePlanetObjectSweph(name, full_degree, house_number) {
   return {
@@ -198,7 +213,7 @@ export const getHouse = (degree, houses) => {
   // Check if houses is valid
   if (!houses) {
     console.error("Houses data is undefined or null");
-    return 1; // Default to first house
+    return 0; // Unknown house
   }
   
   // Convert houses to array if it's not already
@@ -223,18 +238,18 @@ export const getHouse = (degree, houses) => {
         }));
       } else {
         console.error("Could not convert houses object to array:", houses);
-        return 1; // Default to first house
+        return 0; // Unknown house
       }
     }
   } else {
     console.error("Houses is not an array or object:", typeof houses);
-    return 1; // Default to first house
+    return 0; // Unknown house
   }
   
   // Check if we have any houses
   if (housesArray.length === 0) {
     console.error("No houses found in data");
-    return 1; // Default to first house
+    return 0; // Unknown house
   }
   
   
@@ -262,7 +277,7 @@ export const getHouse = (degree, houses) => {
   
   // Fallback (should not reach here if houses are properly defined)
   console.error(`Could not determine house for degree ${degree}. Houses:`, JSON.stringify(sortedHouses, null, 2));
-  return 1; // Default to first house
+  return 0; // Unknown house
 };
 
 // findAspectsForBirthChart
