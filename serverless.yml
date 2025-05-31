@@ -446,4 +446,5 @@ custom:
     httpPort: 3001
 
 plugins:
+  - serverless-plugin-typescript
   - serverless-offline
