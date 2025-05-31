@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { generateTransitSeries, scanTransitSeries, mergeTransitWindows } from '../services/ephemerisDataService.js';
+import { generateTransitSeries, scanTransitSeries, mergeTransitWindows } from '../services/ephemerisDataService.ts';
 
 // Simple demo of the transit utilities
 async function runDemo() {

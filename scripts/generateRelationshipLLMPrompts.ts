@@ -1,7 +1,7 @@
 // @ts-nocheck
-import { getRelationshipCategoryContextForUser } from "../services/vectorize.js";
-import { fetchRelationshipAnalysisByCompositeId } from "../services/dbService.js"; // Ensure this is correctly imported
-import { RELATIONSHIP_CATEGORIES } from "../utilities/relationshipScoringConstants.js";
+import { getRelationshipCategoryContextForUser } from "../services/vectorize.ts";
+import { fetchRelationshipAnalysisByCompositeId } from "../services/dbService.ts"; // Ensure this is correctly imported
+import { RELATIONSHIP_CATEGORIES } from "../utilities/relationshipScoringConstants.ts";
 import fs from "fs";
 import path from "path";
 

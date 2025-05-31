@@ -5,10 +5,10 @@ import { fileURLToPath } from 'url';
 import { dirname} from 'path';
 import path from 'path';
 import { MongoClient, ObjectId } from 'mongodb';
-import { processTextSection, upsertRecords, retrieveTopicContext } from '../services/vectorize.js';
-import { generateTopicMapping } from '../utilities/birthChartScoring.js';
-import { getCompletionShortOverviewForTopic } from '../services/gptService.js';
-import { BroadTopicsEnum } from '../utilities/constants.js';
+import { processTextSection, upsertRecords, retrieveTopicContext } from '../services/vectorize.ts';
+import { generateTopicMapping } from '../utilities/birthChartScoring.ts';
+import { getCompletionShortOverviewForTopic } from '../services/gptService.ts';
+import { BroadTopicsEnum } from '../utilities/constants.ts';
 // Get the project root directory
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

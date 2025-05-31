@@ -3,8 +3,8 @@
 // for each chart, get the relationship score
 
 import { MongoClient, ObjectId } from 'mongodb';
-import { findPlanetsInModalitiesObjects, findPlanetsInElementsObjects, findPlanetsInQuadrantObjects } from '../utilities/generateDescriptions.js';
-import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.js';
+import { findPlanetsInModalitiesObjects, findPlanetsInElementsObjects, findPlanetsInQuadrantObjects } from '../utilities/generateDescriptions.ts';
+import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.ts';
 
 const connection_string = process.env.MONGO_CONNECTION_STRING
 

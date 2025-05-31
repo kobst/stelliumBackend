@@ -2,7 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { ALL_RELATIONSHIP_CATEGORIES, RELATIONSHIP_CATEGORIES } from '../utilities/relationshipScoringConstants.js';
+import { ALL_RELATIONSHIP_CATEGORIES, RELATIONSHIP_CATEGORIES } from '../utilities/relationshipScoringConstants.ts';
 
 // Get the directory name
 const __filename = fileURLToPath(import.meta.url);
