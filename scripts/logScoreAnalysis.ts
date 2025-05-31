@@ -9,7 +9,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Directory containing the log files
-const logsDir = path.join(__dirname, '../logs');
+const logsDir = path.join(__dirname, '../logs/relationship-scoring/');
 
 // Create a debug log file
 const debugLogPath = path.join(__dirname, '../logs/score_analysis_debug.log');
