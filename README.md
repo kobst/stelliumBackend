@@ -47,6 +47,22 @@ Or run with the Serverless framework:
 npx serverless offline
 ```
 
+### Generating Relationship Scoring Statistics
+
+The relationship compatibility scoring uses statistics stored in
+`relationship_scoring_stats.json`. If you need to update or generate these
+statistics (for normalization and grading), run:
+
+```bash
+# Use the ESM loader for TypeScript (project is ESM)
+npx ts-node --esm scripts/logScoreAnalysis.ts
+# or, alternatively:
+npx ts-node-esm scripts/logScoreAnalysis.ts
+```
+
+This will analyze the logs and produce `relationship_scoring_stats.json` at
+the project root, which will then be included in the build.
+
 This will expose the API endpoints defined in `serverless.yml`.
 
 ## Repository Layout

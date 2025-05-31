@@ -446,4 +446,9 @@ custom:
     httpPort: 3001
 
 plugins:
+  - serverless-plugin-typescript
   - serverless-offline
+
+package:
+  include:
+    - relationship_scoring_stats.json
