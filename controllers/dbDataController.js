@@ -10,6 +10,7 @@ import {
 } from '../services/dbService.js';
 
 import { getRelationshipCategoryContextForUser } from '../services/vectorize.js';
+import { processCompositeChartInterpretationSection } from '../services/vectorize.js';
 import { scoreRelationshipCompatibility } from '../utilities/relationshipScoring.js';
 import { generateRelationshipPrompt, getCompletionForRelationshipCategory } from '../services/gptService.js';
 import { RELATIONSHIP_CATEGORIES } from '../utilities/relationshipScoringConstants.js';
@@ -101,7 +102,7 @@ export async function handleSaveSynastryChartInterpretation(req, res) {
     try {
         const { compositeChartId, heading, promptDescription, interpretation} = req.body;
         const result = await saveSynastryChartInterpretation(compositeChartId, heading, promptDescription, interpretation);
-        await processSynastryChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation);
+        await processCompositeChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation);
         res.status(200).json(result);
     } catch (error) {
         res.status(500).json({ error: error.message });

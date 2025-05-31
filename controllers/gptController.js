@@ -1,4 +1,3 @@
-import os from 'os';
 import { join, dirname } from 'path';
 import { writeFileSync, mkdirSync } from 'fs';
 import { fileURLToPath } from 'url';
@@ -15,8 +14,7 @@ import {
   expandPromptRelationship,
   expandPromptRelationshipUserA,
   expandPromptRelationshipUserB,
-  getCompletionGptResponseRelationshipChatThread,
-  getCompletionForRelationshipCategory
+  getCompletionGptResponseRelationshipChatThread
 } from '../services/gptService.js';
 // import { processUserQueryAndAnswer } from '../services/vectorize.js';
 import { 
@@ -92,10 +90,11 @@ export async function handleShortOverviewResponse(req, res) {
     const relevantNatalPositions = generateNatalPromptsShortOverview(birthData)
     console.log("relevantNatalPositions: ", relevantNatalPositions)
     // const response = await getCompletionShortOverviewRelationships(birthDataDescriptions)
-   const response = await getCompletionShortOverview(relevantNatalPositions)
-    return res.json({ response })
-  } catch (error) { 
-    res.status(500).send('Server error');         
+  const response = await getCompletionShortOverview(relevantNatalPositions)
+  return res.json({ response })
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
   }
 }
 
@@ -109,8 +108,9 @@ export async function handleShortOverviewRomanticResponse(req, res) {
     console.log("relevantNatalPositions: ", relevantNatalPositions)
     const response = await getCompletionShortOverviewRelationships(relevantNatalPositions)
     return res.json({ response })
-  } catch (error) { 
-    res.status(500).send('Server error');         
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
   }
 }
 
@@ -120,10 +120,11 @@ export async function handleShortOverviewPlanetResponse(req, res) {
     const { planetName, birthData } = req.body
     const planetDescription = await getPlanetDescription(planetName, birthData)
     console.log("planetDescription: ", planetDescription)
-    const response = await getCompletionPlanets(planetName, planetDescription)
-    return res.json({ response })
-  } catch (error) { 
-    res.status(500).send('Server error');         
+  const response = await getCompletionPlanets(planetName, planetDescription)
+  return res.json({ response })
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Server error');
   }
 }
 
@@ -159,7 +160,7 @@ export async function handleShortOverviewAllPlanetsResponse(req, res) {
     const responses = Object.fromEntries(results)
     
     return res.json({ responses })
-  } catch (error) { 
+  } catch (error) {
     console.error('Server error:', error)
     res.status(500).send('Server error')
   }
@@ -366,14 +367,10 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
         let nextIndex = index;
         let recordCount = 0;
 
-        // Track vectorization status
-        const vectorizationStatus = {
-            section,
-            success: false
-        };
+
 
         switch(section) {
-            case 'overview':
+            case 'overview': {
                 if (birthChartBasicAnalysis.overview) {
                     const overviewRecords = await processTextSection(
                         birthChartBasicAnalysis.overview,
@@ -382,15 +379,16 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
                     );
                     await upsertRecords(overviewRecords, userId);
                     recordCount = overviewRecords.length;
-                    
+
                     // Mark overview as vectorized
                     await updateVectorizationStatus(userId, 'overview', true);
                 }
                 nextSection = 'planets';
                 nextIndex = 0;
                 break;
+            }
 
-            case 'planets':
+            case 'planets': {
                 const planetEntries = Object.entries(birthChartBasicAnalysis.planets || {});
                 if (index < planetEntries.length) {
                     const [planet, data] = planetEntries[index];
@@ -401,10 +399,10 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
                     );
                     await upsertRecords(planetRecords, userId);
                     recordCount = planetRecords.length;
-                    
+
                     // Mark this planet as vectorized
                     await updateVectorizationStatus(userId, 'planets', true, planet);
-                    
+
                     nextIndex = index + 1;
                     if (nextIndex >= planetEntries.length) {
                         nextSection = 'dominance';
@@ -412,8 +410,9 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
                     }
                 }
                 break;
+            }
 
-            case 'dominance':
+            case 'dominance': {
                 const dominanceEntries = Object.entries(birthChartBasicAnalysis.dominance || {});
                 if (index < dominanceEntries.length) {
                     const [category, data] = dominanceEntries[index];
@@ -424,10 +423,10 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
                     );
                     await upsertRecords(dominanceRecords, userId);
                     recordCount = dominanceRecords.length;
-                    
+
                     // Mark this dominance category as vectorized
                     await updateVectorizationStatus(userId, 'dominance', true, category);
-                    
+
                     nextIndex = index + 1;
                     if (nextIndex >= dominanceEntries.length) {
                         nextSection = 'complete';
@@ -435,6 +434,7 @@ export async function handleVectorizeBirthChartAnalysisLog(req, res) {
                     }
                 }
                 break;
+            }
         }
 
         const isComplete = nextSection === 'complete';

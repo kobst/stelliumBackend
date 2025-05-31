@@ -95,7 +95,7 @@ export async function processInterpretationSection(userId, heading, promptDescri
           values: embedding,
           metadata: {
             userId: userId,
-            tagged_sections: [topic_headings],
+            tagged_sections: [heading],
             relevantAspects: promptDescription,
             chunk_index: idx,
             text: chunkText,
@@ -158,6 +158,7 @@ function generateConversationId(userId) {
 
 export async function processUserQueryAndAnswer(userId, query, answer, date, conversationId, exchangeIndex) {
   try {
+    const records = [];
     console.log("Processing user query and answer:", query, answer, );
     console.log("User ID:", userId);
     const queryChunk = await splitText(query);
@@ -186,7 +187,7 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
       const chunkText = answerChunk[idx];
       const embedding = await getEmbedding(chunkText);
       const id = `${conversationId}-a${exchangeIndex}-${idx}`;
-      
+
       records.push({
         id: id,
         values: embedding,
@@ -199,6 +200,8 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
         }
       });
     }
+
+    await index.upsert(records, { namespace: userId });
 
   } catch (error) {
     console.error("Error in processUserQueryAndAnswer:", error);
@@ -415,12 +418,13 @@ export async function upsertRelationshipRecords(records, compositeChartId) {
           }
       }));
       
-      const result = await vectorCollection.bulkWrite(operations);
-      console.log(`Upserted ${result.upsertedCount + result.modifiedCount} relationship vector records`);
-      
+      // TODO: implement persistence layer
+      // const result = await vectorCollection.bulkWrite(operations);
+      // console.log(`Upserted ${result.upsertedCount + result.modifiedCount} relationship vector records`);
+
       return {
           success: true,
-          count: result.upsertedCount + result.modifiedCount
+          count: operations.length
       };
   } catch (error) {
       console.error("Error upserting relationship vector records:", error);

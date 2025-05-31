@@ -805,7 +805,7 @@ export function getMoonPhaseInfo(sunLon, moonLon) {
   }
   
   
-  function extractSignWindows(transitSeries) {
+  export function extractSignWindows(transitSeries) {
     const windows = [];
     const active = new Map(); // planet → { sign, start }
   
