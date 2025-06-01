@@ -103,11 +103,16 @@ function formatHouseNum(h) {
       const sign2 = getSign(aspect.aspectedPlanetDegree)
     //   console.log("sign1: ", sign1)
     //   console.log("sign2: ", sign2)
-      const house1 = getHouse(birthData.planets, planetName1).toString().padStart(2, '0')
-      const house2 = getHouse(birthData.planets, planetName2).toString().padStart(2, '0')
+      const house1 = (getHouse(birthData.planets, planetName1) || 0).toString().padStart(2, '0')
+      const house2 = (getHouse(birthData.planets, planetName2) || 0).toString().padStart(2, '0')
     //   console.log("house1: ", house1)
     //   console.log("house2: ", house2)
       const code = "A-" + planetCodes[planetName1] + signCodes[sign1] + house1 + orbCodes[orbDesc] + transitCodes[aspectType] + planetCodes[planetName2] + signCodes[sign2] + house2
+      
+      // If no houses available (birth time unknown), omit house references
+      if (house1 === '00' || house2 === '00') {
+          return `${planetName1} in ${sign1} is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
+      }
       return `${planetName1} in ${sign1} and the ${house1} house is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
     }
     
@@ -130,8 +135,12 @@ export const generateNatalPromptsShortOverview = (birthData) => {
     let responses = []
     planets.forEach(planet => {
         const planetData = birthData.planets.find(p => p.name.toLowerCase() === planet.toLowerCase());
+        if (!planetData) {
+            // Skip if planet not found (e.g., Ascendant for users without birth time)
+            return;
+        }
         let code
-        const houseCode = planetData.house.toString().padStart(2, '0'); // Pad the house number to ensure it's 2 digits
+        const houseCode = (planetData.house || 0).toString().padStart(2, '0'); // Default to 0 if no house
         code = planetCodes[planet] + signCodes[planetData.sign] + houseCode
         console.log("code: ", code)
         // if (planet === chartRulerPlanet) {
@@ -404,9 +413,24 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
     });    
     console.log("planetName: ", planetName)
     console.log("planetData XXX: ", planetData)
-    const houseCode = planetData.house.toString().padStart(2, '0'); // Pad the house number to ensure it's 2 digits
+    
+    // If planet not found (e.g., Ascendant for users without birth time), return empty description
+    if (!planetData) {
+        console.log(`Planet ${planetName} not found in birth chart - likely no birth time available`);
+        return '';
+    }
+    
+    const houseCode = (planetData.house || 0).toString().padStart(2, '0'); // Default to 0 if no house
     const code = planetCodes[planetName] + signCodes[planetData.sign] + houseCode
-    const description = `${planetName} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`;
+    
+    // Format description based on whether house data is available
+    let description;
+    if (planetData.house && planetData.house > 0) {
+        description = `${planetName} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`;
+    } else {
+        description = `${planetName} in ${planetData.sign} (${code})`;
+    }
+    
     responses.push(description)
     const aspects = findAspects(planetName, birthData)
     responses = responses.concat(aspects)

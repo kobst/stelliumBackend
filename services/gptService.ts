@@ -5,7 +5,8 @@ import { BroadTopicsEnum } from "../utilities/constants.js"
 
 
 
-const apiKey = process.env.OPENAI_API_KEY
+const apiKey = process.env.OPENAI_API_KEY;
+
 const client = new OpenAI({ apiKey: apiKey})
 
 

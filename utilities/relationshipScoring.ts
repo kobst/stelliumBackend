@@ -133,26 +133,64 @@ export function scoreRelationshipCompatibility(synastryAspects, compositeChart, 
                 debugLog.categories[category].composite = compositeResults.debugInfo;
             }
 
-            const synastryHousePlacementsResults = scoreSynastryHousePlacements(userA, userB, category);
-            rawScores[category].synastryHousePlacements = {
-                score: synastryHousePlacementsResults.score,
-            };
-            if (debugLog && synastryHousePlacementsResults.debugInfo) {
-                if (!debugLog.categories[category]) {
-                    debugLog.categories[category] = {};
+            // Check if we should score house placements
+            const userAHasBirthTime = !userA.birthTimeUnknown && userA.birthChart?.houses?.length > 0;
+            const userBHasBirthTime = !userB.birthTimeUnknown && userB.birthChart?.houses?.length > 0;
+            const bothHaveBirthTimes = userAHasBirthTime && userBHasBirthTime;
+            
+            // Only score synastry house placements if at least one user has birth time
+            if (userAHasBirthTime || userBHasBirthTime) {
+                const synastryHousePlacementsResults = scoreSynastryHousePlacements(userA, userB, category);
+                rawScores[category].synastryHousePlacements = {
+                    score: synastryHousePlacementsResults.score,
+                };
+                if (debugLog && synastryHousePlacementsResults.debugInfo) {
+                    if (!debugLog.categories[category]) {
+                        debugLog.categories[category] = {};
+                    }
+                    debugLog.categories[category].synastryHousePlacements = synastryHousePlacementsResults.debugInfo;
                 }
-                debugLog.categories[category].synastryHousePlacements = synastryHousePlacementsResults.debugInfo;
+            } else {
+                // No birth times available - skip house placements
+                rawScores[category].synastryHousePlacements = { score: 0 };
+                if (debugLog) {
+                    if (!debugLog.categories[category]) {
+                        debugLog.categories[category] = {};
+                    }
+                    debugLog.categories[category].synastryHousePlacements = { 
+                        note: "Synastry house placements skipped - no birth times available" 
+                    };
+                }
             }
 
-            const compositeHousePlacements = scoreCompositeHousePlacements(compositeChart, category);
-            rawScores[category].compositeHousePlacements = {
-                score: compositeHousePlacements.score,
-            };
-            if (debugLog && compositeHousePlacements.details) {
-                if (!debugLog.categories[category]) {
-                    debugLog.categories[category] = {};
+            // Only score composite house placements if composite chart has accurate birth times
+            // Check both the flag and if houses start at 0° (equal house system indicator)
+            const hasAccurateBirthTimes = compositeChart.hasAccurateBirthTimes !== false && 
+                                         compositeChart.houseSystem !== 'equal' &&
+                                         (compositeChart.houses?.[0]?.degree || 0) !== 0;
+            
+            if (hasAccurateBirthTimes) {
+                const compositeHousePlacements = scoreCompositeHousePlacements(compositeChart, category);
+                rawScores[category].compositeHousePlacements = {
+                    score: compositeHousePlacements.score,
+                };
+                if (debugLog && compositeHousePlacements.details) {
+                    if (!debugLog.categories[category]) {
+                        debugLog.categories[category] = {};
+                    }
+                    debugLog.categories[category].compositeHousePlacements = compositeHousePlacements.details;
                 }
-                debugLog.categories[category].compositeHousePlacements = compositeHousePlacements.details;
+            } else {
+                // Composite chart using equal houses due to missing birth time(s)
+                rawScores[category].compositeHousePlacements = { score: 0 };
+                if (debugLog) {
+                    if (!debugLog.categories[category]) {
+                        debugLog.categories[category] = {};
+                    }
+                    debugLog.categories[category].compositeHousePlacements = { 
+                        note: "Composite house placements skipped - using equal house system due to missing birth time(s)" 
+                    };
+                }
             }
 
         });
@@ -724,7 +762,11 @@ function scoreSynastryHousePlacements(userA, userB, category) {
     const birthChart2 = userB.birthChart;
     const userAName = userA.firstName;
     const userBName = userB.firstName;
-    if (birthChart1 && birthChart1.planets && birthChart2 && birthChart2.houses) {
+    const userAHasBirthTime = !userA.birthTimeUnknown && birthChart1?.houses?.length > 0;
+    const userBHasBirthTime = !userB.birthTimeUnknown && birthChart2?.houses?.length > 0;
+    
+    // Only check A's planets in B's houses if B has birth time
+    if (birthChart1 && birthChart1.planets && birthChart2 && birthChart2.houses && userBHasBirthTime) {
         console.log(`  Processing ${birthChart1.planets.length} planets from chart A in chart B's houses`);
 
         birthChart1.planets.forEach(planet => {
@@ -797,8 +839,8 @@ function scoreSynastryHousePlacements(userA, userB, category) {
         });
     }
     
-    // Check B's planets in A's houses
-    if (birthChart2 && birthChart2.planets && birthChart1 && birthChart1.houses) {
+    // Check B's planets in A's houses - only if A has birth time
+    if (birthChart2 && birthChart2.planets && birthChart1 && birthChart1.houses && userAHasBirthTime) {
         console.log(`  Processing ${birthChart2.planets.length} planets from chart B in chart A's houses`);
         
         birthChart2.planets.forEach(planet => {

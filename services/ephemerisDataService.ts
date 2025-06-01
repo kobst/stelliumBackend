@@ -431,29 +431,40 @@ export const generateCompositeChart = (birthChart1, birthChart2) => {
     }
 
     console.log("compositeChart.planets: ", compositeChart.planets)
-    // Calculate midpoint for Ascendant and MC
-    // const ascendant1 = planets1.find((p) => p.name === 'Ascendant');
-    // const ascendant2 = planets2.find((p) => p.name === 'Ascendant');
-    // const mc1 = planets1.find((p) => p.name === 'Midheaven' || p.name === 'MC');
-    // const mc2 = planets2.find((p) => p.name === 'Midheaven' || p.name === 'MC');
+    
+    // Check if both users have birth times (ascendant/midheaven data)
     const ascendant1 = planets1.find((p) => p.name === 'ascendant' || p.name === 'Ascendant');
     const ascendant2 = planets2.find((p) => p.name === 'ascendant' || p.name === 'Ascendant');
     const mc1 = planets1.find((p) => p.name === 'midheaven' || p.name === 'MC' || p.name === 'Midheaven');
     const mc2 = planets2.find((p) => p.name === 'midheaven' || p.name === 'MC' || p.name === 'Midheaven');
 
-    const ascendantMidpoint = calculateMidpoint(
-        getProperty(ascendant1, 'fullDegree', 'full_degree'),
-        getProperty(ascendant2, 'fullDegree', 'full_degree')
-    );
-    const mcMidpoint = calculateMidpoint(
-        getProperty(mc1, 'fullDegree', 'full_degree'),
-        getProperty(mc2, 'fullDegree', 'full_degree')
-    );
+    let ascendantMidpoint;
+    let mcMidpoint;
+    let useEqualHouses = false;
 
-    // compositeChart.houses.push({ name: 'Ascendant', fullDegree: ascendantMidpoint });
-    // compositeChart.houses.push({ name: 'Midheaven', fullDegree: mcMidpoint });
+    // If either user is missing birth time data, use equal house system starting at 0° Aries
+    if (!ascendant1 || !ascendant2 || !mc1 || !mc2) {
+        console.log("One or both users missing birth time - using equal house system starting at 0° Aries");
+        ascendantMidpoint = 0; // 0° Aries
+        mcMidpoint = 270; // 0° Capricorn (270° from Aries)
+        useEqualHouses = true;
+    } else {
+        // Both users have birth times - calculate actual midpoints
+        ascendantMidpoint = calculateMidpoint(
+            getProperty(ascendant1, 'fullDegree', 'full_degree'),
+            getProperty(ascendant2, 'fullDegree', 'full_degree')
+        );
+        mcMidpoint = calculateMidpoint(
+            getProperty(mc1, 'fullDegree', 'full_degree'),
+            getProperty(mc2, 'fullDegree', 'full_degree')
+        );
+    }
 
-    // Calculate house cusps based on Ascendant midpoint
+    // Store metadata about house system used
+    compositeChart.houseSystem = useEqualHouses ? 'equal' : 'placidus';
+    compositeChart.hasAccurateBirthTimes = !useEqualHouses;
+
+    // Calculate house cusps - always using equal houses (30° each)
     for (let i = 1; i <= 12; i++) {
         const cusp = (ascendantMidpoint + (i - 1) * 30) % 360;
         const sign = getSign(cusp);

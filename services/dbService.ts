@@ -2,7 +2,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 
-const connection_string = 'mongodb+srv://kobst:AUG2013@version1.obfam.mongodb.net/stellium?retryWrites=true&w=majority'
+const connection_string = process.env.MONGO_URI;
 const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });
 
 client.connect();
