@@ -3,6 +3,7 @@
 import { saveUser, saveCompositeChart, getPreGeneratedTransitSeries } from '../services/dbService.js';
 import {
   getRawChartDataEphemeris,
+  getRawChartDataEphemerisNoTime,
   findSynastryAspects,
   generateCompositeChart,
   scanTransitSeries,
@@ -107,6 +108,49 @@ export const handleCreateRelationship = async (req, res) => {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.status(200).json({ relationshipProfile });
 }
+
+export async function handleUserCreationUnknownTime(req, res) {
+  try {
+    const { firstName, lastName, gender, placeOfBirth, dateOfBirth, email, lat, lon, tzone } = req.body;
+
+    const date = new Date(dateOfBirth);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    const chartData = await getRawChartDataEphemerisNoTime({
+      year,
+      month,
+      day,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      tzone: parseFloat(tzone)
+    });
+
+    const user = {
+      email,
+      firstName,
+      lastName,
+      gender,
+      dateOfBirth,
+      placeOfBirth,
+      totalOffsetHours: tzone,
+      birthTimeUnknown: true,
+      birthChart: chartData
+    };
+
+    const saveUserResponse = await saveUser(user);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
+    res.setHeader('Access-Control-Allow-Credentials', true);
+
+    res.json({ user, saveUserResponse });
+  } catch (error) {
+    console.error('Error in handleUserCreationUnknownTime:', error);
+    res.status(500).send('Server error');
+  }
+};
 
 
 
