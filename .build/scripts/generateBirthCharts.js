@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { MongoClient } from 'mongodb';
-import { getRawChartDataEphemeris } from '../services/ephemerisDataService.js';
+import { getRawChartDataEphemeris } from '../services/ephemerisDataService.ts';
 const connection_string = process.env.MONGO_CONNECTION_STRING;
 async function regenerateBirthCharts() {
     const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });

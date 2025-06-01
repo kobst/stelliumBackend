@@ -8,7 +8,7 @@ import {
 getSignFromLon, // Needs to be exported: function getSignFromLon(lon) { ... }
 getMoonPhaseInfo, // Needs to be exported: function getMoonPhaseInfo(sunLon, moonLon) { ... }
 TRANSIT_BODIES // Needs to be exported: const TRANSIT_BODIES = [ ... ];
- } from '../services/ephemerisDataService.js';
+ } from '../services/ephemerisDataService.ts';
 // Add initialization tracking
 let ephemerisInitialized = false;
 export function initializeEphemeris() {

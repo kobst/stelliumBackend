@@ -1,8 +1,8 @@
 // @ts-nocheck
 // create a script that will get the relationship context for a user, using the getRelationshipCategoryContextForUser function
-import { getRelationshipCategoryContextForUser } from "../services/vectorize.js";
-import { ALL_RELATIONSHIP_CATEGORIES } from "../utilities/relationshipScoringConstants.js";
-import { fetchRelationshipAnalysisByCompositeId } from "../services/dbService.js";
+import { getRelationshipCategoryContextForUser } from "../services/vectorize.ts";
+import { ALL_RELATIONSHIP_CATEGORIES } from "../utilities/relationshipScoringConstants.ts";
+import { fetchRelationshipAnalysisByCompositeId } from "../services/dbService.ts";
 // const userAId = "67f9d8e097321dcacc88a9c2"
 // const userBId = "67f9d929b924d8f22ae3d9bb"
 const compositeChartId = "67fc0e7afd777c32433d2e8e";

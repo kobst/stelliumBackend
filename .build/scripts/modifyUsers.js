@@ -1,6 +1,6 @@
 // @ts-nocheck
 import { MongoClient } from 'mongodb';
-import { findPlanetsInModalitiesObjects, findPlanetsInElementsObjects, findPlanetsInQuadrantObjects } from '../utilities/generateDescriptions.js';
+import { findPlanetsInModalitiesObjects, findPlanetsInElementsObjects, findPlanetsInQuadrantObjects } from '../utilities/generateDescriptions.ts';
 const connection_string = process.env.MONGO_CONNECTION_STRING;
 async function updateUsers() {
     const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });

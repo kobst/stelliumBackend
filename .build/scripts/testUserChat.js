@@ -1,6 +1,6 @@
 // @ts-nocheck
-import { handleProcessUserQueryForBirthChartAnalysis } from '../controllers/gptController.js';
-import { getUserSingle } from '../services/dbService.js'; // Assuming you have this function
+import { handleProcessUserQueryForBirthChartAnalysis } from '../controllers/gptController.ts';
+import { getUserSingle } from '../services/dbService.ts'; // Assuming you have this function
 async function testLiveUserChatAnalysis() {
     console.log("=== Live End-to-End Test: handleProcessUserQueryForBirthChartAnalysis ===\n");
     // Test configuration - UPDATE THESE WITH REAL VALUES FROM YOUR DATABASE
