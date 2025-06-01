@@ -334,6 +334,14 @@ functions:
           method: options
           cors: true
       - http:
+          path: /createUserUnknownTime
+          method: post
+          cors: true
+      - http:
+          path: /createUserUnknownTime
+          method: options
+          cors: true
+      - http:
           path: /createRelationship
           method: post
           cors: true
