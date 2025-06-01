@@ -157,25 +157,26 @@ export const getRulerPlanet = (birthData) => {
     return chartRulerPlanet
   }
 
-  export const getDescendantRuler = (birthData) => {
-    let fourthHouse = birthData.houses.find(h => h.house === 4)
-    let fourthHouseSign = fourthHouse.sign
-    let fourthHouseRuler = rulers[fourthHouseSign]
+export const getDescendantRuler = (birthData) => {
+    const fourthHouse = birthData.houses?.find(h => h.house === 4)
+    if (!fourthHouse) return undefined
+    const fourthHouseRuler = rulers[fourthHouse.sign]
     return fourthHouseRuler
   }
 
   const getHouseRuler = (birthData, house) => {
-    let houseSign = birthData.houses.find(h => h.house === house).sign
-    let houseRuler = rulers[houseSign]
-    return houseRuler
+    const houseData = birthData.houses?.find(h => h.house === house)
+    if (!houseData) return undefined
+    return rulers[houseData.sign]
   }
 
 
 export const generateTopicMapping = (birthData) => {
     console.log("generateTopicMapping")
-    const chartRulerPlanet = getHouseRuler(birthData, 1);
-    const descendantRuler = getHouseRuler(birthData, 7);
-    const fourthHouseRuler = getHouseRuler(birthData, 4);
+    const hasHouses = birthData.houses && birthData.houses.length > 0
+    const chartRulerPlanet = hasHouses ? getHouseRuler(birthData, 1) : undefined
+    const descendantRuler = hasHouses ? getHouseRuler(birthData, 7) : undefined
+    const fourthHouseRuler = hasHouses ? getHouseRuler(birthData, 4) : undefined
   
     const rulerMapping = {
       "ChartRuler": chartRulerPlanet,
@@ -195,11 +196,12 @@ export const generateTopicMapping = (birthData) => {
     return relevantMappings;    
 }
 
-  export const generateRelevantNatalPositions = (promptKey, birthData, rulerMapping) => {
+export const generateRelevantNatalPositions = (promptKey, birthData, rulerMapping) => {
     console.log("generateRelevantNatalPositions");
     const prompt = relevantPromptAspectsV2[promptKey];
     let responses = [];
     let usedCodes = new Set();  // Track used codes
+    const hasHouses = birthData.houses && birthData.houses.length > 0;
     
     let planets = prompt.planets.map(planet => {
         // Find the matching key regardless of case
@@ -224,16 +226,16 @@ export const generateTopicMapping = (birthData) => {
         console.log("planet: ", planet)
         const planetData = birthData.planets.find(p => p.name === planet);
         console.log("planetData: ", planetData)
-        const houseCode = planetData.house.toString().padStart(2, '0');
-        let code = planetCodes[planet] + signCodes[planetData.sign] + houseCode;
+        const houseCode = hasHouses && planetData.house !== undefined ? planetData.house.toString().padStart(2, '0') : '';
+        let code = planetCodes[planet] + signCodes[planetData.sign] + (hasHouses ? houseCode : '');
 
 
         if (planetData.is_retro === "true") {
             code = "Pr-" + code;
-            addUniqueResponse(code, `${planet} is retrograde in ${planetData.sign} in the ${planetData.house} house`);
+            addUniqueResponse(code, `${planet} is retrograde in ${planetData.sign}${hasHouses ? ` in the ${planetData.house} house` : ''}`);
         } else {
             code = "Pp-" + code;
-            addUniqueResponse(code, `${planet} in ${planetData.sign} in the ${planetData.house} house`);
+            addUniqueResponse(code, `${planet} in ${planetData.sign}${hasHouses ? ` in the ${planetData.house} house` : ''}`);
         }
 
         // Get aspects and filter out any that have already been used
@@ -248,8 +250,10 @@ export const generateTopicMapping = (birthData) => {
     });
 
     // Process houses
+    if (hasHouses) {
     prompt.houses.forEach(houseNum => {
         const houseData = birthData.houses.find(h => h.house === houseNum);
+        if (!houseData) return;
         const sign = houseData.sign;
         const rulerPlanet = rulers[sign];
 
@@ -288,6 +292,7 @@ export const generateTopicMapping = (birthData) => {
             }
         });
     });
+    }
 
     return responses.join("\n");
 };
