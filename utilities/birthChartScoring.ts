@@ -152,10 +152,11 @@ export const generateNatalPromptsShortOverview = (birthData) => {
 
 
 export const getRulerPlanet = (birthData) => {
-    let ascendant = birthData.planets.find(p => p.name === "Ascendant" || p.name === "ascendant")
-    let chartRulerPlanet = rulers[ascendant.sign]
-    return chartRulerPlanet
+    const ascendant = birthData.planets?.find(p => p.name === "Ascendant" || p.name === "ascendant")
+    if (!ascendant) return undefined;
+    return rulers[ascendant.sign]
   }
+
 
 export const getDescendantRuler = (birthData) => {
     const fourthHouse = birthData.houses?.find(h => h.house === 4)
@@ -198,6 +199,9 @@ export const generateTopicMapping = (birthData) => {
 
 export const generateRelevantNatalPositions = (promptKey, birthData, rulerMapping) => {
     console.log("generateRelevantNatalPositions");
+    if (!birthData.houses || birthData.houses.length === 0) {
+        return "";
+    }
     const prompt = relevantPromptAspectsV2[promptKey];
     let responses = [];
     let usedCodes = new Set();  // Track used codes

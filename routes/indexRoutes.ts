@@ -3,7 +3,8 @@ import express from 'express';
 const router = express.Router();
 
 import {
-    handleUserCreation, 
+    handleUserCreation,
+    handleUserCreationUnknownTime,
     handleCreateRelationship,
     handleGetTransitWindows
 } from '../controllers/astroDataController.js';
@@ -51,6 +52,7 @@ router.post('/saveSynastryChartInterpretation', handleSaveSynastryChartInterpret
 
 // using sweph/ephemeris
 router.post('/createUser', handleUserCreation);
+router.post('/createUserUnknownTime', handleUserCreationUnknownTime);
 router.post('/createRelationship', handleCreateRelationship);
 router.post('/getRelationshipScore', handleGetRelationshipScore);
 router.post('/fetchRelationshipAnalysis', handleFetchRelationshipAnalysis);

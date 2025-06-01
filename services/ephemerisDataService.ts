@@ -168,6 +168,25 @@ export async function getRawChartDataEphemeris(data) {
   return rawResponse;
 }
 
+export async function getRawChartDataEphemerisNoTime(data) {
+  const base = await getRawChartDataEphemeris({
+    ...data,
+    hour: 12,
+    min: 0
+  });
+
+  base.planets = base.planets.filter(p => {
+    const name = p.name.toLowerCase();
+    return name !== 'ascendant' && name !== 'midheaven' && name !== 'mc';
+  });
+  base.houses = [];
+  base.aspects = findAspectsForBirthChart(base.planets);
+  base.ascendant = 0;
+  base.midheaven = 0;
+  base.birthTimeUnknown = true;
+  return base;
+}
+
 
 function generatePlanetObjectSweph(name, full_degree, house_number) {
   return {

@@ -571,7 +571,7 @@ function getSign(degree) {
 
   function getHouse(birthChartPlanets, planetName) {
     const house = birthChartPlanets.find(planet => planet.name.toLowerCase() === planetName.toLowerCase())?.house;
-    return house;
+    return house ?? 0;
   }
 
 // function addMaxPossibleScore(aspectType) {
