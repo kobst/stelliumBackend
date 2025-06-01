@@ -16,6 +16,10 @@ import {
     ignorePoints } from "./constants.js";
 
 import { getSign } from "../services/ephemerisDataService.js";
+
+function formatHouseNum(h) {
+  return h && h > 0 ? h : 'unknown';
+}
  
   
   export const orbDescription = (orb) => {
@@ -138,10 +142,10 @@ export const generateNatalPromptsShortOverview = (birthData) => {
   
         if (planetData.is_retro === "true") {
           code = "Pr-" + code
-          responses.push(`${planet} is retrograde in ${planetData.sign} in the ${planetData.house} house (${code})`);
+          responses.push(`${planet} is retrograde in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`);
         } else {
           code = "Pp-" + code
-          responses.push(`${planet} in ${planetData.sign} in the ${planetData.house} house (${code})`);
+          responses.push(`${planet} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`);
         }
   
         responses = responses.concat(findAspectsWithinOrb(planet, birthData, 2));
@@ -236,10 +240,11 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
 
         if (planetData.is_retro === "true") {
             code = "Pr-" + code;
-            addUniqueResponse(code, `${planet} is retrograde in ${planetData.sign}${hasHouses ? ` in the ${planetData.house} house` : ''}`);
+            addUniqueResponse(code, `${planet} is retrograde in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house`);
         } else {
             code = "Pp-" + code;
-            addUniqueResponse(code, `${planet} in ${planetData.sign}${hasHouses ? ` in the ${planetData.house} house` : ''}`);
+            addUniqueResponse(code, `${planet} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house`);
+
         }
 
         // Get aspects and filter out any that have already been used
@@ -267,8 +272,8 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
             const houseCode = houseNum.toString().padStart(2, '0');
             const houseCodePlanet = planetData.house.toString().padStart(2, '0');
             const code = rulerRetroCode + planetCodes[rulerPlanet] + signCodes[sign] + houseCode + signCodes[planetData.sign] + houseCodePlanet;
-            
-            addUniqueResponse(code, `${rulerPlanet} ruler of ${sign} and the ${houseNum} house in ${planetData.sign} in ${planetData.house} house`);
+
+            addUniqueResponse(code, `${rulerPlanet} ruler of ${sign} and the ${houseNum} house in ${planetData.sign} in ${formatHouseNum(planetData.house)} house`);
         }
 
         birthData.planets.forEach(planetData => {
@@ -281,7 +286,7 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
                     addUniqueResponse(code, `${planetData.name} is retrograde in ${houseNum} house in ${planetData.sign} house`);
                 } else {
                     code = "Pp-" + code;
-                    addUniqueResponse(code, `${planetData.name} in ${planetData.sign} in the ${planetData.house} house`);
+                    addUniqueResponse(code, `${planetData.name} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house`);
                 }
 
                 // Get aspects and filter duplicates
@@ -401,7 +406,7 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
     console.log("planetData XXX: ", planetData)
     const houseCode = planetData.house.toString().padStart(2, '0'); // Pad the house number to ensure it's 2 digits
     const code = planetCodes[planetName] + signCodes[planetData.sign] + houseCode
-    const description = `${planetName} in ${planetData.sign} in the ${planetData.house} house (${code})`;
+    const description = `${planetName} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`;
     responses.push(description)
     const aspects = findAspects(planetName, birthData)
     responses = responses.concat(aspects)
