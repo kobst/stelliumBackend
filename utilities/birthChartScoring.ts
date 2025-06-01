@@ -152,27 +152,30 @@ export const generateNatalPromptsShortOverview = (birthData) => {
 
 
 export const getRulerPlanet = (birthData) => {
-    let ascendant = birthData.planets.find(p => p.name === "Ascendant" || p.name === "ascendant")
-    let chartRulerPlanet = rulers[ascendant.sign]
-    return chartRulerPlanet
+    const ascendant = birthData.planets?.find(p => p.name === "Ascendant" || p.name === "ascendant")
+    if (!ascendant) return undefined;
+    return rulers[ascendant.sign]
   }
 
   export const getDescendantRuler = (birthData) => {
-    let fourthHouse = birthData.houses.find(h => h.house === 4)
-    let fourthHouseSign = fourthHouse.sign
-    let fourthHouseRuler = rulers[fourthHouseSign]
-    return fourthHouseRuler
+    const fourthHouse = birthData.houses?.find(h => h.house === 4)
+    if (!fourthHouse) return undefined;
+    return rulers[fourthHouse.sign]
   }
 
   const getHouseRuler = (birthData, house) => {
-    let houseSign = birthData.houses.find(h => h.house === house).sign
-    let houseRuler = rulers[houseSign]
-    return houseRuler
+    const houseObj = birthData.houses?.find(h => h.house === house)
+    if (!houseObj) return undefined;
+    return rulers[houseObj.sign]
   }
 
 
 export const generateTopicMapping = (birthData) => {
     console.log("generateTopicMapping")
+    if (!birthData.houses || birthData.houses.length === 0) {
+        console.warn("generateTopicMapping: birth data missing houses");
+        return {};
+    }
     const chartRulerPlanet = getHouseRuler(birthData, 1);
     const descendantRuler = getHouseRuler(birthData, 7);
     const fourthHouseRuler = getHouseRuler(birthData, 4);
@@ -197,6 +200,9 @@ export const generateTopicMapping = (birthData) => {
 
   export const generateRelevantNatalPositions = (promptKey, birthData, rulerMapping) => {
     console.log("generateRelevantNatalPositions");
+    if (!birthData.houses || birthData.houses.length === 0) {
+        return "";
+    }
     const prompt = relevantPromptAspectsV2[promptKey];
     let responses = [];
     let usedCodes = new Set();  // Track used codes
