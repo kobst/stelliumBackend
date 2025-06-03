@@ -38,6 +38,14 @@ import {
     handleGenerateRelationshipAnalysis
 } from '../controllers/dbDataController.js';
 
+import {
+    generateWeeklyHoroscope,
+    generateMonthlyHoroscope,
+    getUserHoroscopes,
+    getLatestUserHoroscope,
+    deleteUserHoroscope
+} from '../controllers/horoscopeController.js';
+
 
 router.post('/getUser', handleGetUserSingle);
 router.post('/getUsers', handleGetUsers);
@@ -90,5 +98,12 @@ router.post('/userChatRelationshipAnalysis', handleProcessUserQueryForRelationsh
 router.post('/fetchUserChatRelationshipAnalysis',  handleFetchUserChatRelationshipAnalysis);
 
 router.post('/getTransitWindows', handleGetTransitWindows);
+
+// Horoscope routes
+router.post('/users/:userId/horoscope/weekly', generateWeeklyHoroscope);
+router.post('/users/:userId/horoscope/monthly', generateMonthlyHoroscope);
+router.get('/users/:userId/horoscopes', getUserHoroscopes);
+router.get('/users/:userId/horoscope/latest', getLatestUserHoroscope);
+router.delete('/users/:userId/horoscopes/:horoscopeId', deleteUserHoroscope);
 
 export default router;

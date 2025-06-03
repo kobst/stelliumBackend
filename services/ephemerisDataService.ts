@@ -712,7 +712,8 @@ export function* scanTransitSeries(transitSeries, natalPoints) {
               natalPlanet: n.name,
               aspect: a.name,
               orb: +(delta.toFixed(2)),
-              approaching
+              approaching,
+              transitingSign: t.sign // Include the transiting planet's sign
             };
           }
         }
@@ -778,7 +779,10 @@ function buildWindowFromEventGroup(eventGroup) {
     natal: exactEvent.natalPlanet,
     aspect: exactEvent.aspect,
     minOrb: exactEvent.orb, // Orb at the point of exactitude
-    exactEventApproaching: exactEvent.approaching // Was it approaching at the exact point?
+    exactEventApproaching: exactEvent.approaching, // Was it approaching at the exact point?
+    transitingSignAtStart: startEvent.transitingSign,
+    transitingSignAtExact: exactEvent.transitingSign,
+    transitingSignAtEnd: endEvent.transitingSign
   };
 }
 
@@ -879,3 +883,116 @@ export function getMoonPhaseInfo(sunLon, moonLon) {
   export function getSignFromLon(lon) {
     return SIGNS[Math.floor(lon / 30)];
   }
+
+/**
+ * Generator yielding transit-to-transit aspects from a transit series.
+ * Filters out aspects between two fast-moving planets.
+ */
+export function* scanTransitToTransitAspects(transitSeries) {
+  const PLANET_SPEEDS = {
+    Moon: 13.2,
+    Sun: 1.0,
+    Mercury: 1.6,
+    Venus: 1.2,
+    Mars: 0.7,
+    Jupiter: 0.08,
+    Saturn: 0.03,
+    Uranus: 0.01,
+    Neptune: 0.006,
+    Pluto: 0.004
+  };
+  
+  for (const { date, planets } of transitSeries) {
+    // Check aspects between all transit planet pairs
+    for (let i = 0; i < planets.length; i++) {
+      for (let j = i + 1; j < planets.length; j++) {
+        const p1 = planets[i];
+        const p2 = planets[j];
+        
+        // Skip if both are fast-moving (> 2 degrees/day)
+        const p1Speed = PLANET_SPEEDS[p1.name] || 1;
+        const p2Speed = PLANET_SPEEDS[p2.name] || 1;
+        
+        if (p1Speed > 2 && p2Speed > 2) {
+          continue;
+        }
+        
+        const angle = angularDifference(p1.lon, p2.lon);
+        
+        for (const aspect of ASPECTS) {
+          const delta = angularDifference(angle, aspect.angle);
+          
+          if (delta <= aspect.orb) {
+            yield {
+              date,
+              planet1: p1.name,
+              planet2: p2.name,
+              aspect: aspect.name,
+              orb: +(delta.toFixed(2)),
+              sign1: p1.sign,
+              sign2: p2.sign
+            };
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Merge transit-to-transit aspect events into windows.
+ * Similar to mergeTransitWindows but for transit-to-transit aspects.
+ */
+export function mergeTransitToTransitWindows(events) {
+  const byKey = {};
+  
+  for (const e of events) {
+    const eventDate = e.date instanceof Date ? e.date : new Date(e.date);
+    // Create a consistent key regardless of planet order
+    const planets = [e.planet1, e.planet2].sort();
+    const key = `${planets[0]}|${planets[1]}|${e.aspect}`;
+    
+    if (!byKey[key]) byKey[key] = [];
+    byKey[key].push({ ...e, date: eventDate });
+  }
+  
+  const windows = [];
+  
+  for (const key of Object.keys(byKey)) {
+    const eventGroup = byKey[key].sort((a, b) => a.date.getTime() - b.date.getTime());
+    
+    if (eventGroup.length > 0) {
+      const [planet1, planet2, aspect] = key.split('|');
+      windows.push(buildTransitToTransitWindow(eventGroup, planet1, planet2, aspect));
+    }
+  }
+  
+  return windows;
+}
+
+/**
+ * Builds a single window object for transit-to-transit aspects.
+ */
+function buildTransitToTransitWindow(eventGroup, planet1, planet2, aspect) {
+  const startEvent = eventGroup[0];
+  const endEvent = eventGroup[eventGroup.length - 1];
+  
+  let exactEvent = startEvent;
+  for (const currentEvent of eventGroup) {
+    if (currentEvent.orb < exactEvent.orb) {
+      exactEvent = currentEvent;
+    }
+  }
+  
+  return {
+    start: startEvent.date,
+    exact: exactEvent.date,
+    end: endEvent.date,
+    planet1,
+    planet2,
+    aspect,
+    minOrb: exactEvent.orb,
+    sign1: exactEvent.sign1,
+    sign2: exactEvent.sign2
+  };
+}

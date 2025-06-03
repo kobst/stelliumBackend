@@ -12,7 +12,7 @@ import { RELATIONSHIP_CATEGORY_PROMPTS } from '../utilities/relationshipScoringC
 // import { PineconeClient } from '@pinecone-database/pinecone';
 
   // Initialize OpenAI
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = process.env.OPENAI_API_KEY
 
 const openAiClient = new OpenAI({ apiKey: apiKey})
 
@@ -289,7 +289,7 @@ export async function processCompositeChartInterpretationSection(compositeChartI
 // }
 
 export async function processUserQueryRelationship(compositeChartId, query) {
-  console.log("Processing user query:", query);
+  console.log("Processing user query for relationship:", query);
   console.log("User ID:", compositeChartId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);
@@ -548,8 +548,8 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
 // CHAT QUERY
 
 
-export async function processUserQueryForBirthChartAnalysis(userId, query, numResults = 2) {
-  console.log("Processing user query:", query);
+export async function processUserQueryForBirthChartAnalysis(userId, query, numResults = 3) {
+  console.log("Processing user query for birth chart analysis:", query);
   console.log("User ID:", userId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);
@@ -597,8 +597,38 @@ export async function processUserQueryForBirthChartAnalysis(userId, query, numRe
   }
 }
 
+
+export async function processUserQueryForHoroscopeAnalysis(userId, query, numResults = 2) {
+  console.log("Processing user query for horoscope analysis:", query);
+  console.log("User ID:", userId);
+  try{
+    const questionQueryEmbedding = await getEmbedding(query);
+    const results = await index.query({
+      vector: questionQueryEmbedding,
+      topK: numResults, // Consider making this configurable or tuning it
+      includeMetadata: true,
+      filter: {
+        userId: userId
+      }
+    });
+
+    // Extract only the text from each match
+    const extractedText = results.matches.map((match, index) => {
+      // console.log(`Match ${index + 1} metadata:`, match.metadata);
+      // Return only the text content
+      return match.metadata?.text || "";
+    });
+
+    console.log("Extracted text:", extractedText);
+    return extractedText;
+  } catch (error) {
+    console.error("Error in processUserQuery:", error);
+    throw error; // Re-throw the error to be handled by the caller
+  }
+}
+
 export async function processUserQueryForRelationshipAnalysis(compositeChartId, query, numResults = 5) {
-  console.log("Processing user query:", query);
+  console.log("Processing user query for relationship analysis:", query);
   console.log("Composite Chart ID:", compositeChartId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);

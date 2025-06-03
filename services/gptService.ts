@@ -2,11 +2,12 @@
 import OpenAI from "openai";
 import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRulerCode } from "../utilities/archive/decoder.js"
 import { BroadTopicsEnum } from "../utilities/constants.js"
+import { processUserQueryForHoroscopeAnalysis } from "./vectorize.js"
+import { getBirthChart } from "./dbService.js"
 
 
 
-const apiKey = process.env.OPENAI_API_KEY;
-
+const apiKey = process.env.OPENAI_API_KEY
 const client = new OpenAI({ apiKey: apiKey})
 
 
@@ -760,8 +761,8 @@ ${contextB}
 
 TASK:
 Please write 3–5 paragraphs addressing the following:
-1. How does User A’s nature interact with the dynamics of "${categoryDisplayName}" in this relationship?
-2. How does User B’s nature interact with these same dynamics?
+1. How does User A's nature interact with the dynamics of "${categoryDisplayName}" in this relationship?
+2. How does User B's nature interact with these same dynamics?
 3. What are the core strengths in this area?
 4. What are the potential growth edges or friction points?
 5. What advice would help them support or evolve this aspect of their connection?
@@ -888,3 +889,207 @@ export async function expandPromptRelationshipUserB(prompt) {
   return completion.choices[0].message.content.trim();
 }
 
+
+
+// Horoscope generation functions
+
+export async function generateHoroscopeNarrative(data) {
+  const { 
+    userId, 
+    period, 
+    startDate, 
+    endDate, 
+    hasKnownBirthTime,
+    mainThemes,
+    immediateEvents,
+    moonPhases,
+    transitToTransitAspects
+  } = data;
+  
+  // Get user context for personalization
+  const contextChunks = await getRelevantContextForHoroscope(userId, mainThemes);
+  
+  const systemPrompt = `You are StelliumAI, generating a ${period} horoscope for a user. Create a flowing narrative that weaves together astrological transits into practical, empowering guidance.
+
+Guidelines:
+- Start with the overall energy/theme of the period
+- Integrate immediate events as specific opportunities or challenges within the larger context
+- ${hasKnownBirthTime ? 'Reference life areas (houses) when relevant' : 'Focus on psychological and behavioral themes only (no house references)'}
+- Keep the tone warm, empowering, and practical
+- For weekly horoscopes: 150-200 words
+- For monthly horoscopes: 250-350 words
+- Don't list transits mechanically; create a cohesive story
+- Use accessible language while maintaining astrological accuracy`;
+
+  const userPrompt = `Time Period: ${startDate.toDateString()} - ${endDate.toDateString()}
+
+User Context from their birth chart analysis:
+${contextChunks.join('\n')}
+
+Main Themes (slower-moving transits providing backdrop):
+${mainThemes.map(t => formatTransitForPrompt(t)).join('\n')}
+
+Immediate Events (faster transits, exact or prominent this period):
+${immediateEvents.map(t => formatTransitForPrompt(t)).join('\n')}
+
+${moonPhases.length > 0 ? `
+Significant Moon Phases:
+${moonPhases.map(t => formatMoonPhaseForPrompt(t)).join('\n')}
+` : ''}
+
+${transitToTransitAspects.length > 0 ? `
+Notable Sky Patterns (affecting everyone):
+${transitToTransitAspects.slice(0, 3).map(t => formatSkyPatternForPrompt(t)).join('\n')}
+` : ''}
+
+Generate a ${period} horoscope that integrates these elements into a meaningful narrative.`;
+
+
+console.log("userPrompt X X X: ", userPrompt)
+
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ],
+    temperature: 0.7,
+    max_tokens: period === 'weekly' ? 300 : 500
+  });
+
+  return {
+    horoscopeText: completion.choices[0].message.content.trim(),
+    userPrompt: userPrompt
+  };
+}
+
+// Helper function to get relevant user context for horoscope
+async function getRelevantContextForHoroscope(userId, mainThemes) {
+  // Get user's birth chart to access house positions
+  const birthChart = await getBirthChart(userId);
+  
+  // First, create rich contextual queries for each transit
+  const transitQueries = await Promise.all(
+    mainThemes.slice(0, 3).map(theme => createTransitContextQuery(theme, birthChart))
+  );
+  
+  // Perform vector searches for each transit query
+  const searchPromises = transitQueries.map(query => 
+    processUserQueryForHoroscopeAnalysis(userId, query, 2)
+  );
+  
+  const searchResults = await Promise.all(searchPromises);
+  
+  // Filter out empty results and return
+  return searchResults.filter(result => result && result.length > 0);
+}
+
+// Generate a rich, contextual query for a specific transit
+async function createTransitContextQuery(transit, birthChart) {
+  const { transitingPlanet, targetPlanet, aspect, description } = transit;
+  
+  // Define archetypal meanings for better context
+  const planetArchetypes = {
+    'Sun': 'identity, self-expression, vitality, life purpose',
+    'Moon': 'emotions, instincts, home, family, security needs',
+    'Mercury': 'communication, thinking, learning, daily routines',
+    'Venus': 'relationships, love, beauty, values, pleasure',
+    'Mars': 'action, desire, assertiveness, conflict, passion',
+    'Jupiter': 'expansion, growth, optimism, opportunities, wisdom',
+    'Saturn': 'responsibility, discipline, limitations, maturity, career',
+    'Uranus': 'change, rebellion, innovation, freedom, awakening',
+    'Neptune': 'spirituality, imagination, confusion, idealism, dissolution',
+    'Pluto': 'transformation, power, death/rebirth, intensity, shadow',
+    'Ascendant': 'self-image, appearance, first impressions, new beginnings',
+    'Midheaven': 'career, reputation, public life, life direction'
+  };
+  
+  const aspectMeanings = {
+    'conjunction': 'merging and intensification',
+    'opposition': 'awareness through tension and balance',
+    'square': 'challenge requiring action and growth',
+    'trine': 'flowing harmony and ease',
+    'sextile': 'opportunity and cooperation'
+  };
+  
+  const houseMeanings = {
+    1: 'self, identity, physical body',
+    2: 'resources, values, possessions',
+    3: 'communication, siblings, learning',
+    4: 'home, family, roots',
+    5: 'creativity, romance, children',
+    6: 'work, health, service',
+    7: 'partnerships, relationships',
+    8: 'transformation, shared resources',
+    9: 'philosophy, higher learning, travel',
+    10: 'career, reputation, public life',
+    11: 'friends, groups, hopes',
+    12: 'spirituality, unconscious, isolation'
+  };
+  
+  // Find the house position and sign of the target planet in birth chart
+  let targetHouse = null;
+  let targetSign = null;
+  if (targetPlanet && birthChart && birthChart.planets) {
+    const planet = birthChart.planets.find(p => p.name === targetPlanet);
+    if (planet) {
+      targetHouse = planet.house;
+      targetSign = planet.sign;
+    }
+  }
+  
+  // Get the current sign of the transiting planet from the transit data
+  const transitingSign = transit.transitingSign || null;
+  
+  // If multiple signs during the transit window, note them
+  const transitingSigns = transit.transitingSigns || [];
+  
+  // Build query components
+  const transitingArchetype = planetArchetypes[transitingPlanet] || transitingPlanet;
+  const targetArchetype = targetPlanet ? (planetArchetypes[targetPlanet] || targetPlanet) : 'personal energy';
+  const aspectMeaning = aspectMeanings[aspect] || aspect;
+  const houseContext = targetHouse ? houseMeanings[targetHouse] : null;
+  
+  // Create a query that includes both technical terms and meanings
+  let searchQuery = `${transitingPlanet}`;
+  
+  // Handle multiple signs if planet changes signs during transit
+  if (transitingSigns.length > 1) {
+    searchQuery += ` moving from ${transitingSigns[0]} to ${transitingSigns[transitingSigns.length - 1]}`;
+  } else if (transitingSign) {
+    searchQuery += ` in ${transitingSign}`;
+  }
+  
+  searchQuery += ` ${aspect} ${targetPlanet}`;
+  if (targetSign) searchQuery += ` in ${targetSign}`;
+  if (targetHouse) searchQuery += ` in ${targetHouse}th house`;
+  
+  // Add descriptive context
+  searchQuery += `. ${transitingPlanet}`;
+  
+  if (transitingSigns.length > 1) {
+    searchQuery += ` (${transitingArchetype}) changing signs from ${transitingSigns[0]} to ${transitingSigns[transitingSigns.length - 1]}`;
+  } else if (transitingSign) {
+    searchQuery += ` in ${transitingSign} (${transitingArchetype})`;
+  } else {
+    searchQuery += ` (${transitingArchetype})`;
+  }
+  
+  searchQuery += ` bringing ${aspectMeaning} to ${targetPlanet}`;
+  if (targetSign) searchQuery += ` in ${targetSign}`;
+  searchQuery += ` (${targetArchetype})`;
+  
+  if (targetHouse) {
+    searchQuery += ` in ${targetHouse}th house matters of ${houseContext}`;
+  }
+  
+  // Log for debugging
+  console.log(`Transit context query: "${searchQuery}"`);
+  
+  return searchQuery;
+}
+
+// Import helper functions from other modules
+import { formatTransitForPrompt } from '../utilities/transitPrioritization.js';
+import { formatMoonPhaseForPrompt } from '../utilities/moonPhaseAnalysis.js';
+import { formatSkyPatternForPrompt } from '../utilities/horoscopeGeneration.js';

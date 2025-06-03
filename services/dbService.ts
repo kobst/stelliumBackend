@@ -2,7 +2,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 
-const connection_string = process.env.MONGO_URI;
+const connection_string = process.env.MONGODB_URI
 const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });
 
 client.connect();
@@ -23,6 +23,7 @@ const relationshipAnalysisCollection = db.collection('relationship_analysis');
 const chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth_chart_analysis');
 const chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
 const transitEphemerisCollection = db.collection('transit_ephemeris');
+const horoscopesCollection = db.collection('horoscopes');
 // const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
@@ -1131,7 +1132,7 @@ export async function getPreGeneratedTransitSeries(startDateStr, endDateStr) {
             }
         };
         const seriesDocuments = await transitEphemerisCollection.find(query).sort({ date: 1 }).toArray();
-        console.log("seriesDocuments: ", seriesDocuments)
+        // console.log("seriesDocuments: ", seriesDocuments)
         // Transform documents to ensure the 'date' field is a Date object,
         // consistent with what scanTransitSeries might expect.
         return seriesDocuments.map(doc => ({
@@ -1141,5 +1142,119 @@ export async function getPreGeneratedTransitSeries(startDateStr, endDateStr) {
     } catch (error) {
         console.error('Error fetching pre-generated transit series:', error);
         throw error; // Re-throw to be handled by the caller
+    }
+}
+
+// Horoscope storage functions
+
+// Create or update a horoscope
+export async function createHoroscope(horoscope) {
+    try {
+        const horoscopeDoc = {
+            ...horoscope,
+            _id: new ObjectId(),
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
+        const result = await horoscopesCollection.insertOne(horoscopeDoc);
+        
+        if (result.acknowledged) {
+            return { ...horoscopeDoc, _id: result.insertedId };
+        }
+        throw new Error('Failed to create horoscope');
+    } catch (error) {
+        console.error('Error creating horoscope:', error);
+        throw error;
+    }
+}
+
+// Update an existing horoscope
+export async function updateHoroscope(horoscopeId, updates) {
+    try {
+        const result = await horoscopesCollection.updateOne(
+            { _id: new ObjectId(horoscopeId) },
+            { 
+                $set: {
+                    ...updates,
+                    updatedAt: new Date()
+                }
+            }
+        );
+        
+        return result.modifiedCount > 0;
+    } catch (error) {
+        console.error('Error updating horoscope:', error);
+        throw error;
+    }
+}
+
+// Get horoscopes by user ID
+export async function getHoroscopesByUserId(userId, type = null, limit = 10) {
+    try {
+        const query = { userId };
+        if (type) {
+            query.period = type;
+        }
+        
+        const horoscopes = await horoscopesCollection
+            .find(query)
+            .sort({ generatedAt: -1 })
+            .limit(limit)
+            .toArray();
+            
+        return horoscopes;
+    } catch (error) {
+        console.error('Error fetching horoscopes:', error);
+        throw error;
+    }
+}
+
+// Get a specific horoscope
+export async function getHoroscopeById(horoscopeId) {
+    try {
+        const horoscope = await horoscopesCollection.findOne({
+            _id: new ObjectId(horoscopeId)
+        });
+        
+        return horoscope;
+    } catch (error) {
+        console.error('Error fetching horoscope:', error);
+        throw error;
+    }
+}
+
+// Get latest horoscope for a user
+export async function getLatestHoroscope(userId, type = null) {
+    try {
+        const query = { userId };
+        if (type) {
+            query.period = type;
+        }
+        
+        const horoscope = await horoscopesCollection
+            .findOne(query, { sort: { generatedAt: -1 } });
+            
+        return horoscope;
+    } catch (error) {
+        console.error('Error fetching latest horoscope:', error);
+        throw error;
+    }
+}
+
+// Delete a horoscope
+export async function deleteHoroscope(horoscopeId, userId = null) {
+    try {
+        const query = { _id: new ObjectId(horoscopeId) };
+        if (userId) {
+            query.userId = userId; // Ensure user owns the horoscope
+        }
+        
+        const result = await horoscopesCollection.deleteOne(query);
+        
+        return result.deletedCount > 0;
+    } catch (error) {
+        console.error('Error deleting horoscope:', error);
+        throw error;
     }
 }

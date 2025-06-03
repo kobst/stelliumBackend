@@ -111,9 +111,13 @@ function formatHouseNum(h) {
       
       // If no houses available (birth time unknown), omit house references
       if (house1 === '00' || house2 === '00') {
-          return `${planetName1} in ${sign1} is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
+          // return `${planetName1} in ${sign1} is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
+          return `...is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
+
       }
-      return `${planetName1} in ${sign1} and the ${house1} house is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
+      return `...is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
+
+      // return `${planetName1} in ${sign1} and the ${house1} house is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
     }
     
   
@@ -426,9 +430,9 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
     // Format description based on whether house data is available
     let description;
     if (planetData.house && planetData.house > 0) {
-        description = `${planetName} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`;
+        description = `Natal ${planetName} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`;
     } else {
-        description = `${planetName} in ${planetData.sign} (${code})`;
+        description = `Natal ${planetName} in ${planetData.sign} (${code})`;
     }
     
     responses.push(description)
