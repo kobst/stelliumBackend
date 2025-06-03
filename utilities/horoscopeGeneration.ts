@@ -185,7 +185,6 @@ export async function generateHoroscope(
   );
   
   // 7. Separate into themes and immediate events
-  // we need to make this more precise with weighting the importance of the various transits
   const { mainThemes, immediateEvents } = categorizeTransits(
     prioritizedTransits,
     type
