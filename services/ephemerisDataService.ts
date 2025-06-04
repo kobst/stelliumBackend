@@ -25,7 +25,9 @@ export async function getPlanetsData(data) {
     const houseSystem = 'P'; // Placidus; you can use 'W' for Whole Sign, etc.
     const jdUT = sweph.julday(year, month, day, utcDecimalHours, 1);
     console.log("jdUT:", jdUT);
-    const flags = sweph.FLG_SWIEPH | sweph.FLG_SPEED;
+    // Use numeric flag values as the constants are undefined in this sweph version
+    // 2 = SWIEPH, 256 = SPEED
+    const flags = 2 | 256; // = 258
   
     const result = await sweph.houses(jdUT, lat, lon, houseSystem);
     console.log("result:", JSON.stringify(result, null, 2));
@@ -79,7 +81,9 @@ export async function getRawChartDataEphemeris(data) {
   const houseSystem = 'P'; // Placidus; you can use 'W' for Whole Sign, etc.
   const jdUT = sweph.julday(year, month, day, utcDecimalHours, 1);
   console.log("jdUT:", jdUT);
-  const flags = sweph.FLG_SWIEPH | sweph.FLG_SPEED;
+  // Use numeric flag values as the constants are undefined in this sweph version
+  // 2 = SWIEPH, 256 = SPEED
+  const flags = 2 | 256; // = 258
 
   const result = await sweph.houses(jdUT, lat, lon, houseSystem);
   console.log("result:", JSON.stringify(result, null, 2));
@@ -713,7 +717,8 @@ export function* scanTransitSeries(transitSeries, natalPoints) {
               aspect: a.name,
               orb: +(delta.toFixed(2)),
               approaching,
-              transitingSign: t.sign // Include the transiting planet's sign
+              transitingSign: t.sign, // Include the transiting planet's sign
+              isRetrograde: t.speed < 0 // Planet is retrograde if speed is negative
             };
           }
         }
@@ -782,7 +787,10 @@ function buildWindowFromEventGroup(eventGroup) {
     exactEventApproaching: exactEvent.approaching, // Was it approaching at the exact point?
     transitingSignAtStart: startEvent.transitingSign,
     transitingSignAtExact: exactEvent.transitingSign,
-    transitingSignAtEnd: endEvent.transitingSign
+    transitingSignAtEnd: endEvent.transitingSign,
+    isRetrogradeAtStart: startEvent.isRetrograde,
+    isRetrogradeAtExact: exactEvent.isRetrograde,
+    isRetrogradeAtEnd: endEvent.isRetrograde
   };
 }
 
@@ -930,7 +938,9 @@ export function* scanTransitToTransitAspects(transitSeries) {
               aspect: aspect.name,
               orb: +(delta.toFixed(2)),
               sign1: p1.sign,
-              sign2: p2.sign
+              sign2: p2.sign,
+              isRetrograde1: p1.speed < 0,
+              isRetrograde2: p2.speed < 0
             };
           }
         }
@@ -993,6 +1003,12 @@ function buildTransitToTransitWindow(eventGroup, planet1, planet2, aspect) {
     aspect,
     minOrb: exactEvent.orb,
     sign1: exactEvent.sign1,
-    sign2: exactEvent.sign2
+    sign2: exactEvent.sign2,
+    isRetrograde1AtStart: startEvent.isRetrograde1,
+    isRetrograde2AtStart: startEvent.isRetrograde2,
+    isRetrograde1AtExact: exactEvent.isRetrograde1,
+    isRetrograde2AtExact: exactEvent.isRetrograde2,
+    isRetrograde1AtEnd: endEvent.isRetrograde1,
+    isRetrograde2AtEnd: endEvent.isRetrograde2
   };
 }

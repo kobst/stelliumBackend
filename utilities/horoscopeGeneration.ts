@@ -140,7 +140,7 @@ export async function generateHoroscope(
   }
   
   const hasKnownBirthTime = userData.birth_time_known !== false;
-  const birthChart = await getBirthChart(userId);
+  const birthChart = userData.birthChart
   if (!birthChart) {
     throw new Error(`Birth chart not found for user: ${userId}`);
   }
@@ -176,7 +176,7 @@ export async function generateHoroscope(
     { start: startDate, end: endDate }
   );
   
-  // 6. Filter and prioritize transits
+  // 6. Filter and prioritize transits, and transform the transit windows into TransitEvents
   const prioritizedTransits = filterAndPrioritizeTransits(
     mergedWindows as TransitWindow[],
     { start: startDate, end: endDate },
@@ -254,9 +254,7 @@ export async function generateHoroscope(
       retrogrades: [] // TODO: Add retrograde detection
     },
     analysis: {
-      keyThemes: keyTransits.slice(0, 3).map(t => 
-        `${t.transitingPlanet}${t.aspect ? ` ${t.aspect} ${t.targetPlanet}` : ''}`
-      ),
+      keyThemes: keyTransits,
       detailedAnalysis: []
     },
     interpretation: horoscopeText,
@@ -322,7 +320,9 @@ function convertTransitToTransitToEvents(
         aspect: w.aspect,
         transitingSign: w.sign1,
         targetSign: w.sign2,
-        description
+        description,
+        isRetrograde: w.isRetrograde1AtExact, // planet1's retrograde status at exact
+        targetIsRetrograde: w.isRetrograde2AtExact // planet2's retrograde status at exact
       };
     })
     .sort((a, b) => b.priority - a.priority);
@@ -337,5 +337,18 @@ export function formatSkyPatternForPrompt(pattern: TransitEvent): string {
     return pattern.description || 'Sky pattern';
   }
   
-  return `${pattern.description} (exact: ${pattern.exact.toDateString()})`;
+  let desc = pattern.description || '';
+  
+  // Add retrograde indicators for both planets
+  if (pattern.isRetrograde) {
+    const planetName = pattern.transitingPlanet;
+    desc = desc.replace(planetName, `${planetName} (retrograde)`);
+  }
+  
+  if (pattern.targetIsRetrograde && pattern.targetPlanet) {
+    const targetPlanetName = pattern.targetPlanet;
+    desc = desc.replace(targetPlanetName, `${targetPlanetName} (retrograde)`);
+  }
+  
+  return `${desc} (exact: ${pattern.exact.toDateString()})`;
 }

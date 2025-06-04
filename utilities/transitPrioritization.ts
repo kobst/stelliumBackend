@@ -12,6 +12,9 @@ export interface TransitWindow {
   transitingSignAtStart?: string;
   transitingSignAtExact?: string;
   transitingSignAtEnd?: string;
+  isRetrogradeAtStart?: boolean;
+  isRetrogradeAtExact?: boolean;
+  isRetrogradeAtEnd?: boolean;
 }
 
 export interface TransitEvent {
@@ -30,6 +33,8 @@ export interface TransitEvent {
   transitingSigns?: string[]; // All signs during the transit window
   targetSign?: string; // Natal planet's sign
   targetHouse?: number; // Natal planet's house
+  isRetrograde?: boolean; // Whether the transiting planet is retrograde
+  targetIsRetrograde?: boolean; // Whether the target planet is retrograde (for transit-to-transit) or natal planet retrograde status
 }
 
 // Average daily motion in degrees
@@ -101,12 +106,14 @@ export function filterAndPrioritizeTransits(
       // Get natal planet information from birth chart
       let targetSign: string | undefined;
       let targetHouse: number | undefined;
+      let targetIsRetrograde: boolean | undefined;
       
       if (birthChart && birthChart.planets && window.natal) {
         const natalPlanet = birthChart.planets.find((p: any) => p.name === window.natal);
         if (natalPlanet) {
           targetSign = natalPlanet.sign;
           targetHouse = natalPlanet.house;
+          targetIsRetrograde = natalPlanet.is_retro;
         }
       }
       
@@ -122,7 +129,9 @@ export function filterAndPrioritizeTransits(
         transitingSign: window.transitingSignAtExact || window.transitingSignAtStart,
         transitingSigns: transitingSigns.length > 0 ? transitingSigns : undefined,
         targetSign,
-        targetHouse
+        targetHouse,
+        isRetrograde: window.isRetrogradeAtExact !== undefined ? window.isRetrogradeAtExact : window.isRetrogradeAtStart,
+        targetIsRetrograde
       };
     })
     .sort((a, b) => b.priority - a.priority);
@@ -206,6 +215,11 @@ export function formatTransitForPrompt(transit: TransitEvent): string {
   if (transit.type === 'transit-to-natal') {
     let description = `${transit.transitingPlanet}`;
     
+    // Add retrograde indicator if applicable
+    if (transit.isRetrograde) {
+      description += ` (retrograde)`;
+    }
+    
     // Add sign information
     if (transit.transitingSigns && transit.transitingSigns.length > 1) {
       description += ` (moving from ${transit.transitingSigns[0]} to ${transit.transitingSigns[transit.transitingSigns.length - 1]})`;
@@ -214,6 +228,11 @@ export function formatTransitForPrompt(transit: TransitEvent): string {
     }
     
     description += ` ${transit.aspect} natal ${transit.targetPlanet}`;
+    
+    // Add natal planet's retrograde status
+    if (transit.targetIsRetrograde) {
+      description += ` (natal retrograde)`;
+    }
     
     // Add natal planet's sign and house
     if (transit.targetSign) {

@@ -406,7 +406,7 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
   }
 
 
-  export function getPlanetDescription(planetName, birthData) {
+  export function getPlanetDescription(planetName, birthData, rulerPlanet) {
     let responses = []
     const planetData = birthData.planets.find(p => {
         const normalizedPlanetName = p.name.toLowerCase().replace(/\s+/g, '');
@@ -417,7 +417,8 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
     });    
     console.log("planetName: ", planetName)
     console.log("planetData XXX: ", planetData)
-    
+
+
     // If planet not found (e.g., Ascendant for users without birth time), return empty description
     if (!planetData) {
         console.log(`Planet ${planetName} not found in birth chart - likely no birth time available`);
@@ -427,12 +428,20 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
     const houseCode = (planetData.house || 0).toString().padStart(2, '0'); // Default to 0 if no house
     const code = planetCodes[planetName] + signCodes[planetData.sign] + houseCode
     
+    // Check if planet is retrograde
+    const retrogradeText = planetData.is_retro ? ' retrograde' : '';
+        // Add chart ruler text if applicable
+    let rulerText = ""
+    if (rulerPlanet && planetName === rulerPlanet) {
+      rulerText = " (chart ruler)"
+    }
+        
     // Format description based on whether house data is available
     let description;
     if (planetData.house && planetData.house > 0) {
-        description = `Natal ${planetName} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house (${code})`;
+        description = `Natal ${planetName}${retrogradeText} in ${planetData.sign} in the ${formatHouseNum(planetData.house)} house${rulerText} (${code})`;
     } else {
-        description = `Natal ${planetName} in ${planetData.sign} (${code})`;
+        description = `Natal ${planetName}${retrogradeText} in ${planetData.sign}${rulerText} (${code})`;
     }
     
     responses.push(description)

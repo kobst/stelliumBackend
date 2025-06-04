@@ -9,7 +9,7 @@ import {
   getSignFromLon,    // Needs to be exported: function getSignFromLon(lon) { ... }
   getMoonPhaseInfo,   // Needs to be exported: function getMoonPhaseInfo(sunLon, moonLon) { ... }
   TRANSIT_BODIES      // Needs to be exported: const TRANSIT_BODIES = [ ... ];
-} from '../services/ephemerisDataService.ts';
+} from '../services/ephemerisDataService.js';
 
 
 
@@ -49,7 +49,9 @@ function generateDates(start, end, stepMs) {
  */
 export function generateSmartEphemeris(fromDateStr, toDateStr) {
   initializeEphemeris(); // Ensure Swiss Ephemeris is initialized
-  const flags = sweph.FLG_SWIEPH | sweph.FLG_SPEED;
+  // Use numeric flag values as the constants are undefined in this sweph version
+  // 2 = SWIEPH, 256 = SPEED
+  const flags = 2 | 256; // = 258
   const series = [];
 
   const fromDate = new Date(fromDateStr);
@@ -69,12 +71,13 @@ export function generateSmartEphemeris(fromDateStr, toDateStr) {
       date.getUTCMonth() + 1,
       date.getUTCDate(),
       date.getUTCHours() + (date.getUTCMinutes() / 60) + (date.getUTCSeconds() / 3600), // More precise time
-      sweph.constants.SE_GREG_CAL // Use Gregorian calendar for julday conversion
+      1 // Calendar type: 1 for Gregorian
     );
 
     const calculatedPlanets = TRANSIT_BODIES.map(({ id, name }) => {
       const planetData = sweph.calc_ut(jd, id, flags);
       const [lon, /*lat*/, /*dist*/, speedLong /*, speedLat, speedDist*/] = planetData.data;
+      
       return {
         name,
         lon,

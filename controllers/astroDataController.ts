@@ -177,7 +177,8 @@ function convertWindowsToTransitEvents(
   natalPlanets.forEach(planet => {
     natalPlanetMap[planet.name] = {
       sign: planet.sign,
-      house: planet.house
+      house: planet.house,
+      is_retro: planet.is_retro
     };
   });
   
@@ -215,6 +216,13 @@ function convertWindowsToTransitEvents(
       // Get natal planet information
       const natalInfo = natalPlanetMap[window.natal] || {};
       
+      // Determine if transiting planet is retrograde at exact time
+      const isRetrograde = window.isRetrogradeAtExact !== undefined ? window.isRetrogradeAtExact : 
+                          (window.isRetrogradeAtStart !== undefined ? window.isRetrogradeAtStart : false);
+      
+      // Get natal planet's retrograde status
+      const targetIsRetrograde = natalInfo.is_retro;
+      
       return {
         type: 'transit-to-natal' as const,
         start: window.start,
@@ -227,7 +235,9 @@ function convertWindowsToTransitEvents(
         transitingSign: window.transitingSignAtExact || window.transitingSignAtStart,
         transitingSigns: transitingSigns.length > 0 ? transitingSigns : undefined,
         targetSign: natalInfo.sign,
-        targetHouse: natalInfo.house > 0 ? natalInfo.house : undefined
+        targetHouse: natalInfo.house > 0 ? natalInfo.house : undefined,
+        isRetrograde,
+        targetIsRetrograde
       };
     })
     .sort((a, b) => b.priority - a.priority);
@@ -281,6 +291,10 @@ function convertTransitToTransitToEvents(
         priority += 1;
       }
       
+      // Determine retrograde status for both planets at exact time
+      const isRetrograde = w.isRetrograde1AtExact !== undefined ? w.isRetrograde1AtExact : false;
+      const targetIsRetrograde = w.isRetrograde2AtExact !== undefined ? w.isRetrograde2AtExact : false;
+      
       // Create description with signs if available
       let description = w.planet1;
       if (w.sign1) {
@@ -303,7 +317,9 @@ function convertTransitToTransitToEvents(
         aspect: w.aspect,
         transitingSign: w.sign1,
         targetSign: w.sign2,
-        description
+        description,
+        isRetrograde,
+        targetIsRetrograde
       };
     })
     .sort((a, b) => b.priority - a.priority);
