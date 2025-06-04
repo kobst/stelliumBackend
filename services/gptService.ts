@@ -382,8 +382,8 @@ PLANETARY PATTERNS:
 ${description}
 
 TASK:
-1️⃣ Write 2 to 3 paragraphs that describe how ${planet}'s placement and aspects shape the native's expression of ${planet}'s energies.
-2️⃣ Note talents, advantages, strengths as welll  potential challenges and opportunities for growth, maintaining an encouraging tone.
+1) Write 2 to 3 paragraphs that describe how ${planet}'s placement and aspects shape the native's expression of ${planet}'s energies.
+2) Note talents, advantages, strengths as well as potential challenges and opportunities for growth, maintaining an encouraging tone.
 Weave in specific aspects and house placements to illustrate key points BUT
 Avoid bullet lists or any other formatting and Avoid simply just describing each aspect or position in isolation; 
 create a flowing narrative, offering balance and pointing out sources of tension or emphasis
@@ -435,7 +435,7 @@ ${description}
 TASK:
 Write 2 to 3 paragraphs:
 1) Describe how the ${category.toLowerCase()} distribution shapes this person's personality and expression.
-2️) Explore potential tensions, lessons, or paths toward balance.
+2) Explore potential tensions, lessons, or paths toward balance.
 3) Incorporate any of the themes from the birth chart overview if they are relevant.
 
 Use supportive, intuitive language, and highlight the most meaningful patterns holistically.`;

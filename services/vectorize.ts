@@ -25,8 +25,12 @@ const index = pinecone.index('stellium-test-index');
 // Define the splitText function using RecursiveCharacterTextSplitter
 export async function splitText(text, maxChunkSize = 900) {  // Increased from 300 to 600
   try {
+      console.log(`splitText called with text length: ${text?.length}, text preview: "${text?.substring(0, 100)}..."`);
+      
       // Split into sentences
       const sentences = text.split(/(?<=[.!?])\s+/);
+      console.log(`Split into ${sentences.length} sentences`);
+      
       const chunks = [];
       let currentChunk = '';
       let relatedSentences = [];
@@ -41,8 +45,8 @@ export async function splitText(text, maxChunkSize = 900) {  // Increased from 3
 
           // Check if adding this sentence would exceed maxChunkSize
           if ((currentChunk + ' ' + sentence).length > maxChunkSize) {
-              // Save current chunk if it's substantial
-              if (currentChunk.length >= 200) {  // Minimum chunk size
+              // Save current chunk if it's substantial (reduced minimum from 200 to 50)
+              if (currentChunk.length >= 50) {  
                   chunks.push(currentChunk.trim());
               }
               currentChunk = sentence;
@@ -54,11 +58,12 @@ export async function splitText(text, maxChunkSize = 900) {  // Increased from 3
           }
       }
 
-      // Add the final chunk if it's substantial
-      if (currentChunk.length >= 200) {
+      // Add the final chunk if it's substantial (reduced minimum from 200 to 50)
+      if (currentChunk.length >= 50) {
           chunks.push(currentChunk.trim());
       }
 
+      console.log(`splitText returning ${chunks.length} chunks`);
       return chunks;
 
   } catch (error) {
@@ -330,7 +335,18 @@ export async function processUserQueryRelationship(compositeChartId, query) {
 // Helper to process a section of text with its description (if any)
 export async function processTextSection(text, userId, description = null) {
     try {
+        if (!text || typeof text !== 'string' || text.trim().length === 0) {
+            console.log("Empty or invalid text provided to processTextSection, returning empty array");
+            return [];
+        }
+
         const chunks = await splitText(text);
+        
+        if (!chunks || chunks.length === 0) {
+            console.log("No chunks generated from text, returning empty array");
+            return [];
+        }
+
         const records = [];
 
         for (let idx = 0; idx < chunks.length; idx++) {
@@ -363,7 +379,18 @@ export async function processTextSection(text, userId, description = null) {
 
 export async function processTextSectionRelationship(text, compositeChartId, description = null, category = null, relevantPositionData = null) {
   try {
+      if (!text || typeof text !== 'string' || text.trim().length === 0) {
+          console.log("Empty or invalid text provided to processTextSectionRelationship, returning empty array");
+          return [];
+      }
+
       const chunks = await splitText(text);
+      
+      if (!chunks || chunks.length === 0) {
+          console.log("No chunks generated from relationship text, returning empty array");
+          return [];
+      }
+
       const records = [];
 
       for (let idx = 0; idx < chunks.length; idx++) {
@@ -396,9 +423,14 @@ export async function processTextSectionRelationship(text, compositeChartId, des
 
 
 export async function upsertRecords(records, nameSpaceId) {
-  // console.log("upserting records: ", records)
-  console.log("nameSpaceId: ", nameSpaceId)
+  if (!records || records.length === 0) {
+    console.log("No records to upsert, skipping");
+    return { success: true, count: 0 };
+  }
+  
+  console.log(`Upserting ${records.length} records to namespace: ${nameSpaceId}`);
   await index.upsert(records, { namespace: nameSpaceId });
+  return { success: true, count: records.length };
 }
 
 

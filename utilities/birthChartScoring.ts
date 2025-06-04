@@ -84,31 +84,58 @@ function formatHouseNum(h) {
     
     // Simplified forEach since filtering is already done
     aspectsSorted.forEach(aspect => {
-        const aspectPhrase = addAspectDescription(aspect, birthData);
+        const aspectPhrase = addAspectDescription(aspect, birthData, planetName);
         aspectList.push(aspectPhrase);
     });
 
     return aspectList;
   }
   
-    function addAspectDescription(aspect, birthData) {
+    // function addAspectDescription(aspect, birthData) {
+    // //   console.log("addAspectDescription:", JSON.stringify(aspect))
+    //   const aspectType = aspect.aspectType.toLowerCase();
+    //   const planetName1 = aspect.aspectingPlanet
+    //   const planetName2 = aspect.aspectedPlanet
+    // //   console.log("planetName1: ", planetName1)
+    // //   console.log("planetName2: ", planetName2)
+    //   const orbDesc = orbDescription(aspect.orb); // Assuming orbDescription is defined elsewhere
+    //   const sign1 = getSign(aspect.aspectingPlanetDegree)
+    //   const sign2 = getSign(aspect.aspectedPlanetDegree)
+    // //   console.log("sign1: ", sign1)
+    // //   console.log("sign2: ", sign2)
+    //   const house1 = (getHouse(birthData.planets, planetName1) || 0).toString().padStart(2, '0')
+    //   const house2 = (getHouse(birthData.planets, planetName2) || 0).toString().padStart(2, '0')
+    // //   console.log("house1: ", house1)
+    // //   console.log("house2: ", house2)
+    //   const code = "A-" + planetCodes[planetName1] + signCodes[sign1] + house1 + orbCodes[orbDesc] + transitCodes[aspectType] + planetCodes[planetName2] + signCodes[sign2] + house2
+      
+    //   // If no houses available (birth time unknown), omit house references
+    //   if (house1 === '00' || house2 === '00') {
+    //       // return `${planetName1} in ${sign1} is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
+    //       return `...is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
+
+    //   }
+    //   return `...is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
+
+    //   // return `${planetName1} in ${sign1} and the ${house1} house is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
+    // }
+    
+
+
+  function addAspectDescription(aspect, birthData, planetName) {
     //   console.log("addAspectDescription:", JSON.stringify(aspect))
       const aspectType = aspect.aspectType.toLowerCase();
       const planetName1 = aspect.aspectingPlanet
       const planetName2 = aspect.aspectedPlanet
-    //   console.log("planetName1: ", planetName1)
-    //   console.log("planetName2: ", planetName2)
       const orbDesc = orbDescription(aspect.orb); // Assuming orbDescription is defined elsewhere
       const sign1 = getSign(aspect.aspectingPlanetDegree)
       const sign2 = getSign(aspect.aspectedPlanetDegree)
-    //   console.log("sign1: ", sign1)
-    //   console.log("sign2: ", sign2)
       const house1 = (getHouse(birthData.planets, planetName1) || 0).toString().padStart(2, '0')
       const house2 = (getHouse(birthData.planets, planetName2) || 0).toString().padStart(2, '0')
-    //   console.log("house1: ", house1)
-    //   console.log("house2: ", house2)
+  
+
+    if (planetName === planetName1) {
       const code = "A-" + planetCodes[planetName1] + signCodes[sign1] + house1 + orbCodes[orbDesc] + transitCodes[aspectType] + planetCodes[planetName2] + signCodes[sign2] + house2
-      
       // If no houses available (birth time unknown), omit house references
       if (house1 === '00' || house2 === '00') {
           // return `${planetName1} in ${sign1} is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} (${code})`
@@ -116,10 +143,15 @@ function formatHouseNum(h) {
 
       }
       return `...is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
-
+    } else {
+      const code = "A-" + planetCodes[planetName2] + signCodes[sign2] + house2 + orbCodes[orbDesc] + transitCodes[aspectType] + planetCodes[planetName1] + signCodes[sign1] + house1
+      if (house1 === '00' || house2 === '00') {
+        return `...is ${orbDesc} ${aspectType} to ${planetName1} in ${sign1} (${code})`
+      }
+      return `...is ${orbDesc} ${aspectType} to ${planetName1} in ${sign1} and the ${house1} house (${code})`
+    }
       // return `${planetName1} in ${sign1} and the ${house1} house is ${orbDesc} ${aspectType} to ${planetName2} in ${sign2} and the ${house2} house (${code})`
     }
-    
   
 
 

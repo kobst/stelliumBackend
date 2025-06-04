@@ -46,6 +46,16 @@ import {
     deleteUserHoroscope
 } from '../controllers/horoscopeController.js';
 
+import {
+    startWorkflow,
+    getWorkflowStatusHandler
+} from '../controllers/workflowController.js';
+
+import {
+    startRelationshipWorkflow,
+    getRelationshipWorkflowStatusHandler
+} from '../controllers/relationshipWorkflowController.js';
+
 
 router.post('/getUser', handleGetUserSingle);
 router.post('/getUsers', handleGetUsers);
@@ -98,6 +108,14 @@ router.post('/userChatRelationshipAnalysis', handleProcessUserQueryForRelationsh
 router.post('/fetchUserChatRelationshipAnalysis',  handleFetchUserChatRelationshipAnalysis);
 
 router.post('/getTransitWindows', handleGetTransitWindows);
+
+// Workflow routes
+router.post('/startWorkflow', startWorkflow);
+router.post('/getWorkflowStatus', getWorkflowStatusHandler);
+
+// Relationship Workflow routes
+router.post('/workflow/relationship/start', startRelationshipWorkflow);
+router.post('/workflow/relationship/status', getRelationshipWorkflowStatusHandler);
 
 // Horoscope routes
 router.post('/users/:userId/horoscope/weekly', generateWeeklyHoroscope);

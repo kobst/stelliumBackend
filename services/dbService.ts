@@ -3,7 +3,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 
 const connection_string = process.env.MONGODB_URI
-const client = new MongoClient(connection_string, { useNewUrlParser: true, useUnifiedTopology: true });
+const client = new MongoClient(connection_string);
 
 client.connect();
 const db = client.db('stellium');
@@ -24,6 +24,8 @@ const chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth
 const chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
 const transitEphemerisCollection = db.collection('transit_ephemeris');
 const horoscopesCollection = db.collection('horoscopes');
+const workflowStatusCollection = db.collection('workflow_status');
+const relationshipWorkflowStatusCollection = db.collection('relationship_workflow_status');
 // const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
@@ -781,7 +783,12 @@ export async function getAllAnalysisByUserId(userId) {
 
         return {
             birthChartAnalysisId: document._id,
-            interpretation: document.interpretation || {},
+            interpretation: {
+                basicAnalysis: document.interpretation?.basicAnalysis || null,
+                SubtopicAnalysis: document.interpretation?.SubtopicAnalysis || null,
+                timestamp: document.interpretation?.timestamp || null,
+                metadata: document.interpretation?.metadata || null
+            },
             vectorizationStatus: document.vectorizationStatus || {
                 overview: false,
                 planets: {},
@@ -882,35 +889,57 @@ export async function saveTopicAnalysis(userId, topicAnalysis) {
 
 
 
-export async function updateVectorizationStatus(userId, section, status, details = null) {
+export async function updateVectorizationStatus(userId, statusUpdates) {
     try {
-        let updatePath;
-        if (section === 'topicAnalysis') {
-            if (!details) {
-                updatePath = `vectorizationStatus.topicAnalysis.isComplete`;
-            } else if (details.subtopic) {
-                updatePath = `vectorizationStatus.topicAnalysis.topics.${details.topic}.subtopics.${details.subtopic}`;
-            } else if (details.topic) {
-                updatePath = `vectorizationStatus.topicAnalysis.topics.${details.topic}.isComplete`;
-            }
-        } else {
-            // Handle basic analysis status updates (previous implementation)
-            updatePath = details 
-                ? `vectorizationStatus.${section}.${details}`
-                : `vectorizationStatus.${section}`;
-        }
-
-        await birthChartAnalysisCollection.updateOne(
-            { userId: new ObjectId(userId) },
-            { 
-                $set: { 
-                    [updatePath]: status,
-                    'vectorizationStatus.lastUpdated': new Date()
+        // Handle both old format (section, status, details) and new format (object of updates)
+        if (typeof statusUpdates === 'string') {
+            // Old format: updateVectorizationStatus(userId, section, status, details)
+            const section = statusUpdates;
+            const status = arguments[2];
+            const details = arguments[3];
+            
+            let updatePath;
+            if (section === 'topicAnalysis') {
+                if (!details) {
+                    updatePath = `vectorizationStatus.topicAnalysis.isComplete`;
+                } else if (details.subtopic) {
+                    updatePath = `vectorizationStatus.topicAnalysis.topics.${details.topic}.subtopics.${details.subtopic}`;
+                } else if (details.topic) {
+                    updatePath = `vectorizationStatus.topicAnalysis.topics.${details.topic}.isComplete`;
                 }
+            } else {
+                updatePath = details 
+                    ? `vectorizationStatus.${section}.${details}`
+                    : `vectorizationStatus.${section}`;
             }
-        );
+
+            await birthChartAnalysisCollection.updateOne(
+                { userId: new ObjectId(userId) },
+                { 
+                    $set: { 
+                        [updatePath]: status,
+                        'vectorizationStatus.lastUpdated': new Date()
+                    }
+                }
+            );
+        } else {
+            // New format: updateVectorizationStatus(userId, { key: value, key2: value2 })
+            const setData = {};
+            
+            // Convert the object keys to vectorizationStatus paths
+            for (const [key, value] of Object.entries(statusUpdates)) {
+                setData[`vectorizationStatus.${key}`] = value;
+            }
+            
+            setData['vectorizationStatus.lastUpdated'] = new Date();
+
+            await birthChartAnalysisCollection.updateOne(
+                { userId: new ObjectId(userId) },
+                { $set: setData }
+            );
+        }
     } catch (error) {
-        console.error(`Error updating vectorization status for ${section}:`, error);
+        console.error(`Error updating vectorization status:`, error);
         throw error;
     }
 }
@@ -1255,6 +1284,141 @@ export async function deleteHoroscope(horoscopeId, userId = null) {
         return result.deletedCount > 0;
     } catch (error) {
         console.error('Error deleting horoscope:', error);
+        throw error;
+    }
+}
+
+// Workflow Status Functions
+export async function createWorkflowStatus(userId, workflowStatus) {
+    try {
+        // Use upsert to prevent duplicate workflow statuses for the same user
+        const result = await workflowStatusCollection.updateOne(
+            { userId },
+            {
+                $set: {
+                    ...workflowStatus,
+                    updatedAt: new Date()
+                },
+                $setOnInsert: {
+                    createdAt: new Date()
+                }
+            },
+            { upsert: true }
+        );
+        return result.upsertedId || result.matchedCount;
+    } catch (error) {
+        console.error('Error creating workflow status:', error);
+        throw error;
+    }
+}
+
+export async function getWorkflowStatus(userId) {
+    try {
+        return await workflowStatusCollection.findOne({ userId });
+    } catch (error) {
+        console.error('Error getting workflow status:', error);
+        throw error;
+    }
+}
+
+export async function updateWorkflowStatus(userId, updates) {
+    try {
+        const updateDoc = { $set: { ...updates, updatedAt: new Date() } };
+        
+        // Handle nested updates (e.g., "progress.generateBasic.status")
+        for (const [key, value] of Object.entries(updates)) {
+            if (key.includes('.')) {
+                delete updateDoc.$set[key];
+                updateDoc.$set[key] = value;
+            }
+        }
+        
+        const result = await workflowStatusCollection.updateOne(
+            { userId },
+            updateDoc
+        );
+        
+        return result.modifiedCount > 0;
+    } catch (error) {
+        console.error('Error updating workflow status:', error);
+        throw error;
+    }
+}
+
+// Relationship Workflow Status Functions
+export async function createRelationshipWorkflowStatus(compositeChartId, workflowStatus) {
+    try {
+        // Use upsert to prevent duplicate workflow statuses for the same composite chart
+        const result = await relationshipWorkflowStatusCollection.updateOne(
+            { compositeChartId },
+            {
+                $set: {
+                    ...workflowStatus,
+                    compositeChartId,
+                    updatedAt: new Date()
+                },
+                $setOnInsert: {
+                    createdAt: new Date()
+                }
+            },
+            { upsert: true }
+        );
+        return result.upsertedId || result.matchedCount;
+    } catch (error) {
+        console.error('Error creating relationship workflow status:', error);
+        throw error;
+    }
+}
+
+export async function getRelationshipWorkflowStatus(compositeChartId) {
+    try {
+        return await relationshipWorkflowStatusCollection.findOne({ compositeChartId });
+    } catch (error) {
+        console.error('Error getting relationship workflow status:', error);
+        throw error;
+    }
+}
+
+export async function updateRelationshipWorkflowStatus(compositeChartId, updates) {
+    try {
+        const updateDoc = { $set: { ...updates, updatedAt: new Date() } };
+        
+        // Handle nested updates for progress object
+        for (const [key, value] of Object.entries(updates)) {
+            if (key.startsWith('progress.')) {
+                delete updateDoc.$set[key];
+                updateDoc.$set[key] = value;
+            }
+        }
+        
+        const result = await relationshipWorkflowStatusCollection.updateOne(
+            { compositeChartId },
+            updateDoc
+        );
+        
+        return result.modifiedCount > 0;
+    } catch (error) {
+        console.error('Error updating relationship workflow status:', error);
+        throw error;
+    }
+}
+
+// Update relationship analysis with vectorization status
+export async function updateRelationshipAnalysisVectorization(compositeChartId, updates) {
+    try {
+        const result = await relationshipAnalysisCollection.updateOne(
+            { compositeChartId },
+            { 
+                $set: {
+                    ...updates,
+                    lastUpdated: new Date()
+                }
+            }
+        );
+        
+        return result.modifiedCount > 0;
+    } catch (error) {
+        console.error('Error updating relationship analysis vectorization:', error);
         throw error;
     }
 }
