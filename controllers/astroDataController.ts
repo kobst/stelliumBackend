@@ -1,6 +1,6 @@
 // @ts-nocheck
 // import { getRawChartData, getPlanetsData } from '../services/astroDataService.js';
-import { saveUser, saveCompositeChart, getPreGeneratedTransitSeries } from '../services/dbService.js';
+import { saveUser, saveCompositeChart, getPreGeneratedTransitSeries, getUserSingle } from '../services/dbService.js';
 import {
   getRawChartDataEphemeris,
   getRawChartDataEphemerisNoTime,
@@ -11,7 +11,7 @@ import {
   scanTransitToTransitAspects,
   mergeTransitToTransitWindows
 } from '../services/ephemerisDataService.js';
-import { calculateTransitPriority, TransitWindow, TransitEvent, PLANET_SPEEDS } from '../utilities/transitPrioritization.js';
+import { calculateTransitPriority, TransitWindow, TransitEvent, PLANET_SPEEDS, calculateHouseFromDegree } from '../utilities/transitPrioritization.js';
 // import { findSynastryAspects, generateCompositeChart } from '../utilities/generateSynastryAspects.js';
 
 
@@ -169,7 +169,8 @@ export async function handleUserCreationUnknownTime(req, res) {
 function convertWindowsToTransitEvents(
   windows: TransitWindow[],
   period: { start: Date; end: Date },
-  natalPlanets: any[]
+  natalPlanets: any[],
+  birthChart?: any
 ): TransitEvent[] {
 
   // Create a map of natal planets for quick lookup
@@ -223,6 +224,12 @@ function convertWindowsToTransitEvents(
       // Get natal planet's retrograde status
       const targetIsRetrograde = natalInfo.is_retro;
       
+      // Calculate transiting planet's house position if birth chart houses are available
+      let transitingHouse: number | undefined;
+      if (birthChart && birthChart.houses && window.transitingDegreeAtExact !== undefined) {
+        transitingHouse = calculateHouseFromDegree(window.transitingDegreeAtExact, birthChart.houses);
+      }
+      
       return {
         type: 'transit-to-natal' as const,
         start: window.start,
@@ -235,6 +242,7 @@ function convertWindowsToTransitEvents(
         transitingSign: window.transitingSignAtExact || window.transitingSignAtStart,
         transitingSigns: transitingSigns.length > 0 ? transitingSigns : undefined,
         targetSign: natalInfo.sign,
+        transitingHouse,
         targetHouse: natalInfo.house > 0 ? natalInfo.house : undefined,
         isRetrograde,
         targetIsRetrograde
@@ -260,7 +268,8 @@ function transformDbTransitData(dbData: any[]): any[] {
 // Convert transit-to-transit windows to events
 function convertTransitToTransitToEvents(
   windows: any[],
-  period: { start: Date; end: Date }
+  period: { start: Date; end: Date },
+  birthChart?: any
 ): TransitEvent[] {
   
   // Debugging: Log the windows data to inspect available fields
@@ -295,6 +304,15 @@ function convertTransitToTransitToEvents(
       const isRetrograde = w.isRetrograde1AtExact !== undefined ? w.isRetrograde1AtExact : false;
       const targetIsRetrograde = w.isRetrograde2AtExact !== undefined ? w.isRetrograde2AtExact : false;
       
+      // Calculate house positions for both planets if birth chart houses are available
+      let transitingHouse: number | undefined;
+      let targetHouse: number | undefined;
+      
+      if (birthChart && birthChart.houses && w.degree1AtExact !== undefined && w.degree2AtExact !== undefined) {
+        transitingHouse = calculateHouseFromDegree(w.degree1AtExact, birthChart.houses);
+        targetHouse = calculateHouseFromDegree(w.degree2AtExact, birthChart.houses);
+      }
+      
       // Create description with signs if available
       let description = w.planet1;
       if (w.sign1) {
@@ -317,6 +335,8 @@ function convertTransitToTransitToEvents(
         aspect: w.aspect,
         transitingSign: w.sign1,
         targetSign: w.sign2,
+        transitingHouse,
+        targetHouse,
         description,
         isRetrograde,
         targetIsRetrograde
@@ -327,10 +347,24 @@ function convertTransitToTransitToEvents(
 
 export async function handleGetTransitWindows(req, res) {
   try {
-    const { natalPlanets, from, to } = req.body;
-    if (!Array.isArray(natalPlanets) || !from || !to) {
-      return res.status(400).json({ error: 'natalPlanets, from and to are required' });
+    const { userId, from, to } = req.body;
+    if (!userId || !from || !to) {
+      return res.status(400).json({ error: 'userId, from and to are required' });
     }
+
+    // Fetch user data and birth chart
+    const userData = await getUserSingle(userId);
+    if (!userData) {
+      return res.status(404).json({ error: `User not found: ${userId}` });
+    }
+
+    const birthChart = userData.birthChart;
+    if (!birthChart) {
+      return res.status(404).json({ error: `Birth chart not found for user: ${userId}` });
+    }
+
+    // Extract natal planets from birth chart
+    const natalPlanets = birthChart.planets || [];
     const series = await getPreGeneratedTransitSeries(from, to);
     // const series = await generateTransitSeries(from, to);
 
@@ -356,7 +390,8 @@ export async function handleGetTransitWindows(req, res) {
     const transitEvents = convertWindowsToTransitEvents(
       windows, 
       { start: new Date(from), end: new Date(to) },
-      natalPlanets
+      natalPlanets,
+      birthChart
     );
 
     // Calculate transit-to-transit events
@@ -366,7 +401,8 @@ export async function handleGetTransitWindows(req, res) {
     // Convert transit-to-transit windows to events
     const transitToTransitEvents = convertTransitToTransitToEvents(
       mergedTransitWindows,
-      { start: new Date(from), end: new Date(to) }
+      { start: new Date(from), end: new Date(to) },
+      birthChart
     );
 
     res.json({ 

@@ -23,7 +23,8 @@ import {
   generateNatalPromptsShortOverview,
   generateDominanceDescriptions,
   getPlanetDescription,
-  generateTopicMapping
+  generateTopicMapping,
+  getRulerPlanet
 } from '../utilities/birthChartScoring.js';
 
 import { BroadTopicsEnum } from '../utilities/constants.js';
@@ -234,10 +235,11 @@ export async function handleBirthChartAnalysis(req, res) {
       }
     });
 
+    const rulerPlanet = getRulerPlanet(birthData)
     // Process planets
     const planetPromises = planets.map(async (planet) => {
       try {
-        const planetDescriptions = getPlanetDescription(planet, birthData);
+        const planetDescriptions = getPlanetDescription(planet, birthData, rulerPlanet);
         console.log("planetDescriptions: ", planetDescriptions);
         const response  = await getCompletionForNatalPlanet(planet, planetDescriptions, shortOverviewResponse);
         console.log("planet response: ", response);

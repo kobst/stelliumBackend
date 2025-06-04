@@ -718,6 +718,7 @@ export function* scanTransitSeries(transitSeries, natalPoints) {
               orb: +(delta.toFixed(2)),
               approaching,
               transitingSign: t.sign, // Include the transiting planet's sign
+              transitingDegree: t.lon, // Include the transiting planet's longitude
               isRetrograde: t.speed < 0 // Planet is retrograde if speed is negative
             };
           }
@@ -788,6 +789,9 @@ function buildWindowFromEventGroup(eventGroup) {
     transitingSignAtStart: startEvent.transitingSign,
     transitingSignAtExact: exactEvent.transitingSign,
     transitingSignAtEnd: endEvent.transitingSign,
+    transitingDegreeAtStart: startEvent.transitingDegree,
+    transitingDegreeAtExact: exactEvent.transitingDegree,
+    transitingDegreeAtEnd: endEvent.transitingDegree,
     isRetrogradeAtStart: startEvent.isRetrograde,
     isRetrogradeAtExact: exactEvent.isRetrograde,
     isRetrogradeAtEnd: endEvent.isRetrograde
@@ -939,6 +943,8 @@ export function* scanTransitToTransitAspects(transitSeries) {
               orb: +(delta.toFixed(2)),
               sign1: p1.sign,
               sign2: p2.sign,
+              degree1: p1.lon,
+              degree2: p2.lon,
               isRetrograde1: p1.speed < 0,
               isRetrograde2: p2.speed < 0
             };
@@ -1004,6 +1010,12 @@ function buildTransitToTransitWindow(eventGroup, planet1, planet2, aspect) {
     minOrb: exactEvent.orb,
     sign1: exactEvent.sign1,
     sign2: exactEvent.sign2,
+    degree1AtStart: startEvent.degree1,
+    degree2AtStart: startEvent.degree2,
+    degree1AtExact: exactEvent.degree1,
+    degree2AtExact: exactEvent.degree2,
+    degree1AtEnd: endEvent.degree1,
+    degree2AtEnd: endEvent.degree2,
     isRetrograde1AtStart: startEvent.isRetrograde1,
     isRetrograde2AtStart: startEvent.isRetrograde2,
     isRetrograde1AtExact: exactEvent.isRetrograde1,

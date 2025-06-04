@@ -12,6 +12,9 @@ export interface TransitWindow {
   transitingSignAtStart?: string;
   transitingSignAtExact?: string;
   transitingSignAtEnd?: string;
+  transitingDegreeAtStart?: number;
+  transitingDegreeAtExact?: number;
+  transitingDegreeAtEnd?: number;
   isRetrogradeAtStart?: boolean;
   isRetrogradeAtExact?: boolean;
   isRetrogradeAtEnd?: boolean;
@@ -32,7 +35,8 @@ export interface TransitEvent {
   transitingSign?: string; // Sign at exact aspect (or current if ongoing)
   transitingSigns?: string[]; // All signs during the transit window
   targetSign?: string; // Natal planet's sign
-  targetHouse?: number; // Natal planet's house
+  transitingHouse?: number; // House of the transiting planet (calculated from natal chart houses)
+  targetHouse?: number; // Natal planet's house or calculated house for transit-to-transit
   isRetrograde?: boolean; // Whether the transiting planet is retrograde
   targetIsRetrograde?: boolean; // Whether the target planet is retrograde (for transit-to-transit) or natal planet retrograde status
 }
@@ -64,6 +68,77 @@ const ASPECT_WEIGHTS = {
 };
 
 const PERSONAL_PLANETS = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars'];
+
+/**
+ * Helper function to convert house number to ordinal string
+ * @param houseNumber - House number (1-12)
+ * @returns Ordinal string (1st, 2nd, 3rd, 4th, etc.)
+ */
+export function getOrdinalHouse(houseNumber: number): string {
+  const j = houseNumber % 10;
+  const k = houseNumber % 100;
+  if (j === 1 && k !== 11) {
+    return houseNumber + "st";
+  }
+  if (j === 2 && k !== 12) {
+    return houseNumber + "nd";
+  }
+  if (j === 3 && k !== 13) {
+    return houseNumber + "rd";
+  }
+  return houseNumber + "th";
+}
+
+/**
+ * Calculate which house a planet degree falls into based on house cusps
+ * @param planetDegree - The planet's degree (0-360)
+ * @param houses - Array of house objects with degree property
+ * @returns House number (1-12) or undefined if houses not available
+ */
+export function calculateHouseFromDegree(planetDegree: number, houses: any[]): number | undefined {
+  if (!houses || houses.length !== 12) {
+    return undefined;
+  }
+  
+  // Normalize the planet degree to 0-360 range
+  let normalizedDegree = ((planetDegree % 360) + 360) % 360;
+  
+  // Sort houses by degree to ensure proper order
+  const sortedHouses = [...houses].sort((a, b) => a.degree - b.degree);
+  
+  // Find which house the planet falls into
+  for (let i = 0; i < sortedHouses.length; i++) {
+    const currentHouse = sortedHouses[i];
+    const nextHouse = sortedHouses[(i + 1) % sortedHouses.length];
+    
+    let houseStart = currentHouse.degree;
+    let houseEnd = nextHouse.degree;
+    
+    // Handle wrap-around from house 12 to house 1
+    if (i === sortedHouses.length - 1) {
+      // Last house wraps around to first house
+      if (normalizedDegree >= houseStart || normalizedDegree < houseEnd) {
+        return currentHouse.house;
+      }
+    } else {
+      // Normal case: check if planet is between current and next house
+      if (houseEnd > houseStart) {
+        // Normal case - no wrap around
+        if (normalizedDegree >= houseStart && normalizedDegree < houseEnd) {
+          return currentHouse.house;
+        }
+      } else {
+        // Wrap around case
+        if (normalizedDegree >= houseStart || normalizedDegree < houseEnd) {
+          return currentHouse.house;
+        }
+      }
+    }
+  }
+  
+  // Fallback - shouldn't reach here with valid house data
+  return undefined;
+}
 
 export function filterAndPrioritizeTransits(
   mergedWindows: TransitWindow[],
@@ -117,6 +192,12 @@ export function filterAndPrioritizeTransits(
         }
       }
       
+      // Calculate transiting planet's house position if birth chart houses are available
+      let transitingHouse: number | undefined;
+      if (birthChart && birthChart.houses && hasKnownBirthTime && window.transitingDegreeAtExact !== undefined) {
+        transitingHouse = calculateHouseFromDegree(window.transitingDegreeAtExact, birthChart.houses);
+      }
+      
       return {
         type: 'transit-to-natal' as const,
         start: window.start,
@@ -129,6 +210,7 @@ export function filterAndPrioritizeTransits(
         transitingSign: window.transitingSignAtExact || window.transitingSignAtStart,
         transitingSigns: transitingSigns.length > 0 ? transitingSigns : undefined,
         targetSign,
+        transitingHouse,
         targetHouse,
         isRetrograde: window.isRetrogradeAtExact !== undefined ? window.isRetrogradeAtExact : window.isRetrogradeAtStart,
         targetIsRetrograde
@@ -227,6 +309,11 @@ export function formatTransitForPrompt(transit: TransitEvent): string {
       description += ` in ${transit.transitingSign}`;
     }
     
+    // Add transiting planet's house if available
+    if (transit.transitingHouse) {
+      description += ` in the ${getOrdinalHouse(transit.transitingHouse)} house`;
+    }
+    
     description += ` ${transit.aspect} natal ${transit.targetPlanet}`;
     
     // Add natal planet's retrograde status
@@ -239,7 +326,7 @@ export function formatTransitForPrompt(transit: TransitEvent): string {
       description += ` in ${transit.targetSign}`;
     }
     if (transit.targetHouse) {
-      description += ` in ${transit.targetHouse}th house`;
+      description += ` in the ${getOrdinalHouse(transit.targetHouse)} house`;
     }
     
     description += ` (exact: ${transit.exact.toDateString()}, priority: ${transit.priority}, ${speedDesc} moving)`;

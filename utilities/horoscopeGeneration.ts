@@ -18,7 +18,9 @@ import {
   filterAndPrioritizeTransits, 
   categorizeTransits,
   TransitEvent,
-  TransitWindow
+  TransitWindow,
+  calculateHouseFromDegree,
+  getOrdinalHouse
 } from './transitPrioritization.js';
 import { 
   extractSignificantMoonPhases,
@@ -193,7 +195,8 @@ export async function generateHoroscope(
   // 8. Convert transit-to-transit windows to events
   const transitToTransitEvents = convertTransitToTransitToEvents(
     mergedTransitWindows,
-    { start: startDate, end: endDate }
+    { start: startDate, end: endDate },
+    birthChart
   );
   
   // 9. Generate narrative with GPT
@@ -270,7 +273,8 @@ export async function generateHoroscope(
 // Convert transit-to-transit windows to events
 function convertTransitToTransitToEvents(
   windows: any[],
-  period: { start: Date; end: Date }
+  period: { start: Date; end: Date },
+  birthChart?: any
 ): TransitEvent[] {
   
   return windows
@@ -298,14 +302,29 @@ function convertTransitToTransitToEvents(
         priority += 1;
       }
       
-      // Create description with signs if available
+      // Calculate house positions for both planets if birth chart houses are available
+      let transitingHouse: number | undefined;
+      let targetHouse: number | undefined;
+      
+      if (birthChart && birthChart.houses && w.degree1AtExact !== undefined && w.degree2AtExact !== undefined) {
+        transitingHouse = calculateHouseFromDegree(w.degree1AtExact, birthChart.houses);
+        targetHouse = calculateHouseFromDegree(w.degree2AtExact, birthChart.houses);
+      }
+      
+      // Create description with signs and houses if available
       let description = w.planet1;
       if (w.sign1) {
         description += ` in ${w.sign1}`;
       }
+      if (transitingHouse) {
+        description += ` in the ${getOrdinalHouse(transitingHouse)} house`;
+      }
       description += ` ${w.aspect} ${w.planet2}`;
       if (w.sign2) {
         description += ` in ${w.sign2}`;
+      }
+      if (targetHouse) {
+        description += ` in the ${getOrdinalHouse(targetHouse)} house`;
       }
       description += ` in the sky`;
       
@@ -320,6 +339,8 @@ function convertTransitToTransitToEvents(
         aspect: w.aspect,
         transitingSign: w.sign1,
         targetSign: w.sign2,
+        transitingHouse,
+        targetHouse,
         description,
         isRetrograde: w.isRetrograde1AtExact, // planet1's retrograde status at exact
         targetIsRetrograde: w.isRetrograde2AtExact // planet2's retrograde status at exact
