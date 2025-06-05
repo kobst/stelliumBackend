@@ -1020,14 +1020,6 @@ export const handleProcessUserQueryForRelationshipAnalysis = async (req, res) =>
       console.log("userId: ", userId);
       console.log("compositeChartId: ", compositeChartId);
       console.log("query: ", query);
-      
-      const expandedQuery = await expandPromptRelationship(query);
-      
-      const expandedQueryUserA = await expandPromptRelationshipUserA(query);
-      const expandedQueryUserB = await expandPromptRelationshipUserB(query);
-      const chatHistory = await getChatHistoryForRelationshipAnalysis(userId, compositeChartId);
-
-      console.log("expandedQuery: ", expandedQuery);
 
       const relationshipAnalysis = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
       if (!relationshipAnalysis || !relationshipAnalysis.debug || !relationshipAnalysis.debug.inputSummary) {
@@ -1038,6 +1030,16 @@ export const handleProcessUserQueryForRelationshipAnalysis = async (req, res) =>
       }
 
       const { userAId, userBId, userAName, userBName } = relationshipAnalysis.debug.inputSummary;
+      
+      const expandedQuery = await expandPromptRelationship(query, userAName, userBName);
+      
+      const expandedQueryUserA = await expandPromptRelationshipUserA(query);
+      const expandedQueryUserB = await expandPromptRelationshipUserB(query);
+      const chatHistory = await getChatHistoryForRelationshipAnalysis(userId, compositeChartId);
+
+      console.log("expandedQuery: ", expandedQuery);
+
+
 
       const [contextFromAnalysis, contextFromUserA, contextFromUserB] = await Promise.all([
           processUserQueryForRelationshipAnalysis(compositeChartId, expandedQuery),

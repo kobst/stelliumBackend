@@ -360,7 +360,7 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
         return {
             scores: analysis.scores,
             debug: analysis.debug,
-            analysis: analysis.analysis,
+            categoryAnalysis: analysis.categoryAnalysis,
             vectorizationStatus: analysis.vectorizationStatus || defaultVectorizationStatus,
             _id: analysis._id
         };

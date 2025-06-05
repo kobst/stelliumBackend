@@ -13,7 +13,8 @@ import {
   updateRelationshipVectorizationStatus
 } from '../services/dbService.js';
 import {
-  getCompletionForRelationshipCategory
+  getCompletionForRelationshipCategory,
+  generateRelationshipPrompt
 } from '../services/gptService.js';
 import {
   scoreRelationshipCompatibility
@@ -21,6 +22,12 @@ import {
 import {
   generatePromptForRelationshipCategory
 } from '../utilities/relationshipAnalysis.js';
+import {
+  getRelationshipCategoryContextForUser
+} from '../services/vectorize.js';
+import {
+  RELATIONSHIP_CATEGORIES
+} from '../utilities/relationshipScoringConstants.js';
 import {
   findSynastryAspects,
   generateCompositeChart
@@ -251,61 +258,169 @@ async function executeGenerateScores(compositeChartId: string, userA: any, userB
   console.log(`Relationship scores saved for ${compositeChartId}`);
 }
 
+// Helper functions copied from dbDataController
+async function fetchAllContextsForUser(userId, userName, relationshipCategories) {
+  const userContexts = {};
+  console.log(`[fetchAllContextsForUser] START for ${userName} (ID: ${userId})`);
+  for (const categoryKey of Object.keys(relationshipCategories)) {
+    const categoryValue = relationshipCategories[categoryKey];
+    console.log(`  [fetchAllContextsForUser] ${userName} - Fetching context for category: ${categoryValue}`);
+    try {
+      console.log(`    [fetchAllContextsForUser] ${userName} - BEFORE getRelationshipCategoryContext for ${categoryValue}`);
+      const contextArray = await getRelationshipCategoryContextForUser(userId, categoryValue);
+      console.log(`    [fetchAllContextsForUser] ${userName} - AFTER getRelationshipCategoryContext for ${categoryValue}. Found ${contextArray.length} items.`);
+      userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\n---\n\n");
+      if (!userContexts[categoryValue]) {
+        userContexts[categoryValue] = "No specific context found from individual analysis for this category.";
+      }
+    } catch (error) {
+      console.error(`    [fetchAllContextsForUser] ${userName} - ERROR fetching context for ${categoryValue}:`, error.message);
+      userContexts[categoryValue] = `Error retrieving context for ${categoryValue}.`;
+    }
+  }
+  console.log(`[fetchAllContextsForUser] END for ${userName} (ID: ${userId}). Returning contexts.`);
+  return userContexts;
+}
+
+function formatAstrologicalDetailsForLLM(categoryDetails, userAName, userBName) {
+  if (!categoryDetails || Object.keys(categoryDetails).length === 0) {
+    return "No specific astrological details available for this category in the relationship data.";
+  }
+  let detailsString = "";
+
+  if (categoryDetails.synastry && categoryDetails.synastry.matchedAspects && categoryDetails.synastry.matchedAspects.length > 0) {
+    detailsString += `Synastry Aspects (interactions between ${userAName}'s and ${userBName}'s charts):\n`;
+    categoryDetails.synastry.matchedAspects.forEach(aspect => {
+      detailsString += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score})\n`;
+    });
+    detailsString += "\n";
+  }
+
+  if (categoryDetails.composite && categoryDetails.composite.matchedAspects && categoryDetails.composite.matchedAspects.length > 0) {
+    detailsString += `Composite Chart Aspects (the relationship's own chart):\n`;
+    categoryDetails.composite.matchedAspects.forEach(aspect => {
+      detailsString += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score}, Type: ${aspect.scoreType})\n     Description: ${aspect.description}\n`;
+    });
+    detailsString += "\n";
+  }
+  
+  if (categoryDetails.synastryHousePlacements) {
+    detailsString += `Synastry House Placements:\n`;
+    if (categoryDetails.synastryHousePlacements.AinB && categoryDetails.synastryHousePlacements.AinB.length > 0) {
+      detailsString += `  ${userAName}'s planets in ${userBName}'s houses:\n`;
+      categoryDetails.synastryHousePlacements.AinB.forEach(p => {
+        detailsString += `    - ${p.description} (Points: ${p.points}, Reason: ${p.reason})\n`;
+      });
+    }
+    if (categoryDetails.synastryHousePlacements.BinA && categoryDetails.synastryHousePlacements.BinA.length > 0) {
+      detailsString += `  ${userBName}'s planets in ${userAName}'s houses:\n`;
+      categoryDetails.synastryHousePlacements.BinA.forEach(p => {
+        detailsString += `    - ${p.description} (Points: ${p.points}, Reason: ${p.reason})\n`;
+      });
+    }
+    detailsString += "\n";
+  }
+
+  if (categoryDetails.compositeHousePlacements && categoryDetails.compositeHousePlacements.length > 0) {
+    detailsString += `Composite Chart House Placements:\n`;
+    categoryDetails.compositeHousePlacements.forEach(p => {
+      detailsString += `  - ${p.description} (Points: ${p.points}, Reason: ${p.reason}, Type: ${p.type})\n`;
+    });
+    detailsString += "\n";
+  }
+  return detailsString || "No specific astrological details parsed for this category.";
+}
+
 async function executeGenerateAnalysis(compositeChartId: string, userA: any, userB: any) {
   console.log(`Generating relationship analysis for ${compositeChartId}`);
   
-  // Get the relationship scores
-  const relationshipData = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
-  
-  if (!relationshipData) {
-    throw new Error('Relationship scores not found');
+  // 1. Fetch Relationship Analysis Document (following original flow)
+  const relationshipAnalysis = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
+  if (!relationshipAnalysis || !relationshipAnalysis.debug || !relationshipAnalysis.debug.inputSummary) {
+    throw new Error('Relationship analysis data not found or incomplete for the given compositeChartId.');
+  }
+  console.log(`Fetched relationship analysis for compositeChartId: ${compositeChartId}`);
+
+  const { userAId, userBId, userAName, userBName } = relationshipAnalysis.debug.inputSummary;
+  if (!userAId || !userBId || !userAName || !userBName) {
+    throw new Error('User IDs or names missing in relationship analysis data.');
   }
 
-  const categoryAnalysis = {};
+  console.log(`[executeGenerateAnalysis] About to call Promise.all for user contexts.`);
+  const [contextsUserA, contextsUserB] = await Promise.all([
+    fetchAllContextsForUser(userAId, userAName, RELATIONSHIP_CATEGORIES),
+    fetchAllContextsForUser(userBId, userBName, RELATIONSHIP_CATEGORIES)
+  ]);
+  console.log(`[executeGenerateAnalysis] SUCCESSFULLY Fetched contexts for ${userAName} and ${userBName}`);
 
-  // Generate analysis for each category
-  for (const category of RELATIONSHIP_CATEGORIES) {
-    console.log(`Generating analysis for category: ${category}`);
+  const allGeneratedAnalyses = {};
+  const promises = []; // Array to hold all the promises for LLM calls
+
+  console.log("[executeGenerateAnalysis] Preparing to generate prompts and initiate LLM calls.");
+
+  for (const categoryKey of Object.keys(RELATIONSHIP_CATEGORIES)) {
+    const categoryValue = RELATIONSHIP_CATEGORIES[categoryKey];
+    const categoryDisplayName = categoryValue.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+
+    const relationshipScores = relationshipAnalysis.scores[categoryValue] || {};
+    const relationshipAstrologyDetails = relationshipAnalysis.debug.categories[categoryValue] || {};
+    const contextA = contextsUserA[categoryValue] || "No specific context found for User A in this category.";
+    const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
+    const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
     
-    // Format category display name
-    const categoryDisplayName = category.split('_')
-      .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-      .join(' ');
-    
-    // Get scores for this category
-    const categoryScores = relationshipData.normalizedScores?.[category] || {};
-    const scores = {
-      overall: categoryScores.overallNormalized,
-      synastry: categoryScores.synastry?.normalized,
-      composite: categoryScores.composite?.normalized,
-      synastryHousePlacements: categoryScores.synastryHousePlacements?.normalized,
-      compositeHousePlacements: categoryScores.compositeHousePlacements?.normalized
-    };
-    
-    // Format astrology data for this category
-    const categoryData = relationshipData.categories?.[category] || {};
-    const formattedAstrology = formatAstrologyForCategory(categoryData);
-    
-    // Get user snippets/context
-    const contextA = userA.snippet || `${userA.firstName} - Birth chart overview not available`;
-    const contextB = userB.snippet || `${userB.firstName} - Birth chart overview not available`;
-    
-    // Get AI completion with correct parameters
-    const analysis = await getCompletionForRelationshipCategory(
-      userA.firstName,
-      userB.firstName,
-      categoryDisplayName,
-      scores,
-      formattedAstrology,
-      contextA,
+    const promptString = await generateRelationshipPrompt( 
+      userAName, 
+      userBName, 
+      categoryDisplayName, 
+      relationshipScores, 
+      formattedAstrology, 
+      contextA, 
       contextB
     );
-    
-    categoryAnalysis[category] = {
-      interpretation: analysis,
-      generatedAt: new Date()
-    };
+
+    console.log(`--- PROMPT FOR CATEGORY: ${categoryDisplayName} ---`);
+
+    promises.push(
+      getCompletionForRelationshipCategory(
+        userAName, 
+        userBName, 
+        categoryDisplayName, 
+        relationshipScores, 
+        formattedAstrology, 
+        contextA, 
+        contextB
+      )
+      .then(interpretation => {
+        console.log(`[LLM SUCCESS] Received analysis for ${categoryDisplayName}`);
+        return { categoryValue, interpretation, formattedAstrology }; 
+      })
+      .catch(error => {
+        console.error(`[LLM ERROR] Failed to get analysis for ${categoryDisplayName}:`, error.message);
+        return { 
+          categoryValue, 
+          interpretation: `Error generating analysis for this category: ${error.message}`, 
+          formattedAstrology
+        };
+      })
+    );
   }
+
+  console.log(`[executeGenerateAnalysis] All ${promises.length} LLM calls initiated. Waiting for all to complete...`);
+  
+  const results = await Promise.all(promises);
+
+  console.log("[executeGenerateAnalysis] All LLM calls completed.");
+
+  const categoryAnalysis = {};
+  results.forEach(result => {
+    if (result) { 
+      categoryAnalysis[result.categoryValue] = {
+        interpretation: result.interpretation,
+        astrologyData: result.formattedAstrology,
+        generatedAt: new Date()
+      };
+    }
+  });
 
   // Update the relationship document with the analysis
   await updateRelationshipAnalysisVectorization(compositeChartId, {
@@ -316,50 +431,6 @@ async function executeGenerateAnalysis(compositeChartId: string, userA: any, use
   console.log(`Relationship analysis saved for ${compositeChartId}`);
 }
 
-function formatAstrologyForCategory(categoryData) {
-  let formatted = '';
-  
-  // Format synastry aspects
-  if (categoryData.synastry?.matchedAspects?.length > 0) {
-    formatted += 'SYNASTRY ASPECTS:\n';
-    categoryData.synastry.matchedAspects
-      .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))
-      .slice(0, 5)
-      .forEach(aspect => {
-        formatted += `- ${aspect.aspect} (orb: ${aspect.orb}°, score: ${aspect.score})\n`;
-      });
-    formatted += '\n';
-  }
-  
-  // Format composite aspects
-  if (categoryData.composite?.matchedAspects?.length > 0) {
-    formatted += 'COMPOSITE ASPECTS:\n';
-    categoryData.composite.matchedAspects
-      .sort((a, b) => Math.abs(b.score) - Math.abs(a.score))
-      .slice(0, 5)
-      .forEach(aspect => {
-        formatted += `- ${aspect.aspect} (orb: ${aspect.orb}°, score: ${aspect.score})\n`;
-      });
-    formatted += '\n';
-  }
-  
-  // Format house placements
-  if (categoryData.synastryHousePlacements) {
-    formatted += 'HOUSE PLACEMENTS:\n';
-    const allPlacements = [
-      ...(categoryData.synastryHousePlacements.AinB || []),
-      ...(categoryData.synastryHousePlacements.BinA || [])
-    ];
-    allPlacements
-      .sort((a, b) => Math.abs(b.points) - Math.abs(a.points))
-      .slice(0, 3)
-      .forEach(placement => {
-        formatted += `- ${placement.description} (points: ${placement.points})\n`;
-      });
-  }
-  
-  return formatted || 'No specific astrological factors for this category.';
-}
 
 async function executeVectorizeAnalysis(compositeChartId: string) {
   console.log(`Vectorizing relationship analysis for ${compositeChartId}`);
@@ -383,12 +454,22 @@ async function executeVectorizeAnalysis(compositeChartId: string) {
         continue;
       }
       
+      // Create rich description using the stored astrology data
+      const categoryDisplayName = category.split('_')
+        .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+        .join(' ');
+      
+      const richDescription = data.astrologyData ? 
+        `${categoryDisplayName} Analysis\n\n${data.astrologyData}` :
+        `Relationship analysis for ${category}`;
+      
       // Process and vectorize the text
       const records = await processTextSectionRelationship(
         data.interpretation,
         compositeChartId,
-        `Relationship analysis for ${category}`,
-        category
+        richDescription,
+        category,
+        data.astrologyData
       );
       
       // Upsert records to vector database only if we have records

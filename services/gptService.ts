@@ -810,7 +810,7 @@ export async function expandPrompt(prompt) {
   return completion.choices[0].message.content.trim();
 }
 
-export async function expandPromptRelationship(prompt) {
+export async function expandPromptRelationship(prompt, userAName, userBName) {
   console.log("expandPromptRelationship")
   console.log("prompt: ", prompt)
   const completion = await client.chat.completions.create({
@@ -826,7 +826,7 @@ export async function expandPromptRelationship(prompt) {
       },
       {
         role: "user",
-        content: `Expand this query for astrology vector search that will be executed over an analysis of the relationship between ${userAName} and ${userBName}:\n\n"${prompt}"`
+        content: `Expand this query asked by ${userAName} for astrology vector search that will be executed over an analysis of the relationship between ${userAName} and ${userBName}:\n\n"${prompt}"`
       }
     ],
     temperature: 0.5,
