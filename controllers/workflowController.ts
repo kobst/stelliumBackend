@@ -57,15 +57,15 @@ export async function startWorkflow(req, res) {
     }
 
     // Initialize or reset workflow status
-    const workflowStatus = {
+  const workflowStatus = {
       userId,
       status: 'running',
       currentStep: 'generateBasic',
       progress: {
-        generateBasic: { status: 'pending', startedAt: null, completedAt: null },
-        vectorizeBasic: { status: 'pending', startedAt: null, completedAt: null },
-        generateTopic: { status: 'pending', startedAt: null, completedAt: null },
-        vectorizeTopic: { status: 'pending', startedAt: null, completedAt: null }
+        generateBasic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 },
+        vectorizeBasic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 },
+        generateTopic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 },
+        vectorizeTopic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 }
       },
       error: null,
       startedAt: new Date(),
@@ -196,57 +196,66 @@ async function executeGenerateBasic(userId: string) {
     throw new Error('User or birth chart not found');
   }
 
+  const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
+  const totalTasks = 1 + 3 + planetNames.length; // overview + dominance(3) + planets
+  let completed = 0;
+
+  await updateWorkflowStatus(userId, {
+    'progress.generateBasic.total': totalTasks,
+    'progress.generateBasic.completed': 0
+  });
+  const basicAnalysis: any = { userId, dominance: {}, planets: {}, createdAt: new Date() };
+
   // Generate overview
   const relevantNatalPositions = generateNatalPromptsShortOverview(user.birthChart);
   const overviewResponse = await getCompletionShortOverview(relevantNatalPositions);
+  basicAnalysis.overview = overviewResponse;
+  completed++;
+  await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+  await updateWorkflowStatus(userId, { 'progress.generateBasic.completed': completed });
 
   // Generate dominance patterns
   const dominanceDescriptions = generateDominanceDescriptions(user.birthChart);
   console.log('dominanceDescriptions.elements:', dominanceDescriptions.elements);
   console.log('dominanceDescriptions.modalities:', dominanceDescriptions.modalities);
   console.log('dominanceDescriptions.quadrants:', dominanceDescriptions.quadrants);
-  
+
   const elementsResponse = await getCompletionForDominancePattern('elements', overviewResponse, dominanceDescriptions.elements.join('\n'));
   const modalitiesResponse = await getCompletionForDominancePattern('modalities', overviewResponse, dominanceDescriptions.modalities.join('\n'));
   const quadrantsResponse = await getCompletionForDominancePattern('quadrants', overviewResponse, dominanceDescriptions.quadrants.join('\n'));
 
+  basicAnalysis.dominance = {
+    elements: {
+      description: dominanceDescriptions.elements,
+      interpretation: elementsResponse
+    },
+    modalities: {
+      description: dominanceDescriptions.modalities,
+      interpretation: modalitiesResponse
+    },
+    quadrants: {
+      description: dominanceDescriptions.quadrants,
+      interpretation: quadrantsResponse
+    }
+  };
+  completed += 3;
+  await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+  await updateWorkflowStatus(userId, { 'progress.generateBasic.completed': completed });
   // Generate planet interpretations
-  const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
-  const planets = {};
-
   for (const planetName of planetNames) {
     const rulerPlanet = getRulerPlanet(planetName, user.birthChart);
     const planetDescription = getPlanetDescription(planetName, user.birthChart, rulerPlanet);
     if (planetDescription) {
       const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
-      planets[planetName] = { 
+      basicAnalysis.planets[planetName] = {
         description: planetDescription,
-        interpretation 
+        interpretation
       };
+      completed++;
+      await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+      await updateWorkflowStatus(userId, { 'progress.generateBasic.completed': completed });
     }
   }
-
-  // Save basic analysis
-  const basicAnalysis = {
-    userId,
-    overview: overviewResponse,
-    dominance: {
-      elements: { 
-        description: dominanceDescriptions.elements,
-        interpretation: elementsResponse 
-      },
-      modalities: { 
-        description: dominanceDescriptions.modalities,
-        interpretation: modalitiesResponse 
-      },
-      quadrants: { 
-        description: dominanceDescriptions.quadrants,
-        interpretation: quadrantsResponse 
-      }
-    },
-    planets,
-    createdAt: new Date()
-  };
 
   console.log('Saving basic analysis for userId:', userId);
   console.log('Basic analysis object keys:', Object.keys(basicAnalysis));
@@ -275,11 +284,26 @@ async function executeVectorizeBasic(userId: string) {
   console.log('Retrieving basic analysis for userId:', userId);
   const analysis = await getBasicAnalysisByUserId(userId);
   console.log('Retrieved analysis:', analysis ? 'found' : 'not found');
-  
+
   if (!analysis) {
     console.error('No basic analysis found for userId:', userId);
     throw new Error('Basic analysis not found');
   }
+
+  let totalTasks = 0;
+  let completed = 0;
+  if (analysis.overview) totalTasks++;
+  if (analysis.dominance && typeof analysis.dominance === 'object') {
+    totalTasks += Object.keys(analysis.dominance).length;
+  }
+  if (analysis.planets && typeof analysis.planets === 'object') {
+    totalTasks += Object.keys(analysis.planets).length;
+  }
+
+  await updateWorkflowStatus(userId, {
+    'progress.vectorizeBasic.total': totalTasks,
+    'progress.vectorizeBasic.completed': 0
+  });
 
   console.log('Analysis object:', JSON.stringify(analysis, null, 2));
   console.log('analysis.overview:', analysis.overview);
@@ -291,6 +315,8 @@ async function executeVectorizeBasic(userId: string) {
     const records = await processTextSection(analysis.overview, userId, 'overview');
     await upsertRecords(records, userId);
     await updateVectorizationStatus(userId, { overview: true });
+    completed++;
+    await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
   }
 
   // Process dominance patterns
@@ -305,6 +331,8 @@ async function executeVectorizeBasic(userId: string) {
         const records = await processTextSection(data.interpretation, userId, dominanceDescription);
         await upsertRecords(records, userId);
         await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
+        completed++;
+        await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
       }
     }
   }
@@ -316,11 +344,14 @@ async function executeVectorizeBasic(userId: string) {
         const records = await processTextSection(data.interpretation, userId, data.description || `planet_${planetName}`);
         await upsertRecords(records, userId);
         await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
+        completed++;
+        await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
       }
     }
   }
 
   await updateVectorizationStatus(userId, { basicAnalysis: true });
+  await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': totalTasks });
 }
 
 async function executeGenerateTopic(userId: string) {
@@ -328,6 +359,13 @@ async function executeGenerateTopic(userId: string) {
   if (!user || !user.birthChart) {
     throw new Error('User or birth chart not found');
   }
+  let completed = 0;
+  const totalSubtopics = Object.values(BroadTopicsEnum).reduce((acc: number, t: any) => acc + Object.keys(t.subtopics).length, 0);
+
+  await updateWorkflowStatus(userId, {
+    'progress.generateTopic.total': totalSubtopics,
+    'progress.generateTopic.completed': 0
+  });
 
   const results = {};
 
@@ -355,11 +393,22 @@ async function executeGenerateTopic(userId: string) {
       // For now, use empty string for RAGResponse since RAG isn't implemented in workflow
       const response = await getCompletionShortOverviewForTopic(subtopicLabel, topicMapping[topicData.label] || '', '');
       results[broadTopic].subtopics[subtopicKey] = response;
+
+      await saveTopicAnalysis(userId, {
+        [broadTopic]: {
+          label: topicData.label,
+          relevantPositions: relevantPositions,
+          subtopics: { [subtopicKey]: response }
+        }
+      });
+      completed++;
+      await updateWorkflowStatus(userId, { 'progress.generateTopic.completed': completed });
     }
   }
 
   // Save topic analysis to database
   await saveTopicAnalysis(userId, results);
+  await updateWorkflowStatus(userId, { 'progress.generateTopic.completed': totalSubtopics });
 }
 
 async function executeVectorizeTopic(userId: string) {
@@ -367,6 +416,13 @@ async function executeVectorizeTopic(userId: string) {
   if (!topicAnalysis) {
     throw new Error('Topic analysis not found');
   }
+
+  const totalSubtopics = Object.values(topicAnalysis).reduce((acc: number, t: any) => acc + (t.subtopics ? Object.keys(t.subtopics).length : 0), 0);
+  let completed = 0;
+  await updateWorkflowStatus(userId, {
+    'progress.vectorizeTopic.total': totalSubtopics,
+    'progress.vectorizeTopic.completed': 0
+  });
 
   for (const [topicKey, topicData] of Object.entries(topicAnalysis)) {
     if (topicData.subtopics) {
@@ -382,12 +438,14 @@ async function executeVectorizeTopic(userId: string) {
         const description = `${topicData.label} - ${BroadTopicsEnum[topicKey].subtopics[subtopicKey]}\n\nRelevant Positions:\n${topicData.relevantPositions || 'None specified'}`;
         
         const records = await processTextSection(content, userId, description);
-        
+
         if (records && records.length > 0) {
           await upsertRecords(records, userId);
-          await updateVectorizationStatus(userId, { 
-            [`topicAnalysis.${topicKey}.${subtopicKey}`]: true 
+          await updateVectorizationStatus(userId, {
+            [`topicAnalysis.${topicKey}.${subtopicKey}`]: true
           });
+          completed++;
+          await updateWorkflowStatus(userId, { 'progress.vectorizeTopic.completed': completed });
         } else {
           console.log(`No records generated for ${topicKey}.${subtopicKey}, skipping vectorization`);
         }
@@ -395,8 +453,9 @@ async function executeVectorizeTopic(userId: string) {
     }
   }
 
-  await updateVectorizationStatus(userId, { 
+  await updateVectorizationStatus(userId, {
     'topicAnalysis.isComplete': true,
     lastUpdated: new Date().toISOString()
   });
+  await updateWorkflowStatus(userId, { 'progress.vectorizeTopic.completed': totalSubtopics });
 }
