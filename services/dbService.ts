@@ -704,29 +704,27 @@ export async function getWeeklyTransitInterpretationData(date) {
 
 
 export async function saveBasicAnalysis(userId, analysis) {
-    const existingDocument = await birthChartAnalysisCollection.findOne({ 
-        userId: new ObjectId(userId) 
+    const existingDocument = await birthChartAnalysisCollection.findOne({
+        userId: new ObjectId(userId)
     });
-    
+
     if (existingDocument) {
-        // Update the existing document
+        // Only update the basicAnalysis portion to allow incremental saves
         const result = await birthChartAnalysisCollection.updateOne(
             { userId: new ObjectId(userId) },
-            { 
-                $set: { 
-                    interpretation: {
-                        timestamp: analysis.timestamp,
-                        metadata: analysis.metadata,
-                        basicAnalysis: analysis.basicAnalysis
-                    }
+            {
+                $set: {
+                    'interpretation.basicAnalysis': analysis.basicAnalysis,
+                    'interpretation.timestamp': analysis.timestamp,
+                    'interpretation.metadata': analysis.metadata
                 }
             }
         );
         return result;
     } else {
-        // Create a new document
-        const result = await birthChartAnalysisCollection.insertOne({ 
-            userId: new ObjectId(userId), 
+        // Create a new document if none exists
+        const result = await birthChartAnalysisCollection.insertOne({
+            userId: new ObjectId(userId),
             interpretation: {
                 timestamp: analysis.timestamp,
                 metadata: analysis.metadata,
