@@ -669,7 +669,7 @@ export async function generateRelationshipPrompt(
 ) {
   return `
 You are an expert astrologer providing a relationship analysis.
-The relationship is between ${userAName} (referred to as User A) and ${userBName} (referred to as User B).
+The relationship is between ${userAName} and ${userBName}.
 This specific analysis focuses on the category: "${categoryDisplayName}".
 
 I. RELATIONSHIP DATA FOR "${categoryDisplayName.toUpperCase()}":
@@ -682,24 +682,24 @@ Overall Score for this category: ${relationshipScores.overall !== undefined ? re
 Key Astrological Factors from their combined charts influencing "${categoryDisplayName}":
 ${formattedAstrology}
 
-II. INDIVIDUAL CONTEXT FOR ${userAName.toUpperCase()} (USER A) RELEVANT TO "${categoryDisplayName.toUpperCase()}":
+II. INDIVIDUAL CONTEXT FOR ${userAName.toUpperCase()} RELEVANT TO "${categoryDisplayName.toUpperCase()}":
 (The following is derived from ${userAName}'s individual birth chart analysis)
 ---
 ${contextA}
 ---
 
-III. INDIVIDUAL CONTEXT FOR ${userBName.toUpperCase()} (USER B) RELEVANT TO "${categoryDisplayName.toUpperCase()}":
+III. INDIVIDUAL CONTEXT FOR ${userBName.toUpperCase()} RELEVANT TO "${categoryDisplayName.toUpperCase()}":
 (The following is derived from ${userBName}'s individual birth chart analysis)
 ---
 ${contextB}
 ---
 
 IV. ANALYSIS TASK:
-Based on ALL the information above (the relationship scores, specific astrological interactions between User A and User B, and the individual contexts of User A and User B related to "${categoryDisplayName}"), provide a comprehensive astrological analysis for this facet of their relationship.
+Based on ALL the information above (the relationship scores, specific astrological interactions between ${userAName} and ${userBName}, and the individual contexts of ${userAName} and ${userBName} related to "${categoryDisplayName}"), provide a comprehensive astrological analysis for this facet of their relationship.
 
 Please address the following:
-1. How do the individual tendencies and needs of ${userAName} (User A), as suggested by their context, interact with the relationship dynamics for "${categoryDisplayName}"?
-2. How do the individual tendencies and needs of ${userBName} (User B), as suggested by their context, interact with the relationship dynamics for "${categoryDisplayName}"?
+1. How do the individual tendencies and needs of ${userAName}, as suggested by their context, interact with the relationship dynamics for "${categoryDisplayName}"?
+2. How do the individual tendencies and needs of ${userBName}, as suggested by their context, interact with the relationship dynamics for "${categoryDisplayName}"?
 3. What are the key strengths in this area of their relationship, considering both their individual charts and their combined astrology?
 4. What are potential challenges or friction points in this area, and how might their individual natures contribute to or mitigate these?
 5. Offer insights or advice for ${userAName} and ${userBName} to navigate and enhance the "${categoryDisplayName}" aspect of their connection.
@@ -741,7 +741,7 @@ Every interpretation should reflect how the unique energies between the two peop
 `;
 
     const userPrompt = `
-Relationship Analysis for "${categoryDisplayName}" between ${userAName} (User A) and ${userBName} (User B)
+Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
 I. SCORES:
 - Overall Score: ${relationshipScores.overall ?? "N/A"}
@@ -753,16 +753,16 @@ I. SCORES:
 II. ASTROLOGICAL FACTORS FOR "${categoryDisplayName}":
 ${formattedAstrology}
 
-III. CONTEXT FOR ${userAName.toUpperCase()} (User A):
+III. CONTEXT FOR ${userAName.toUpperCase()}:
 ${contextA}
 
-IV. CONTEXT FOR ${userBName.toUpperCase()} (User B):
+IV. CONTEXT FOR ${userBName.toUpperCase()}:
 ${contextB}
 
 TASK:
 Please write 3–5 paragraphs addressing the following:
-1. How does User A's nature interact with the dynamics of "${categoryDisplayName}" in this relationship?
-2. How does User B's nature interact with these same dynamics?
+1. How does ${userAName}'s nature interact with the dynamics of "${categoryDisplayName}" in this relationship?
+2. How does ${userBName}'s nature interact with these same dynamics?
 3. What are the core strengths in this area?
 4. What are the potential growth edges or friction points?
 5. What advice would help them support or evolve this aspect of their connection?
