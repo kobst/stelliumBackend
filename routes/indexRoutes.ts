@@ -43,7 +43,8 @@ import {
     generateMonthlyHoroscope,
     getUserHoroscopes,
     getLatestUserHoroscope,
-    deleteUserHoroscope
+    deleteUserHoroscope,
+    generateCustomTransitHoroscope
 } from '../controllers/horoscopeController.js';
 
 import {
@@ -120,6 +121,7 @@ router.post('/workflow/relationship/status', getRelationshipWorkflowStatusHandle
 // Horoscope routes
 router.post('/users/:userId/horoscope/weekly', generateWeeklyHoroscope);
 router.post('/users/:userId/horoscope/monthly', generateMonthlyHoroscope);
+router.post('/users/:userId/horoscope/custom', generateCustomTransitHoroscope);
 router.get('/users/:userId/horoscopes', getUserHoroscopes);
 router.get('/users/:userId/horoscope/latest', getLatestUserHoroscope);
 router.delete('/users/:userId/horoscopes/:horoscopeId', deleteUserHoroscope);

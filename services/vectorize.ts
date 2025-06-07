@@ -13,7 +13,6 @@ import { RELATIONSHIP_CATEGORY_PROMPTS } from '../utilities/relationshipScoringC
 
   // Initialize OpenAI
 const apiKey = process.env.OPENAI_API_KEY;
-
 const openAiClient = new OpenAI({ apiKey: apiKey})
 
 // Initialize Pinecone

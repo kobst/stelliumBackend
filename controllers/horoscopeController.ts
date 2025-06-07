@@ -6,9 +6,12 @@ import {
   getHoroscopesByUserId, 
   getLatestHoroscope,
   deleteHoroscope,
-  getExistingHoroscope 
+  getExistingHoroscope,
+  getUserSingle,
+  getBirthChart
 } from '../services/dbService.js';
 import { normalizeHoroscopeDateRange } from '../utilities/horoscopeDateUtils.js';
+import { generateCustomTransitNarrative } from '../services/gptService.js';
 
 // Generate weekly horoscope
 export async function generateWeeklyHoroscope(req: Request, res: Response) {
@@ -236,6 +239,140 @@ export async function deleteUserHoroscope(req: Request, res: Response) {
     console.error('Error deleting horoscope:', error);
     return res.status(500).json({ 
       error: 'Failed to delete horoscope',
+      message: error.message 
+    });
+  }
+}
+
+// Generate horoscope from custom transit events
+export async function generateCustomTransitHoroscope(req: Request, res: Response) {
+  try {
+    const { userId } = req.params;
+    const { transitEvents } = req.body;
+    
+    if (!transitEvents || !Array.isArray(transitEvents) || transitEvents.length === 0) {
+      return res.status(400).json({ 
+        error: 'transitEvents array is required in request body' 
+      });
+    }
+    
+    // Validate transit events structure
+    for (const event of transitEvents) {
+      if (!event.type || !event.transitingPlanet || !event.exact) {
+        return res.status(400).json({ 
+          error: 'Each transit event must have type, transitingPlanet, and exact date' 
+        });
+      }
+
+      // Validate and parse dates
+      try {
+        const exactDate = new Date(event.exact);
+        if (isNaN(exactDate.getTime())) {
+          return res.status(400).json({
+            error: `Invalid exact date format for event: ${event.transitingPlanet}`
+          });
+        }
+        event.exact = exactDate;
+
+        if (event.start) {
+          const startDate = new Date(event.start);
+          if (isNaN(startDate.getTime())) {
+            return res.status(400).json({
+              error: `Invalid start date format for event: ${event.transitingPlanet}`
+            });
+          }
+          event.start = startDate;
+        }
+
+        if (event.end) {
+          const endDate = new Date(event.end);
+          if (isNaN(endDate.getTime())) {
+            return res.status(400).json({
+              error: `Invalid end date format for event: ${event.transitingPlanet}`
+            });
+          }
+          event.end = endDate;
+        }
+      } catch (error) {
+        return res.status(400).json({
+          error: `Error parsing dates for event: ${event.transitingPlanet}`,
+          message: error.message
+        });
+      }
+    }
+    
+    console.log(`Generating custom transit horoscope for user ${userId} with ${transitEvents.length} events`);
+    
+ 
+    
+    // Get user and birth chart data
+    const user = await getUserSingle(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        error: 'User not found' 
+      });
+    }
+    
+    const birthChart = await getBirthChart(userId);
+    if (!birthChart) {
+      return res.status(404).json({ 
+        error: 'Birth chart not found for user' 
+      });
+    }
+    
+    // Determine date range from transit events
+    const dates = transitEvents.map(e => new Date(e.exact));
+    const startDate = new Date(Math.min(...dates.map(d => d.getTime())));
+    const endDate = new Date(Math.max(...dates.map(d => d.getTime())));
+    
+    // Determine period type based on date range
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    let period: 'daily' | 'weekly' | 'monthly';
+    if (daysDiff <= 1) {
+      period = 'daily';
+    } else if (daysDiff <= 7) {
+      period = 'weekly';
+    } else {
+      period = 'monthly';
+    }
+    
+    // Prepare horoscope data
+    const horoscopeData = {
+      userId,
+      period,
+      startDate,
+      endDate,
+      hasKnownBirthTime: user.knownBirthTime || false,
+      customTransitEvents: transitEvents,
+      isCustom: true
+    };
+    
+    // Generate narrative with GPT
+    const { horoscopeText } = await generateCustomTransitNarrative(horoscopeData);
+    
+    // Return the generated horoscope
+    return res.status(200).json({
+      success: true,
+      horoscope: {
+        userId,
+        period,
+        startDate,
+        endDate,
+        text: horoscopeText,
+        transitEvents,
+        generatedAt: new Date(),
+        isCustom: true,
+        metadata: {
+          hasKnownBirthTime: user.knownBirthTime || false,
+          transitEventCount: transitEvents.length
+        }
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error generating custom transit horoscope:', error);
+    return res.status(500).json({ 
+      error: 'Failed to generate custom transit horoscope',
       message: error.message 
     });
   }

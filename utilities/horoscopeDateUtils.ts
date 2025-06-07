@@ -61,16 +61,43 @@ export function getMonthEndDate(date: Date): Date {
 }
 
 /**
+ * Get the start of day for a given date
+ * @param date - Any date
+ * @returns Date object set to 00:00:00 UTC of that day
+ */
+export function getDayStartDate(date: Date): Date {
+  const d = new Date(date);
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+/**
+ * Get the end of day for a given date
+ * @param date - Any date
+ * @returns Date object set to 23:59:59 UTC of that day
+ */
+export function getDayEndDate(date: Date): Date {
+  const d = new Date(date);
+  d.setUTCHours(23, 59, 59, 999);
+  return d;
+}
+
+/**
  * Normalize date range based on horoscope type
  * @param date - Input date
- * @param type - 'weekly' or 'monthly'
+ * @param type - 'daily', 'weekly' or 'monthly'
  * @returns Object with normalized start and end dates
  */
-export function normalizeHoroscopeDateRange(date: Date, type: 'weekly' | 'monthly'): {
+export function normalizeHoroscopeDateRange(date: Date, type: 'daily' | 'weekly' | 'monthly'): {
   startDate: Date;
   endDate: Date;
 } {
-  if (type === 'weekly') {
+  if (type === 'daily') {
+    return {
+      startDate: getDayStartDate(date),
+      endDate: getDayEndDate(date)
+    };
+  } else if (type === 'weekly') {
     return {
       startDate: getWeekStartDate(date),
       endDate: getWeekEndDate(date)
@@ -87,10 +114,10 @@ export function normalizeHoroscopeDateRange(date: Date, type: 'weekly' | 'monthl
  * Check if two dates fall within the same horoscope period
  * @param date1 - First date
  * @param date2 - Second date
- * @param type - 'weekly' or 'monthly'
+ * @param type - 'daily', 'weekly' or 'monthly'
  * @returns boolean
  */
-export function isSameHoroscopePeriod(date1: Date, date2: Date, type: 'weekly' | 'monthly'): boolean {
+export function isSameHoroscopePeriod(date1: Date, date2: Date, type: 'daily' | 'weekly' | 'monthly'): boolean {
   const range1 = normalizeHoroscopeDateRange(date1, type);
   const range2 = normalizeHoroscopeDateRange(date2, type);
   

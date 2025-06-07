@@ -1093,3 +1093,70 @@ async function createTransitContextQuery(transit, birthChart) {
 import { formatTransitForPrompt } from '../utilities/transitPrioritization.js';
 import { formatMoonPhaseForPrompt } from '../utilities/moonPhaseAnalysis.js';
 import { formatSkyPatternForPrompt } from '../utilities/horoscopeGeneration.js';
+
+// Generate horoscope narrative from custom transit events
+export async function generateCustomTransitNarrative(data) {
+  const { 
+    userId, 
+    period, 
+    startDate, 
+    endDate, 
+    hasKnownBirthTime,
+    customTransitEvents
+  } = data;
+  
+  // Get user context for personalization
+  const contextChunks = await getRelevantContextForHoroscope(userId, customTransitEvents.slice(0, 3));
+  
+  // Separate events by type for better organization
+  const transitToNatal = customTransitEvents.filter(e => e.type === 'transit-to-natal');
+  const transitToTransit = customTransitEvents.filter(e => e.type === 'transit-to-transit');
+  const moonPhaseEvents = customTransitEvents.filter(e => e.type === 'moon-phase');
+  
+  const systemPrompt = `You are StelliumAI, generating a custom horoscope based on specific transits selected by the user. Create a focused narrative that addresses these particular astrological events.
+
+Guidelines:
+- Focus specifically on the transits provided, as these were deliberately selected
+- Create a cohesive interpretation that shows how these transits work together
+- ${hasKnownBirthTime ? 'Reference life areas (houses) when relevant' : 'Focus on psychological and behavioral themes only (no house references)'}
+- Keep the tone warm, empowering, and practical
+- Length should match the scope: ${period === 'daily' ? '100-150 words' : period === 'weekly' ? '150-200 words' : '250-350 words'}
+- Don't add extra transits or themes not mentioned in the input
+- Use accessible language while maintaining astrological accuracy`;
+
+  const userPrompt = `Time Period: ${startDate.toDateString()} - ${endDate.toDateString()}
+
+User Context from their birth chart analysis:
+${contextChunks.join('\n')}
+
+Selected Transits for Interpretation:
+${transitToNatal.map(t => formatTransitForPrompt(t)).join('\n')}
+
+${moonPhaseEvents.length > 0 ? `
+Moon Phases:
+${moonPhaseEvents.map(t => formatMoonPhaseForPrompt(t)).join('\n')}
+` : ''}
+
+${transitToTransit.length > 0 ? `
+Sky Patterns (affecting everyone):
+${transitToTransit.map(t => formatSkyPatternForPrompt(t)).join('\n')}
+` : ''}
+
+Generate a focused horoscope interpretation for these specific transits.`;
+
+  console.log("Custom horoscope userPrompt: ", userPrompt);
+
+  const completion = await client.chat.completions.create({
+    model: "gpt-4o",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt }
+    ],
+    temperature: 0.7,
+    max_tokens: period === 'daily' ? 200 : period === 'weekly' ? 300 : 500
+  });
+
+  return {
+    horoscopeText: completion.choices[0].message.content.trim()
+  };
+}

@@ -449,6 +449,14 @@ functions:
           path: /getTransitWindows
           method: options
           cors: true
+      - http:
+          path: /users/{userId}/horoscope/custom
+          method: post
+          cors: true
+      - http:
+          path: /users/{userId}/horoscope/custom
+          method: options
+          cors: true
 custom:
   serverless-offline:
     httpPort: 3001
