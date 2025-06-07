@@ -7,7 +7,7 @@ import { getBirthChart } from "./dbService.js"
 
 
 
-const apiKey = process.env.OPENAI_API_KEY
+const apiKey = process.env.OPENAI_API_KEY;
 const client = new OpenAI({ apiKey: apiKey})
 
 

@@ -2,7 +2,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 
-const connection_string = process.env.MONGODB_URI
+const connection_string = process.env.MONGODB_URI;
 const client = new MongoClient(connection_string);
 
 client.connect();
@@ -1282,6 +1282,23 @@ export async function deleteHoroscope(horoscopeId, userId = null) {
         return result.deletedCount > 0;
     } catch (error) {
         console.error('Error deleting horoscope:', error);
+        throw error;
+    }
+}
+
+// Check for existing horoscope within a date range
+export async function getExistingHoroscope(userId: string, startDate: Date, endDate: Date, type: 'weekly' | 'monthly') {
+    try {
+        const horoscope = await horoscopesCollection.findOne({
+            userId,
+            period: type,
+            startDate: { $eq: startDate },
+            endDate: { $eq: endDate }
+        });
+        
+        return horoscope;
+    } catch (error) {
+        console.error('Error checking for existing horoscope:', error);
         throw error;
     }
 }

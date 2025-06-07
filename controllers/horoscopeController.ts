@@ -5,8 +5,10 @@ import { generateHoroscope } from '../utilities/horoscopeGeneration.js';
 import { 
   getHoroscopesByUserId, 
   getLatestHoroscope,
-  deleteHoroscope 
+  deleteHoroscope,
+  getExistingHoroscope 
 } from '../services/dbService.js';
+import { normalizeHoroscopeDateRange } from '../utilities/horoscopeDateUtils.js';
 
 // Generate weekly horoscope
 export async function generateWeeklyHoroscope(req: Request, res: Response) {
@@ -21,25 +23,39 @@ export async function generateWeeklyHoroscope(req: Request, res: Response) {
     }
     
     // Parse and validate date
-    const start = new Date(startDate);
-    if (isNaN(start.getTime())) {
+    const inputDate = new Date(startDate);
+    if (isNaN(inputDate.getTime())) {
       return res.status(400).json({ 
         error: 'Invalid startDate format' 
       });
     }
     
-    // Calculate end date (7 days later)
-    const end = new Date(start);
-    end.setDate(end.getDate() + 6); // 6 days after start = 7 day period
+    // Normalize to Monday-Sunday week
+    const { startDate: normalizedStart, endDate: normalizedEnd } = normalizeHoroscopeDateRange(inputDate, 'weekly');
     
-    console.log(`Generating weekly horoscope for user ${userId} from ${start.toDateString()} to ${end.toDateString()}`);
+    console.log(`Checking for existing weekly horoscope for user ${userId} from ${normalizedStart.toDateString()} to ${normalizedEnd.toDateString()}`);
     
-    // Generate the horoscope
-    const horoscope = await generateHoroscope(userId, start, end, 'weekly');
+    // Check for existing horoscope in this period
+    const existingHoroscope = await getExistingHoroscope(userId, normalizedStart, normalizedEnd, 'weekly');
+    
+    if (existingHoroscope) {
+      console.log(`Found existing weekly horoscope for user ${userId}, returning cached version`);
+      return res.status(200).json({
+        success: true,
+        horoscope: existingHoroscope,
+        cached: true
+      });
+    }
+    
+    console.log(`Generating new weekly horoscope for user ${userId}`);
+    
+    // Generate the horoscope with normalized dates
+    const horoscope = await generateHoroscope(userId, normalizedStart, normalizedEnd, 'weekly');
     
     return res.status(200).json({
       success: true,
-      horoscope
+      horoscope,
+      cached: false
     });
     
   } catch (error) {
@@ -64,24 +80,39 @@ export async function generateMonthlyHoroscope(req: Request, res: Response) {
     }
     
     // Parse and validate date
-    const start = new Date(startDate);
-    if (isNaN(start.getTime())) {
+    const inputDate = new Date(startDate);
+    if (isNaN(inputDate.getTime())) {
       return res.status(400).json({ 
         error: 'Invalid startDate format' 
       });
     }
     
-    // Calculate end date (last day of the month)
-    const end = new Date(start.getFullYear(), start.getMonth() + 1, 0);
+    // Normalize to full month period
+    const { startDate: normalizedStart, endDate: normalizedEnd } = normalizeHoroscopeDateRange(inputDate, 'monthly');
     
-    console.log(`Generating monthly horoscope for user ${userId} from ${start.toDateString()} to ${end.toDateString()}`);
+    console.log(`Checking for existing monthly horoscope for user ${userId} from ${normalizedStart.toDateString()} to ${normalizedEnd.toDateString()}`);
     
-    // Generate the horoscope
-    const horoscope = await generateHoroscope(userId, start, end, 'monthly');
+    // Check for existing horoscope in this period
+    const existingHoroscope = await getExistingHoroscope(userId, normalizedStart, normalizedEnd, 'monthly');
+    
+    if (existingHoroscope) {
+      console.log(`Found existing monthly horoscope for user ${userId}, returning cached version`);
+      return res.status(200).json({
+        success: true,
+        horoscope: existingHoroscope,
+        cached: true
+      });
+    }
+    
+    console.log(`Generating new monthly horoscope for user ${userId}`);
+    
+    // Generate the horoscope with normalized dates
+    const horoscope = await generateHoroscope(userId, normalizedStart, normalizedEnd, 'monthly');
     
     return res.status(200).json({
       success: true,
-      horoscope
+      horoscope,
+      cached: false
     });
     
   } catch (error) {
