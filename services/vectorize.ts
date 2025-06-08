@@ -5,7 +5,6 @@ import { encoding_for_model } from '@dqbd/tiktoken';
 import OpenAI from "openai";
 import { Pinecone } from '@pinecone-database/pinecone';  
 import pkg from '@pinecone-database/pinecone';
-import { getTopicsForChunk } from './gptService.js';
 import { BroadTopicsEnum,  subTopicSearchPrompts } from '../utilities/constants.js';
 import { RELATIONSHIP_CATEGORY_PROMPTS } from '../utilities/relationshipScoringConstants.js';
 // const { PineconeClient } = pkg;
@@ -13,13 +12,18 @@ import { RELATIONSHIP_CATEGORY_PROMPTS } from '../utilities/relationshipScoringC
 
   // Initialize OpenAI
 const apiKey = process.env.OPENAI_API_KEY;
-const openAiClient = new OpenAI({ apiKey: apiKey})
+const openAiClient = new OpenAI({ 
+    apiKey: apiKey,
+    timeout: 30000, // 30 second timeout
+    maxRetries: 2   // Limit retries to prevent connection buildup
+});
 
-// Initialize Pinecone
+// Initialize Pinecone with connection limits
 const pinecone = new Pinecone({
     apiKey: process.env.PINECONE_API_KEY
 });
 const index = pinecone.index('stellium-test-index');
+
 
 // Define the splitText function using RecursiveCharacterTextSplitter
 export async function splitText(text, maxChunkSize = 900) {  // Increased from 300 to 600
@@ -71,14 +75,37 @@ export async function splitText(text, maxChunkSize = 900) {  // Increased from 3
   }
 }
 
-// Function to get embeddings
-async function getEmbedding(text, model = 'text-embedding-ada-002') {
-    const response = await openAiClient.embeddings.create({
-        model: model,
-        input: text
-    });
-    const embedding = response.data[0].embedding;
-    return embedding;
+// Function to get embeddings with retry logic and timeout
+async function getEmbedding(text, model = 'text-embedding-ada-002', retries = 3) {
+    for (let attempt = 1; attempt <= retries; attempt++) {
+        try {
+            console.log(`Getting embedding for text (${text.length} chars), attempt ${attempt}/${retries}`);
+            
+            // Add timeout to embedding request
+            const timeoutPromise = new Promise((_, reject) => 
+                setTimeout(() => reject(new Error('Embedding timeout after 20 seconds')), 20000)
+            );
+            
+            const embeddingPromise = openAiClient.embeddings.create({
+                model: model,
+                input: text
+            });
+            
+            const response = await Promise.race([embeddingPromise, timeoutPromise]);
+            const embedding = response.data[0].embedding;
+            console.log(`Successfully generated embedding with ${embedding.length} dimensions`);
+            return embedding;
+        } catch (error) {
+            console.error(`Embedding attempt ${attempt}/${retries} failed:`, error.message);
+            if (attempt === retries) {
+                throw new Error(`Failed to generate embedding after ${retries} attempts: ${error.message}`);
+            }
+            // Exponential backoff with longer delays for rate limiting
+            const delay = Math.pow(2, attempt) * 2000; // 4s, 8s, 16s
+            console.log(`Waiting ${delay}ms before embedding retry...`);
+            await new Promise(resolve => setTimeout(resolve, delay));
+        }
+    }
 }
 
 
@@ -334,6 +361,8 @@ export async function processUserQueryRelationship(compositeChartId, query) {
 // Helper to process a section of text with its description (if any)
 export async function processTextSection(text, userId, description = null) {
     try {
+        console.log(`processTextSection called for userId: ${userId}, text length: ${text?.length}`);
+        
         if (!text || typeof text !== 'string' || text.trim().length === 0) {
             console.log("Empty or invalid text provided to processTextSection, returning empty array");
             return [];
@@ -346,31 +375,51 @@ export async function processTextSection(text, userId, description = null) {
             return [];
         }
 
+        console.log(`Processing ${chunks.length} chunks for userId: ${userId}`);
         const records = [];
 
         for (let idx = 0; idx < chunks.length; idx++) {
-            const chunkText = chunks[idx];
-            const topics = await getTopicsForChunk(chunkText);
-            console.log("chunkText: ", chunkText)
-            console.log("topics: ", topics)
-            const embedding = await getEmbedding(chunkText);
-            
-            records.push({
-                id: `${userId}-${Date.now()}-${idx}`,
-                values: embedding,
-                metadata: {
-                    userId: userId,
-                    description: description,
-                    topics: topics,
-                    chunk_index: idx,
-                    text: chunkText,
-                }
-            });
+            try {
+                const chunkText = chunks[idx];
+                console.log(`Processing chunk ${idx + 1}/${chunks.length} (${chunkText.length} chars)`);
+                
+                const embedding = await getEmbedding(chunkText);
+                
+                records.push({
+                    id: `${userId}-${Date.now()}-${idx}`,
+                    values: embedding,
+                    metadata: {
+                        userId: userId,
+                        description: description,
+                        chunk_index: idx,
+                        text: chunkText,
+                    }
+                });
+                
+                console.log(`Successfully processed chunk ${idx + 1}/${chunks.length}`);
+            } catch (chunkError) {
+                console.error(`Error processing chunk ${idx + 1}/${chunks.length}:`, {
+                    error: chunkError.message,
+                    chunkLength: chunks[idx]?.length,
+                    userId: userId
+                });
+                throw new Error(`Failed to process chunk ${idx + 1}: ${chunkError.message}`);
+            }
         }
 
+        console.log(`Successfully processed all ${records.length} chunks for userId: ${userId}`);
+        
+        // Clear variables to help with memory management
+        chunks.length = 0;
+        
         return records;
     } catch (error) {
-        console.error("Error in processTextSection:", error);
+        console.error("Error in processTextSection:", {
+            error: error.message,
+            userId: userId,
+            textLength: text?.length,
+            description: description
+        });
         throw error;
     }
 }
@@ -394,9 +443,7 @@ export async function processTextSectionRelationship(text, compositeChartId, des
 
       for (let idx = 0; idx < chunks.length; idx++) {
           const chunkText = chunks[idx];
-          // const topics = await getTopicsForChunk(chunkText);
           console.log("chunkText: ", chunkText)
-          // console.log("topics: ", topics)
           const embedding = await getEmbedding(chunkText);
           
           records.push({
@@ -421,15 +468,55 @@ export async function processTextSectionRelationship(text, compositeChartId, des
 }
 
 
-export async function upsertRecords(records, nameSpaceId) {
+export async function upsertRecords(records, nameSpaceId, retries = 3) {
   if (!records || records.length === 0) {
     console.log("No records to upsert, skipping");
     return { success: true, count: 0 };
   }
   
   console.log(`Upserting ${records.length} records to namespace: ${nameSpaceId}`);
-  await index.upsert(records, { namespace: nameSpaceId });
-  return { success: true, count: records.length };
+  
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Pinecone upsert attempt ${attempt}/${retries} for ${records.length} records`);
+      
+      // Add timeout to the upsert operation
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Pinecone upsert timeout after 60 seconds')), 60000)
+      );
+      
+      const upsertPromise = index.upsert(records, { namespace: nameSpaceId });
+      
+      await Promise.race([upsertPromise, timeoutPromise]);
+      
+      console.log(`Successfully upserted ${records.length} records to Pinecone namespace: ${nameSpaceId}`);
+      
+      // Force garbage collection to free memory
+      if (global.gc) {
+        console.log('Running garbage collection after upsert');
+        global.gc();
+      }
+      
+      return { success: true, count: records.length };
+      
+    } catch (error) {
+      console.error(`Pinecone upsert attempt ${attempt}/${retries} failed:`, {
+        error: error.message,
+        namespace: nameSpaceId,
+        recordCount: records.length,
+        recordIds: records.slice(0, 3).map(r => r.id) // Log first 3 IDs for debugging
+      });
+      
+      if (attempt === retries) {
+        throw new Error(`Pinecone upsert failed after ${retries} attempts: ${error.message}`);
+      }
+      
+      // Exponential backoff
+      const delay = Math.pow(2, attempt) * 2000; // 2s, 4s, 8s
+      console.log(`Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
+  }
 }
 
 
@@ -477,61 +564,25 @@ export async function retrieveTopicContext(userId, topic) {
         // Get embedding for the prompt
       const promptEmbedding = await getEmbedding(prompt);
         
-        // Query 1: Get results by metadata topic match
-        const topicResults = await index.query({
-            vector: promptEmbedding, // still needed even though we're not using it for ranking
-            topK: 5,
-            includeMetadata: true,
-            filter: {
-                $and: [
-                    { userId: userId },
-                    { topics: { $in: [topic] } }  // Changed from $contains to $in
-                ]
-            }
-        });
-
-        // Query 2: Get results by vector similarity
+        // Query by vector similarity only (topics removed)
         const vectorResults = await index.query({
             vector: promptEmbedding,
-            topK: 5,
+            topK: 10, // Increased since we're not using topic filtering
             includeMetadata: true,
             filter: {
                 userId: userId
             }
         });
 
-        // Combine results and remove duplicates
-        const seenIds = new Set();
-        const combinedResults = [];
-
-        // Helper function to add unique results
-        const addUniqueResult = (match) => {
-            if (!seenIds.has(match.id)) {
-                seenIds.add(match.id);
-                combinedResults.push({
-                    text: match.metadata.text,
-                    description: match.metadata.description,
-                    score: match.score,
-                    topics: match.metadata.topics,
-                    matchType: match.matchType // indicates how this result was found
-                });
-            }
-        };
-
-        // Add topic matches first
-        topicResults.matches.forEach(match => {
-            match.matchType = 'topic';
-            addUniqueResult(match);
-        });
-
-        // Add vector matches
-        vectorResults.matches.forEach(match => {
-            match.matchType = 'vector';
-            addUniqueResult(match);
-        });
+        // Process results (topics removed)
+        const results = vectorResults.matches.map(match => ({
+            text: match.metadata.text,
+            description: match.metadata.description,
+            score: match.score
+        }));
 
         return {
-            matches: combinedResults
+            matches: results
         };
 
     } catch (error) {
@@ -561,7 +612,6 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
             return results.matches.map(match => ({
                 text: match.metadata.text,
                 description: match.metadata.description,
-                topics: match.metadata.topics,
                 score: match.score,
                 id: match.id
             }));

@@ -318,7 +318,9 @@ export async function getCompletionGptResponseForRelationshipAnalysis(relationsh
 }
 
 
-export async function getTopicsForChunk(chunkText) {
+export async function getTopicsForChunk(chunkText, retries = 3) {
+  console.log(`Getting topics for chunk (${chunkText.length} chars)`);
+  
   // Dynamically extract the labels
   const broadTopicLabels = Object.values(BroadTopicsEnum).map(topic => `"${topic.label}"`).join("\n");
 
@@ -334,18 +336,42 @@ Return format:
   "topics": ["topic1", "topic2"] // return at least one but no more than 3 topics
 }`;
 
-  try {
-    const completion = await client.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-    });
-
-    const response = JSON.parse(completion.choices[0].message.content);
-    return response.topics;
-  } catch (error) {
-    console.error("Error getting topics for chunk:", error);
-    throw error;
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      console.log(`Topic classification attempt ${attempt}/${retries}`);
+      
+      // Add timeout to the API call
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Topic classification timeout after 30 seconds')), 30000)
+      );
+      
+      const completionPromise = client.chat.completions.create({
+        model: "gpt-4o-mini", // Changed from gpt-4 to gpt-4o-mini for speed
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.3,
+        max_tokens: 100 // Limit response size
+      });
+      
+      const completion = await Promise.race([completionPromise, timeoutPromise]);
+      const response = JSON.parse(completion.choices[0].message.content);
+      
+      console.log(`Topics identified: ${response.topics}`);
+      return response.topics;
+      
+    } catch (error) {
+      console.error(`Topic classification attempt ${attempt}/${retries} failed:`, error.message);
+      
+      if (attempt === retries) {
+        console.error(`All topic classification attempts failed, using fallback`);
+        // Fallback to default topics if all retries fail
+        return ["Personal Growth"]; // Safe default topic
+      }
+      
+      // Exponential backoff
+      const delay = Math.pow(2, attempt) * 1000; // 2s, 4s, 8s
+      console.log(`Waiting ${delay}ms before retry...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
+    }
   }
 }
 

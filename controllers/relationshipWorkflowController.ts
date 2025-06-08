@@ -425,14 +425,15 @@ async function executeGenerateAnalysis(compositeChartId: string, userA: any, use
 
 
 async function executeVectorizeAnalysis(compositeChartId: string) {
-  console.log(`Vectorizing relationship analysis for ${compositeChartId}`);
+  console.log(`Starting vectorization for relationship analysis: ${compositeChartId}`);
   
-  // Get the relationship analysis
-  const relationshipData = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
-  
-  if (!relationshipData || !relationshipData.categoryAnalysis) {
-    throw new Error('Relationship analysis not found');
-  }
+  try {
+    // Get the relationship analysis
+    const relationshipData = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
+    
+    if (!relationshipData || !relationshipData.categoryAnalysis) {
+      throw new Error('Relationship analysis not found');
+    }
 
   const vectorizationStatus = {};
   const totalCategories = Object.keys(relationshipData.categoryAnalysis).length;
@@ -445,51 +446,86 @@ async function executeVectorizeAnalysis(compositeChartId: string) {
   // Process each category analysis
   for (const [category, data] of Object.entries(relationshipData.categoryAnalysis)) {
     if (data.interpretation) {
-      console.log(`Vectorizing category: ${category}, content length: ${data.interpretation?.length || 0}`);
-      
-      if (!data.interpretation || typeof data.interpretation !== 'string' || data.interpretation.trim().length === 0) {
-        console.log(`Skipping empty interpretation for category: ${category}`);
-        continue;
-      }
-      
-      // Create rich description using the stored astrology data
-      const categoryDisplayName = category.split('_')
-        .map(word => word.charAt(0) + word.slice(1).toLowerCase())
-        .join(' ');
-      
-      const richDescription = data.astrologyData ? 
-        `${categoryDisplayName} Analysis\n\n${data.astrologyData}` :
-        `Relationship analysis for ${category}`;
-      
-      // Process and vectorize the text
-      const records = await processTextSectionRelationship(
-        data.interpretation,
-        compositeChartId,
-        richDescription,
-        category,
-        data.astrologyData
-      );
-      
-      // Upsert records to vector database only if we have records
-      if (records && records.length > 0) {
-        await upsertRecords(records, compositeChartId);
-        vectorizationStatus[`categoryAnalysis.${category}`] = true;
-        completed++;
-        await updateRelationshipWorkflowStatus(compositeChartId, { 'progress.vectorizeAnalysis.completed': completed });
-      } else {
-        console.log(`No records generated for category: ${category}, skipping vectorization`);
+      try {
+        console.log(`Vectorizing category: ${category}, content length: ${data.interpretation?.length || 0}`);
+        
+        if (!data.interpretation || typeof data.interpretation !== 'string' || data.interpretation.trim().length === 0) {
+          console.log(`Skipping empty interpretation for category: ${category}`);
+          continue;
+        }
+        
+        // Create rich description using the stored astrology data
+        const categoryDisplayName = category.split('_')
+          .map(word => word.charAt(0) + word.slice(1).toLowerCase())
+          .join(' ');
+        
+        const richDescription = data.astrologyData ? 
+          `${categoryDisplayName} Analysis\n\n${data.astrologyData}` :
+          `Relationship analysis for ${category}`;
+        
+        // Process and vectorize the text
+        const records = await processTextSectionRelationship(
+          data.interpretation,
+          compositeChartId,
+          richDescription,
+          category,
+          data.astrologyData
+        );
+        
+        // Upsert records to vector database only if we have records
+        if (records && records.length > 0) {
+          await upsertRecords(records, compositeChartId);
+          vectorizationStatus[`categoryAnalysis.${category}`] = true;
+          completed++;
+          await updateRelationshipWorkflowStatus(compositeChartId, { 'progress.vectorizeAnalysis.completed': completed });
+          console.log(`Category ${category} vectorization completed`);
+        } else {
+          console.log(`No records generated for category: ${category}, skipping vectorization`);
+        }
+        
+        // Add delay between operations to avoid rate limiting
+        console.log('Waiting 2 seconds before next vectorization step...');
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Log memory usage and force cleanup if needed
+        const memUsage = process.memoryUsage();
+        console.log(`Memory usage: RSS=${Math.round(memUsage.rss/1024/1024)}MB, Heap=${Math.round(memUsage.heapUsed/1024/1024)}MB`);
+        
+        // Force garbage collection if memory usage is high
+        if (memUsage.heapUsed > 1024 * 1024 * 1024 && global.gc) { // > 1GB heap
+          console.log('High memory usage detected, running garbage collection');
+          global.gc();
+        }
+        
+      } catch (error) {
+        console.error(`Category ${category} vectorization failed:`, error.message);
+        throw new Error(`Failed to vectorize category ${category}: ${error.message}`);
       }
     }
   }
 
-  // Update vectorization status
-  await updateRelationshipAnalysisVectorization(compositeChartId, {
-    vectorizationStatus,
-    vectorizationCompletedAt: new Date(),
-    isVectorized: true
-  });
+    // Update vectorization status
+    await updateRelationshipAnalysisVectorization(compositeChartId, {
+      vectorizationStatus,
+      vectorizationCompletedAt: new Date(),
+      isVectorized: true
+    });
 
-  await updateRelationshipWorkflowStatus(compositeChartId, { 'progress.vectorizeAnalysis.completed': totalCategories });
-  
-  console.log(`Relationship analysis vectorized for ${compositeChartId}`);
+    await updateRelationshipWorkflowStatus(compositeChartId, { 'progress.vectorizeAnalysis.completed': totalCategories });
+    
+    console.log(`Relationship analysis vectorization completed successfully for ${compositeChartId}`);
+  } catch (error) {
+    console.error(`Relationship vectorization failed for ${compositeChartId}`, {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // Update workflow status to show vectorization error
+    await updateRelationshipWorkflowStatus(compositeChartId, {
+      'progress.vectorizeAnalysis.status': 'error',
+      'progress.vectorizeAnalysis.error': error.message
+    });
+    
+    throw error;
+  }
 }

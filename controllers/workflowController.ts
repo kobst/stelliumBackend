@@ -287,14 +287,16 @@ async function executeGenerateBasic(userId: string) {
 }
 
 async function executeVectorizeBasic(userId: string) {
-  console.log('Retrieving basic analysis for userId:', userId);
-  const analysis = await getBasicAnalysisByUserId(userId);
-  console.log('Retrieved analysis:', analysis ? 'found' : 'not found');
+  console.log('Starting vectorization for userId:', userId);
+  
+  try {
+    const analysis = await getBasicAnalysisByUserId(userId);
+    console.log('Retrieved analysis:', analysis ? 'found' : 'not found');
 
-  if (!analysis) {
-    console.error('No basic analysis found for userId:', userId);
-    throw new Error('Basic analysis not found');
-  }
+    if (!analysis) {
+      console.error('No basic analysis found for userId:', userId);
+      throw new Error('Basic analysis not found');
+    }
 
   let totalTasks = 0;
   let completed = 0;
@@ -318,27 +320,55 @@ async function executeVectorizeBasic(userId: string) {
 
   // Process overview
   if (analysis.overview) {
-    const records = await processTextSection(analysis.overview, userId, 'overview');
-    await upsertRecords(records, userId);
-    await updateVectorizationStatus(userId, { overview: true });
-    completed++;
-    await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
+    try {
+      console.log(`Processing overview for userId: ${userId}`);
+      const records = await processTextSection(analysis.overview, userId, 'overview');
+      await upsertRecords(records, userId);
+      await updateVectorizationStatus(userId, { overview: true });
+      completed++;
+      await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
+      console.log(`Overview vectorization completed for userId: ${userId}`);
+    } catch (error) {
+      console.error(`Overview vectorization failed for userId: ${userId}:`, error.message);
+      throw new Error(`Failed to vectorize overview: ${error.message}`);
+    }
   }
 
   // Process dominance patterns
   if (analysis.dominance && typeof analysis.dominance === 'object') {
     for (const [type, data] of Object.entries(analysis.dominance)) {
       if (data && data.interpretation) {
-        // Create rich description using the dominance description array
-        const dominanceDescription = data.description ? 
-          `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${data.description.join('\n')}` : 
-          `dominance_${type}`;
-        
-        const records = await processTextSection(data.interpretation, userId, dominanceDescription);
-        await upsertRecords(records, userId);
-        await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
-        completed++;
-        await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
+        try {
+          console.log(`Processing dominance ${type} for userId: ${userId}`);
+          // Create rich description using the dominance description array
+          const dominanceDescription = data.description ? 
+            `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${data.description.join('\n')}` : 
+            `dominance_${type}`;
+          
+          const records = await processTextSection(data.interpretation, userId, dominanceDescription);
+          await upsertRecords(records, userId);
+          await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
+          completed++;
+          await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
+          console.log(`Dominance ${type} vectorization completed for userId: ${userId}`);
+          
+          // Add delay between operations to avoid rate limiting
+          console.log('Waiting 2 seconds before next vectorization step...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          
+          // Log memory usage and force cleanup if needed
+          const memUsage = process.memoryUsage();
+          console.log(`Memory usage: RSS=${Math.round(memUsage.rss/1024/1024)}MB, Heap=${Math.round(memUsage.heapUsed/1024/1024)}MB`);
+          
+          // Force garbage collection if memory usage is high
+          if (memUsage.heapUsed > 1024 * 1024 * 1024 && global.gc) { // > 1GB heap
+            console.log('High memory usage detected, running garbage collection');
+            global.gc();
+          }
+        } catch (error) {
+          console.error(`Dominance ${type} vectorization failed for userId: ${userId}:`, error.message);
+          throw new Error(`Failed to vectorize dominance ${type}: ${error.message}`);
+        }
       }
     }
   }
@@ -347,17 +377,44 @@ async function executeVectorizeBasic(userId: string) {
   if (analysis.planets && typeof analysis.planets === 'object') {
     for (const [planetName, data] of Object.entries(analysis.planets)) {
       if (data && data.interpretation) {
-        const records = await processTextSection(data.interpretation, userId, data.description || `planet_${planetName}`);
-        await upsertRecords(records, userId);
-        await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
-        completed++;
-        await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
+        try {
+          console.log(`Processing planet ${planetName} for userId: ${userId}`);
+          const records = await processTextSection(data.interpretation, userId, data.description || `planet_${planetName}`);
+          await upsertRecords(records, userId);
+          await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
+          completed++;
+          await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': completed });
+          console.log(`Planet ${planetName} vectorization completed for userId: ${userId}`);
+          
+          // Add delay between operations to avoid rate limiting
+          console.log('Waiting 2 seconds before next vectorization step...');
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        } catch (error) {
+          console.error(`Planet ${planetName} vectorization failed for userId: ${userId}:`, error.message);
+          throw new Error(`Failed to vectorize planet ${planetName}: ${error.message}`);
+        }
       }
     }
   }
 
-  await updateVectorizationStatus(userId, { basicAnalysis: true });
-  await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': totalTasks });
+    await updateVectorizationStatus(userId, { basicAnalysis: true });
+    await updateWorkflowStatus(userId, { 'progress.vectorizeBasic.completed': totalTasks });
+    
+    console.log(`Vectorization completed successfully for userId: ${userId}`);
+  } catch (error) {
+    console.error(`Vectorization failed for userId: ${userId}`, {
+      error: error.message,
+      stack: error.stack
+    });
+    
+    // Update workflow status to show vectorization error
+    await updateWorkflowStatus(userId, {
+      'progress.vectorizeBasic.status': 'error',
+      'progress.vectorizeBasic.error': error.message
+    });
+    
+    throw error;
+  }
 }
 
 async function executeGenerateTopic(userId: string) {
