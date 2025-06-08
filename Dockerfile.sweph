@@ -1,0 +1,28 @@
+FROM amazonlinux:2023
+
+# Install dependencies including Python 3.9+ for node-gyp
+RUN dnf clean all && \
+    dnf update -y && \
+    dnf install -y gcc gcc-c++ make python3 python3-devel tar gzip git && \
+    dnf groupinstall -y "Development Tools"
+
+# Install Node.js 18
+RUN curl -sL https://rpm.nodesource.com/setup_18.x | bash - && \
+    dnf install -y nodejs
+
+# Create app directory
+WORKDIR /app
+
+# Create a minimal package.json just for sweph
+RUN echo '{"name": "sweph-builder", "version": "1.0.0"}' > package.json
+
+# Install sweph and force rebuild from source
+RUN npm install sweph --build-from-source
+
+# Create output directory and copy the binary
+RUN mkdir -p /output/nodejs/node_modules/sweph/build/Release && \
+    cp -r node_modules/sweph /output/nodejs/node_modules/ && \
+    ls -la /output/nodejs/node_modules/sweph/build/Release/
+
+# Verify the binary format
+RUN file /output/nodejs/node_modules/sweph/build/Release/sweph.node

@@ -63,11 +63,6 @@ export async function handleUserCreation(req, res) {
 
 
     const saveUserResponse = await saveUser(user)
-    // Set CORS headers
-    res.setHeader('Access-Control-Allow-Origin', '*'); // Adjust this to match your front-end URL in production
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-    res.setHeader('Access-Control-Allow-Credentials', true);
     
     res.json({ user, saveUserResponse});
   } catch (error) {
@@ -105,10 +100,6 @@ export const handleCreateRelationship = async (req, res) => {
   const result = await saveCompositeChart(relationshipProfile);
   console.log("insertedId: ", result.insertedId);
 
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-  res.setHeader('Access-Control-Allow-Credentials', true);
   res.status(200).json({ relationshipProfile });
 }
 
@@ -149,10 +140,6 @@ export async function handleUserCreationUnknownTime(req, res) {
     };
 
     const saveUserResponse = await saveUser(user);
-    res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-    res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-    res.setHeader('Access-Control-Allow-Credentials', true);
 
     res.json({ user, saveUserResponse });
   } catch (error) {

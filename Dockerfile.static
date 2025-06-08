@@ -1,0 +1,25 @@
+FROM amazonlinux:2023
+
+# Install dependencies with static linking capabilities
+RUN dnf clean all && \
+    dnf update -y && \
+    dnf install -y gcc gcc-c++ make python3 python3-devel tar gzip git glibc-static libstdc++-static && \
+    dnf groupinstall -y "Development Tools"
+
+# Install Node.js 18
+RUN curl -sL https://rpm.nodesource.com/setup_18.x | bash - && \
+    dnf install -y nodejs
+
+WORKDIR /app
+
+# Install sweph with static linking flags
+RUN echo '{"name": "sweph-static", "version": "1.0.0"}' > package.json
+RUN npm_config_build_from_source=true \
+    CXXFLAGS="-static-libgcc -static-libstdc++" \
+    LDFLAGS="-static-libgcc -static-libstdc++" \
+    npm install sweph@gpl
+
+# Create output and verify
+RUN mkdir -p /output/nodejs/node_modules/sweph/build/Release && \
+    cp -r node_modules/sweph /output/nodejs/node_modules/ && \
+    ldd /output/nodejs/node_modules/sweph/build/Release/sweph.node || echo "Static binary (no deps)"

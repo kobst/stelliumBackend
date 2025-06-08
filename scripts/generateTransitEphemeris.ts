@@ -1,5 +1,5 @@
 // @ts-nocheck
-import sweph from 'sweph';
+import sweph from '/opt/nodejs/node_modules/sweph';
 import { MongoClient } from 'mongodb'; // For MongoDB persistence example
 
 // Assuming ephemerisDataService.js is in ../services/

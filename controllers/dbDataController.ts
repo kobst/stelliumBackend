@@ -24,10 +24,6 @@ export async function handleGetUsers(req, res) {
     console.log("handleGetUsers")
     try {
         const users = await getUsers();
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type');
-        res.setHeader('Access-Control-Allow-Credentials', true);
         res.status(200).json(users);
     } catch (error) {
         res.status(500).json({ error: error.message });

@@ -1,17 +1,7 @@
 // @ts-nocheck
-import path from 'path';
-import fs from 'fs';
-import { fileURLToPath } from 'url';
+import { relationshipScoringStats } from './relationshipScoringStats.js';
 
-let statsData;
-try {
-  statsData = JSON.parse(
-    fs.readFileSync(new URL('../relationship_scoring_stats.json', import.meta.url), 'utf-8')
-  );
-} catch {
-  const fallbackPath = path.join(process.cwd(), 'relationship_scoring_stats.json');
-  statsData = JSON.parse(fs.readFileSync(fallbackPath, 'utf-8'));
-}
+const statsData = relationshipScoringStats;
 
 import {
     ALL_RELATIONSHIP_CATEGORIES,

@@ -1,0 +1,23 @@
+# Use AWS Lambda Node.js 18 base image for building
+FROM public.ecr.aws/lambda/nodejs:18 as builder
+
+# Install build dependencies
+RUN yum install -y gcc-c++ make python3
+
+# Create app directory
+WORKDIR /app
+
+# Create a minimal package.json just for sweph
+RUN echo '{"name": "sweph-builder", "version": "1.0.0"}' > package.json
+
+# Install sweph and force rebuild from source
+RUN npm install sweph --build-from-source
+
+# Create output directory and copy the binary
+RUN mkdir -p /output/nodejs/node_modules/sweph && \
+    cp -r node_modules/sweph /output/nodejs/node_modules/ && \
+    ls -la /output/nodejs/node_modules/sweph/build/Release/
+
+# Final stage to output just the built module
+FROM scratch
+COPY --from=builder /output /

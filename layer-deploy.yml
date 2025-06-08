@@ -1,0 +1,17 @@
+service: stellium-sweph-layer
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+
+layers:
+  sweph:
+    path: layer
+    name: stellium-sweph-layer
+    description: Swiss Ephemeris library with statically linked binary
+    compatibleRuntimes:
+      - nodejs18.x
+      - nodejs20.x
+    compatibleArchitectures:
+      - arm64

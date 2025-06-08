@@ -11,24 +11,10 @@ dotenv.config();
 
 const app = express();
 
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// CORS middleware
-app.use(cors({
-  origin: '*', // For development, in production set to your frontend's URL
-  methods: 'GET,PUT,POST,DELETE,OPTIONS',
-  allowedHeaders: 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
-  credentials: true
-}));
-
-// Your routes
-app.use('/', indexRoutes);
-
 // Initialize database connection
 let dbInitialized = false;
 
-app.use(async (req, res, next) => {
+const initDbMiddleware = async (req, res, next) => {
   if (!dbInitialized) {
     try {
       await initializeDatabase();
@@ -39,6 +25,105 @@ app.use(async (req, res, next) => {
     }
   }
   next();
+};
+
+// CORS configuration
+const corsOptions = {
+  origin: [
+    'https://main.d36g3neun79jnt.amplifyapp.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: [
+    'Content-Type',
+    'X-Amz-Date',
+    'Authorization',
+    'X-Api-Key',
+    'X-Amz-Security-Token',
+    'X-Requested-With'
+  ]
+};
+
+// Apply CORS middleware first
+app.use(cors(corsOptions));
+
+// Add explicit CORS headers for Lambda compatibility
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  const allowedOrigins = [
+    'https://main.d36g3neun79jnt.amplifyapp.com',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ];
+  
+  // Set CORS headers explicitly
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', 'https://main.d36g3neun79jnt.amplifyapp.com');
+  }
+  
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, X-Requested-With');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  
+  // Handle preflight OPTIONS requests
+  if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS preflight request for:', req.url);
+    return res.status(200).end();
+  }
+  
+  next();
 });
 
-export const handler = serverless(app);
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(initDbMiddleware);
+
+// Your routes
+app.use('/', indexRoutes);
+
+// Error handler
+app.use((err, req, res, next) => {
+  console.error('Error:', err);
+  res.status(500).json({ error: err.message || 'Internal Server Error' });
+});
+
+// Create serverless handler with explicit CORS support
+export const handler = serverless(app, {
+  binary: false,
+  request: (request, event, context) => {
+    // Log for debugging
+    console.log('Lambda event:', JSON.stringify(event, null, 2));
+  },
+  response: (response, event, context) => {
+    // Ensure CORS headers are always present in Lambda response
+    if (!response.headers) {
+      response.headers = {};
+    }
+    
+    const origin = event.headers?.origin || event.headers?.Origin;
+    const allowedOrigins = [
+      'https://main.d36g3neun79jnt.amplifyapp.com',
+      'http://localhost:3000',
+      'http://localhost:5173'
+    ];
+    
+    if (origin && allowedOrigins.includes(origin)) {
+      response.headers['Access-Control-Allow-Origin'] = origin;
+    } else {
+      response.headers['Access-Control-Allow-Origin'] = 'https://main.d36g3neun79jnt.amplifyapp.com';
+    }
+    
+    response.headers['Access-Control-Allow-Credentials'] = 'true';
+    response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS';
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type, X-Amz-Date, Authorization, X-Api-Key, X-Amz-Security-Token, X-Requested-With';
+    response.headers['Access-Control-Max-Age'] = '86400';
+    
+    console.log('Lambda response headers:', response.headers);
+    return response;
+  }
+});

@@ -1,5 +1,58 @@
 // @ts-nocheck
-import sweph from 'sweph';
+let sweph = null;
+let swephLoadError = null;
+
+// Async function to load sweph
+async function loadSweph() {
+  console.log('Attempting to load sweph module...');
+  console.log('NODE_PATH:', process.env.NODE_PATH);
+  console.log('Process cwd:', process.cwd());
+  
+  // Check filesystem first
+  try {
+    const fs = await import('fs');
+    const path = await import('path');
+    
+    console.log('Checking filesystem for sweph...');
+    const layerPath = '/opt/nodejs/node_modules/sweph';
+    const taskPath = '/var/task/node_modules/sweph';
+    
+    console.log('Layer path exists:', fs.existsSync(layerPath));
+    console.log('Task path exists:', fs.existsSync(taskPath));
+    
+    if (fs.existsSync(layerPath)) {
+      console.log('Layer contents:', fs.readdirSync(layerPath));
+      const binaryPath = path.join(layerPath, 'build/Release/sweph.node');
+      console.log('Binary exists:', fs.existsSync(binaryPath));
+    }
+  } catch (err) {
+    console.warn('Filesystem check failed:', err.message);
+  }
+  
+  // Try multiple paths for layer loading
+  const pathsToTry = [
+    'sweph', // Standard import
+    '/opt/nodejs/node_modules/sweph', // Layer path
+    'file:///opt/nodejs/node_modules/sweph/index.mjs' // Direct layer ESM path
+  ];
+  
+  for (const path of pathsToTry) {
+    try {
+      console.log(`Trying to load sweph from: ${path}`);
+      const swephModule = await import(path);
+      sweph = swephModule.default || swephModule;
+      console.log('Successfully loaded sweph module from:', path);
+      console.log('Sweph constants available:', sweph?.constants ? 'Yes' : 'No');
+      return true;
+    } catch (error) {
+      console.warn(`Failed to load sweph from ${path}:`, error.message);
+    }
+  }
+  
+  console.warn('All sweph loading attempts failed');
+  console.warn('Astronomical calculations will not be available');
+  return false;
+}
 import { sortOrder, orbDegreesNatal, orbDegreesTransit } from '../utilities/constants.js';
 import { 
   findPlanetsInElementsObjects, 
@@ -11,15 +64,30 @@ import {
 // Add initialization tracking
 let ephemerisInitialized = false;
 
-export function initializeEphemeris() {
+export async function initializeEphemeris() {
   if (!ephemerisInitialized) {
-    sweph.set_ephe_path('./data');
-    ephemerisInitialized = true;
+    // Try to load sweph if not already loaded
+    if (!sweph && !swephLoadError) {
+      await loadSweph();
+    }
+    
+    if (sweph) {
+      // Use absolute path for Lambda environment
+      const ephePath = process.env.LAMBDA_TASK_ROOT ? '/var/task/data' : './data';
+      sweph.set_ephe_path(ephePath);
+      ephemerisInitialized = true;
+    } else {
+      console.warn('Sweph module not available, skipping ephemeris initialization');
+    }
   }
 }
 
 export async function getPlanetsData(data) {
-    initializeEphemeris();
+    await initializeEphemeris();
+    
+    if (!sweph) {
+      throw new Error('Swiss Ephemeris module not available. Astronomical calculations cannot be performed.');
+    }
   
     const { year, month, day, hour, min, lat, lon, tzone } = data;
     console.log("data:", JSON.stringify(data, null, 2));
@@ -75,7 +143,7 @@ export async function getPlanetsData(data) {
   
 
 export async function getRawChartDataEphemeris(data) {
-  initializeEphemeris();
+  await initializeEphemeris();
   
   const { year, month, day, hour, min, lat, lon, tzone } = data;
   console.log("data:", JSON.stringify(data, null, 2));
@@ -638,18 +706,23 @@ const calculateMidpoint = (degree1, degree2) => {
 // ------------------------------------------------------------
 // Transit utilities
 // ------------------------------------------------------------
-export const TRANSIT_BODIES = [
-  { id: sweph.constants.SE_SUN, name: 'Sun' },
-  { id: sweph.constants.SE_MOON, name: 'Moon' },
-  { id: sweph.constants.SE_MERCURY, name: 'Mercury' },
-  { id: sweph.constants.SE_VENUS, name: 'Venus' },
-  { id: sweph.constants.SE_MARS, name: 'Mars' },
-  { id: sweph.constants.SE_JUPITER, name: 'Jupiter' },
-  { id: sweph.constants.SE_SATURN, name: 'Saturn' },
-  { id: sweph.constants.SE_URANUS, name: 'Uranus' },
-  { id: sweph.constants.SE_NEPTUNE, name: 'Neptune' },
-  { id: sweph.constants.SE_PLUTO, name: 'Pluto' }
-];
+export function getTransitBodies() {
+  if (!sweph) {
+    throw new Error('Swiss Ephemeris module not available');
+  }
+  return [
+    { id: sweph.constants.SE_SUN, name: 'Sun' },
+    { id: sweph.constants.SE_MOON, name: 'Moon' },
+    { id: sweph.constants.SE_MERCURY, name: 'Mercury' },
+    { id: sweph.constants.SE_VENUS, name: 'Venus' },
+    { id: sweph.constants.SE_MARS, name: 'Mars' },
+    { id: sweph.constants.SE_JUPITER, name: 'Jupiter' },
+    { id: sweph.constants.SE_SATURN, name: 'Saturn' },
+    { id: sweph.constants.SE_URANUS, name: 'Uranus' },
+    { id: sweph.constants.SE_NEPTUNE, name: 'Neptune' },
+    { id: sweph.constants.SE_PLUTO, name: 'Pluto' }
+  ];
+}
 
 const ASPECTS = [
   { angle: 0,   orb: 8, name: 'conjunction' },
