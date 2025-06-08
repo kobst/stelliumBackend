@@ -448,7 +448,7 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
                (normalizedSearchName === 'node' && normalizedPlanetName === 'truenode');
     });    
     console.log("planetName: ", planetName)
-    console.log("planetData XXX: ", planetData)
+    console.log("planetData: ", planetData)
 
 
     // If planet not found (e.g., Ascendant for users without birth time), return empty description
@@ -517,11 +517,60 @@ export const generateRelevantNatalPositions = (promptKey, birthData, rulerMappin
         `Northern-Southern axis is ${hemispheres.northern.dominance} (${hemispheres.northern.percentage}% north, ${hemispheres.southern.percentage}% south)`
     ];
 
+    // Patterns Description
+    const patternDesc = [];
+    if (birthData.patterns?.patterns) {
+        const { patterns } = birthData.patterns;
+        
+        // Add chart shape if present
+        if (patterns.chartShape) {
+            patternDesc.push(patterns.chartShape);
+        }
+
+        // Add stelliums
+        if (patterns.stelliums?.length > 0) {
+            patternDesc.push(...patterns.stelliums);
+        }
+
+        // Add grand trines
+        if (patterns.grandTrines?.length > 0) {
+            patternDesc.push(...patterns.grandTrines);
+        }
+
+        // Add T-squares
+        if (patterns.tSquares?.length > 0) {
+            patternDesc.push(...patterns.tSquares);
+        }
+
+        // Add grand crosses
+        if (patterns.grandCrosses?.length > 0) {
+            patternDesc.push(...patterns.grandCrosses);
+        }
+
+        // Add kites
+        if (patterns.kites?.length > 0) {
+            patternDesc.push(...patterns.kites);
+        }
+
+        // Add mystic rectangles
+        if (patterns.mysticRectangles?.length > 0) {
+            patternDesc.push(...patterns.mysticRectangles);
+        }
+
+        // Add yods
+        if (patterns.yods?.length > 0) {
+            patternDesc.push(...patterns.yods);
+        }
+    }
+
+  
+
     return {
         elements: elementDesc,
         modalities: modalityDesc,
         quadrants: quadrantDesc,
-        hemispheres: hemisphereDesc
+        hemispheres: hemisphereDesc,
+        patterns: patternDesc
     };
 }
 

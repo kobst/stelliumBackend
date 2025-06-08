@@ -16,6 +16,7 @@ import {
   getCompletionShortOverview,
   getCompletionForNatalPlanet,
   getCompletionForDominancePattern,
+  getCompletionForChartPattern,
   getCompletionShortOverviewForTopic
 } from '../services/gptService.js';
 import {
@@ -197,7 +198,7 @@ async function executeGenerateBasic(userId: string) {
   }
 
   const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
-  const totalTasks = 1 + 3 + planetNames.length; // overview + dominance(3) + planets
+  const totalTasks = 1 + 4 + planetNames.length; // overview + dominance(4) + planets
   let completed = 0;
 
   await updateWorkflowStatus(userId, {
@@ -223,6 +224,7 @@ async function executeGenerateBasic(userId: string) {
   const elementsResponse = await getCompletionForDominancePattern('elements', overviewResponse, dominanceDescriptions.elements.join('\n'));
   const modalitiesResponse = await getCompletionForDominancePattern('modalities', overviewResponse, dominanceDescriptions.modalities.join('\n'));
   const quadrantsResponse = await getCompletionForDominancePattern('quadrants', overviewResponse, dominanceDescriptions.quadrants.join('\n'));
+  const patternsResponse = await getCompletionForChartPattern('patterns', overviewResponse, dominanceDescriptions.patterns.join('\n'));
 
   basicAnalysis.dominance = {
     elements: {
@@ -236,6 +238,10 @@ async function executeGenerateBasic(userId: string) {
     quadrants: {
       description: dominanceDescriptions.quadrants,
       interpretation: quadrantsResponse
+    },
+    patterns: {
+      description: dominanceDescriptions.patterns,
+      interpretation: patternsResponse
     }
   };
   completed += 3;

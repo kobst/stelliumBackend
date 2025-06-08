@@ -1,7 +1,12 @@
 // @ts-nocheck
 import sweph from 'sweph';
 import { sortOrder, orbDegreesNatal, orbDegreesTransit } from '../utilities/constants.js';
-import { findPlanetsInElementsObjects, findPlanetsInModalitiesObjects, findPlanetsInQuadrantObjects } from '../utilities/generateDescriptions.js';
+import { 
+  findPlanetsInElementsObjects, 
+  findPlanetsInModalitiesObjects, 
+  findPlanetsInQuadrantObjects,
+  findBirthChartPatternsObject
+} from '../utilities/generateDescriptions.js';
 
 // Add initialization tracking
 let ephemerisInitialized = false;
@@ -149,9 +154,8 @@ export async function getRawChartDataEphemeris(data) {
   const aspects = findAspectsForBirthChart(planets);
   const modalities = findPlanetsInModalitiesObjects(planets);
   const elements = findPlanetsInElementsObjects(planets);
-//   const pattern = identifyBirthChartPattern(planets);
   const quadrants = findPlanetsInQuadrantObjects(planets);
-
+  const patterns = findBirthChartPatternsObject(planets);
 
   const rawResponse = {
     date: `${year}-${month}-${day}`,
@@ -166,7 +170,8 @@ export async function getRawChartDataEphemeris(data) {
     houses,
     modalities,
     elements,
-    quadrants
+    quadrants,
+    patterns
   };
 
   return rawResponse;

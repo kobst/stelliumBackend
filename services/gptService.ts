@@ -455,6 +455,56 @@ Use supportive, intuitive language, and highlight the most meaningful patterns h
   }
 }
 
+
+export async function getCompletionForChartPattern(category, context, description) {
+  try {
+    console.log("getCompletionForDominancePatternPatterns");
+    console.log("category:", category);
+    console.log("context:", context);
+    console.log("description:", description);
+
+    const systemPrompt = `
+You are StelliumAI, an expert astrological interpreter specializing in birth chart patterns and planetary configurations.
+
+You are interpreting **chart patterns** such as stelliums, grand trines, T-squares, and other significant planetary configurations.
+
+Your tone is warm, empowering, and clear. Focus on how these patterns create unique dynamics in the birth chart and influence the person's life path.
+
+Use specific planet placements, aspects, and house positions to illustrate your points. Explain both the challenges and opportunities these patterns present.
+`;
+
+    const userPrompt = `
+CONTEXT:
+• Chart Pattern Type: ${formatCategoryName(category)}
+• Birth Chart Overview:
+${context}
+
+CHART PATTERNS:
+${description}
+
+TASK:
+Write 2 to 3 paragraphs:
+1) Describe how these chart patterns create unique dynamics in the birth chart and influence the person's life path.
+2) Explain the challenges and opportunities these patterns present, including any tension points or harmonious aspects.
+3) Connect these patterns to the broader themes in the birth chart overview if relevant.
+
+Use supportive, intuitive language, and highlight how these patterns work together to create a unique astrological signature.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt.trim() },
+        { role: "user", content: userPrompt.trim() }
+      ]
+    });
+
+    return response.choices[0].message.content;
+  } catch (error) {
+    console.error("Error in getCompletionForDominancePatternPatterns:", error);
+    throw error;
+  }
+}
+
 function formatCategoryName(category) {
   return category.split('_')
       .map(word => word.charAt(0) + word.slice(1).toLowerCase())
