@@ -1,14 +1,39 @@
 // @ts-nocheck
 import { BroadTopicsEnum } from '../utilities/constants.js';
+
+// Retry utility function
+async function retryOperation<T>(
+  operation: () => Promise<T>, 
+  maxRetries: number = 3, 
+  baseDelayMs: number = 1000,
+  backoffMultiplier: number = 2
+): Promise<T> {
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      console.log(`Attempt ${attempt}/${maxRetries} failed:`, error.message);
+      
+      if (attempt === maxRetries) {
+        console.error(`Operation failed after ${maxRetries} attempts`);
+        throw error; // Re-throw the last error
+      }
+      
+      // Calculate exponential backoff delay
+      const delayMs = baseDelayMs * Math.pow(backoffMultiplier, attempt - 1);
+      console.log(`Waiting ${delayMs}ms before retry ${attempt + 1}...`);
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+  
+  throw new Error('Retry operation completed without result'); // Should never reach here
+}
 import {
   getUserSingle,
   saveBasicAnalysis,
   getBasicAnalysisByUserId,
   updateVectorizationStatus,
   getAllAnalysisByUserId,
-  getWorkflowStatus,
-  updateWorkflowStatus,
-  createWorkflowStatus,
   saveTopicAnalysis,
   getTopicAnalysisByUserId
 } from '../services/dbService.js';
@@ -47,47 +72,21 @@ export async function startWorkflow(req, res) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
-    // Check if workflow is already running
-    const existingWorkflow = await getWorkflowStatus(userId);
-    if (existingWorkflow && existingWorkflow.status === 'running') {
-      return res.json({
-        success: true,
-        message: 'Workflow already running',
-        workflowId: userId,
-        status: existingWorkflow
-      });
-    }
-
-    // Initialize or reset workflow status with unified step
-  const workflowStatus = {
-      userId,
-      status: 'running',
-      currentStep: 'processAllContent',
-      progress: {
-        processAllContent: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 }
-      },
-      error: null,
-      startedAt: new Date(),
-      completedAt: null
-    };
-
-    await createWorkflowStatus(userId, workflowStatus);
-
     // Start the workflow in the background
-    processWorkflowStep(userId, 'processAllContent').catch(error => {
+    executeProcessAllContent(userId).catch(error => {
       console.error('Error in workflow processing:', error);
-      updateWorkflowStatus(userId, {
-        status: 'error',
-        error: error.message,
-        completedAt: new Date()
+      console.error('Error stack:', error.stack);
+      console.error('Error details:', {
+        message: error.message,
+        name: error.name,
+        userId: userId
       });
     });
 
     res.json({ 
       success: true, 
       message: 'Workflow started',
-      workflowId: userId,
-      status: workflowStatus
+      workflowId: userId
     });
 
   } catch (error) {
@@ -104,18 +103,93 @@ export async function getWorkflowStatusHandler(req, res) {
       return res.status(400).json({ success: false, error: 'Missing userId' });
     }
 
-    const status = await getWorkflowStatus(userId);
-    
-    if (!status) {
-      return res.status(404).json({ success: false, error: 'Workflow not found' });
-    }
-
-    // Also return the current analysis data if available
+    // Get current analysis data and determine progress from it
+    console.log('Getting analysis for userId:', userId, 'type:', typeof userId);
     const analysisData = await getAllAnalysisByUserId(userId);
+    console.log('Retrieved analysisData:', analysisData ? 'found' : 'null/empty');
+    console.log('AnalysisData keys:', analysisData ? Object.keys(analysisData) : 'none');
+    
+    // If no analysis data exists, user hasn't started any workflow yet
+    if (!analysisData) {
+      return res.json({ 
+        success: true, 
+        status: {
+          status: 'not_started',
+          progress: {
+            completed: 0,
+            total: 0,
+            percentage: 0
+          }
+        },
+        analysisData: null
+      });
+    }
+    
+    const jobs = analyzeIncompleteJobs(analysisData);
+    console.log('Jobs analysis for status check:', JSON.stringify(jobs, null, 2));
+    
+    // Calculate completion statistics
+    // Each field needs both generation AND vectorization to be complete
+    let totalTasks = 0;
+    let completedTasks = 0;
+    
+    // Count overview (generation + vectorization = 2 tasks)
+    totalTasks += 2;
+    if (!jobs.overview.needsGeneration) completedTasks++;
+    if (!jobs.overview.needsVectorization) completedTasks++;
+    
+    // Count dominance patterns (generation + vectorization = 2 tasks each)
+    Object.values(jobs.dominance).forEach((job: any) => {
+      totalTasks += 2;
+      if (!job.needsGeneration) completedTasks++;
+      if (!job.needsVectorization) completedTasks++;
+    });
+    
+    // Count planets (generation + vectorization = 2 tasks each)
+    Object.values(jobs.planets).forEach((job: any) => {
+      totalTasks += 2;
+      if (!job.needsGeneration) completedTasks++;
+      if (!job.needsVectorization) completedTasks++;
+    });
+    
+    // Count topics (generation + vectorization = 2 tasks each)
+    Object.values(jobs.topics).forEach((broadTopicJobs: any) => {
+      Object.values(broadTopicJobs).forEach((job: any) => {
+        totalTasks += 2;
+        if (!job.needsGeneration) completedTasks++;
+        if (!job.needsVectorization) completedTasks++;
+      });
+    });
+    
+    // Check if workflow completed with failures
+    const vectorStatus = analysisData?.vectorizationStatus || {};
+    const completedWithFailures = vectorStatus.topicAnalysis?.completedWithFailures === true;
+    const remainingTasks = vectorStatus.topicAnalysis?.remainingTasks || 0;
+    
+    const isComplete = completedTasks >= totalTasks;
+    let status;
+    
+    if (isComplete) {
+      status = 'completed';
+    } else if (completedWithFailures) {
+      status = 'completed_with_failures';
+    } else {
+      status = 'running';
+    }
+    
+    console.log(`Progress calculation: ${completedTasks}/${totalTasks} tasks completed`);
+    console.log(`Workflow status: ${status}`);
     
     res.json({ 
       success: true, 
-      status,
+      status: {
+        status,
+        progress: {
+          completed: completedTasks,
+          total: totalTasks,
+          percentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+        }
+      },
       analysisData
     });
 
@@ -125,44 +199,100 @@ export async function getWorkflowStatusHandler(req, res) {
   }
 }
 
-async function processWorkflowStep(userId: string, step: string) {
-  try {
-    await updateWorkflowStatus(userId, {
-      currentStep: step,
-      [`progress.${step}.status`]: 'running',
-      [`progress.${step}.startedAt`]: new Date()
-    });
+// Helper function to determine what needs to be processed
+function analyzeIncompleteJobs(existingData: any) {
+  const jobs = {
+    overview: { needsGeneration: true, needsVectorization: true },
+    dominance: {},
+    planets: {},
+    topics: {}
+  };
 
-    switch (step) {
-      case 'processAllContent':
-        await executeProcessAllContent(userId);
-        break;
-      default:
-        throw new Error(`Unknown workflow step: ${step}`);
-    }
+  // Set up defaults for basic/topic analysis and vector status
+  const basicAnalysis = existingData?.interpretation?.basicAnalysis || {};
+  const topicAnalysis = existingData?.interpretation?.SubtopicAnalysis || {};
+  const vectorStatus = existingData?.vectorizationStatus || {};
 
-    await updateWorkflowStatus(userId, {
-      [`progress.${step}.status`]: 'completed',
-      [`progress.${step}.completedAt`]: new Date()
-    });
-
-    // Workflow complete (only one step now)
-    await updateWorkflowStatus(userId, {
-      status: 'completed',
-      currentStep: null,
-      completedAt: new Date()
-    });
-
-  } catch (error) {
-    console.error(`Error in workflow step ${step}:`, error);
-    await updateWorkflowStatus(userId, {
-      status: 'error',
-      error: error.message,
-      [`progress.${step}.status`]: 'error',
-      completedAt: new Date()
-    });
-    throw error;
+  // Check overview
+  if (basicAnalysis.overview) {
+    jobs.overview.needsGeneration = false;
+    // Check vectorization - could be true, false, or undefined
+    jobs.overview.needsVectorization = vectorStatus.overview !== true;
   }
+
+  // Check dominance patterns
+  const dominanceTypes = ['elements', 'modalities', 'quadrants', 'patterns'];
+  dominanceTypes.forEach(type => {
+    jobs.dominance[type] = {
+      needsGeneration: !basicAnalysis.dominance?.[type],
+      needsVectorization: vectorStatus.dominance?.[type] !== true
+    };
+  });
+
+  // Check planets
+  const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
+  planetNames.forEach(planet => {
+    jobs.planets[planet] = {
+      needsGeneration: !basicAnalysis.planets?.[planet],
+      needsVectorization: vectorStatus.planets?.[planet] !== true
+    };
+  });
+
+  // Check topics
+  console.log('Checking topic vectorization status...');
+  console.log('VectorStatus topicAnalysis keys:', Object.keys(vectorStatus.topicAnalysis || {}));
+  console.log('VectorStatus topics keys:', Object.keys(vectorStatus.topics || {}));
+  console.log('VectorStatus flat topicAnalysis keys:', Object.keys(vectorStatus).filter(k => k.startsWith('topicAnalysis.')));
+  console.log('VectorStatus flat topics keys:', Object.keys(vectorStatus).filter(k => k.startsWith('topics.')));
+  console.log('All vectorStatus keys:', Object.keys(vectorStatus));
+  
+  for (const [broadTopic, topicData] of Object.entries(BroadTopicsEnum)) {
+    jobs.topics[broadTopic] = {};
+    for (const [subtopicKey, subtopicLabel] of Object.entries(topicData.subtopics)) {
+      const hasContent = topicAnalysis[broadTopic]?.subtopics?.[subtopicKey];
+      
+      // Check vectorization status with multiple fallback approaches
+      let isVectorized = false;
+      const nestedPath = vectorStatus.topicAnalysis?.[broadTopic]?.[subtopicKey];
+      const flatPath = vectorStatus[`topicAnalysis.${broadTopic}.${subtopicKey}`];
+      const topicsPath = vectorStatus.topics?.[broadTopic]?.[subtopicKey];
+      const flatTopicsPath = vectorStatus[`topics.${broadTopic}.${subtopicKey}`];
+      
+      if (nestedPath === true) {
+        isVectorized = true;
+      } else if (flatPath === true) {
+        // Handle flat dot-notation structure from MongoDB
+        isVectorized = true;
+      } else if (topicsPath === true) {
+        // Handle new flattened topics structure
+        isVectorized = true;
+      } else if (flatTopicsPath === true) {
+        // Handle new flattened topics with dot notation
+        isVectorized = true;
+      }
+      
+      console.log(`${broadTopic}.${subtopicKey}: hasContent=${!!hasContent}, nestedPath=${nestedPath}, flatPath=${flatPath}, topicsPath=${topicsPath}, flatTopicsPath=${flatTopicsPath}, isVectorized=${isVectorized}`);
+      
+      // Special case: if content exists but we have no vectorization status (neither nested nor flat),
+      // and we only have the general isComplete flag, assume it needs vectorization
+      if (hasContent && !isVectorized && vectorStatus.topicAnalysis?.isComplete === true && !nestedPath && !flatPath) {
+        console.log(`Found content without specific vectorization status for ${broadTopic}.${subtopicKey} - marking as needing vectorization`);
+      }
+      
+      // Calculate the boolean values explicitly
+      const needsGeneration = !hasContent;
+      const needsVectorization = hasContent ? !isVectorized : true;
+      
+      console.log(`${broadTopic}.${subtopicKey}: needsGeneration=${needsGeneration}, needsVectorization=${needsVectorization}, hasContent=${!!hasContent}, isVectorized=${isVectorized}`);
+      
+      jobs.topics[broadTopic][subtopicKey] = {
+        needsGeneration,
+        needsVectorization
+      };
+    }
+  }
+
+  return jobs;
 }
 
 async function executeProcessAllContent(userId: string) {
@@ -174,16 +304,6 @@ async function executeProcessAllContent(userId: string) {
   console.log(`Starting unified content processing for userId: ${userId}`);
 
   const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
-  
-  // Calculate total items: overview + dominance(4) + planets + topic analysis
-  const totalSubtopics = Object.values(BroadTopicsEnum).reduce((acc: number, t: any) => acc + Object.keys(t.subtopics).length, 0);
-  const totalTasks = 1 + 4 + planetNames.length + totalSubtopics; // overview + dominance + planets + topics
-  let completed = 0;
-
-  await updateWorkflowStatus(userId, {
-    'progress.processAllContent.total': totalTasks,
-    'progress.processAllContent.completed': 0
-  });
 
   // Initialize basic analysis object
   const basicAnalysis: any = { userId, dominance: {}, planets: {}, createdAt: new Date() };
@@ -191,28 +311,30 @@ async function executeProcessAllContent(userId: string) {
   try {
     // 1. PROCESS OVERVIEW (generate → vectorize)
     console.log('Processing overview...');
-    const relevantNatalPositions = generateNatalPromptsShortOverview(user.birthChart);
-    const overviewResponse = await getCompletionShortOverview(relevantNatalPositions);
-    basicAnalysis.overview = overviewResponse;
+    let overviewResponse;
     
-    // Save overview immediately
-    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-    console.log('Overview saved to database');
+    await retryOperation(async () => {
+      const relevantNatalPositions = generateNatalPromptsShortOverview(user.birthChart);
+      overviewResponse = await getCompletionShortOverview(relevantNatalPositions);
+      basicAnalysis.overview = overviewResponse;
+      
+      // Save overview immediately
+      await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+      console.log('Overview saved to database');
+      
+      // Vectorize - but don't fail the whole task if this fails
+      try {
+        const overviewRecords = await processTextSection(overviewResponse, userId, 'overview');
+        await upsertRecords(overviewRecords, userId);
+        await updateVectorizationStatus(userId, { overview: true });
+        console.log('Overview vectorized successfully');
+      } catch (vectorError) {
+        console.error('Failed to vectorize overview:', vectorError.message);
+        await updateVectorizationStatus(userId, { overview: false });
+      }
+    }, 2); // 2 retries for overview
     
-    // Vectorize - but don't fail the whole task if this fails
-    try {
-      const overviewRecords = await processTextSection(overviewResponse, userId, 'overview');
-      await upsertRecords(overviewRecords, userId);
-      await updateVectorizationStatus(userId, { overview: true });
-      console.log('Overview vectorized successfully');
-    } catch (vectorError) {
-      console.error('Failed to vectorize overview:', vectorError.message);
-      await updateVectorizationStatus(userId, { overview: false });
-    }
-    
-    completed++;
-    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-    console.log(`Overview completed (${completed}/${totalTasks})`);
+    console.log('Overview completed');
     
     // Add delay and memory management
     await new Promise(resolve => setTimeout(resolve, 2000));
@@ -229,40 +351,40 @@ async function executeProcessAllContent(userId: string) {
 
     const dominanceTasks = Object.entries(dominanceDescriptions).map(async ([type, desc]) => {
       try {
-        // Generate content
-        const response = type === 'patterns'
-          ? await getCompletionForChartPattern('patterns', overviewResponse, desc.join('\n'))
-          : await getCompletionForDominancePattern(type, overviewResponse, desc.join('\n'));
-        
-        // Update in-memory object
-        basicAnalysis.dominance[type] = { description: desc, interpretation: response };
+        await retryOperation(async () => {
+          // Generate content
+          const response = type === 'patterns'
+            ? await getCompletionForChartPattern('patterns', overviewResponse, desc.join('\n'))
+            : await getCompletionForDominancePattern(type, overviewResponse, desc.join('\n'));
+          
+          // Update in-memory object
+          basicAnalysis.dominance[type] = { description: desc, interpretation: response };
 
-        // Save immediately (includes all content generated so far)
-        await saveBasicAnalysis(userId, { 
-          basicAnalysis, 
-          timestamp: new Date().toISOString(), 
-          metadata: { generatedBy: 'workflow', version: '1.0' } 
-        });
-        console.log(`${type} saved to database`);
+          // Save immediately (includes all content generated so far)
+          await saveBasicAnalysis(userId, { 
+            basicAnalysis, 
+            timestamp: new Date().toISOString(), 
+            metadata: { generatedBy: 'workflow', version: '1.0' } 
+          });
+          console.log(`${type} saved to database`);
 
-        // Vectorize - but don't fail the whole task if this fails
-        try {
-          const descriptionText = `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${desc.join('\n')}`;
-          const records = await processTextSection(response, userId, descriptionText);
-          await upsertRecords(records, userId);
-          await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
-          console.log(`${type} vectorized successfully`);
-        } catch (vectorError) {
-          console.error(`Failed to vectorize dominance ${type}:`, vectorError.message);
-          await updateVectorizationStatus(userId, { [`dominance.${type}`]: false });
-        }
+          // Vectorize - but don't fail the whole task if this fails
+          try {
+            const descriptionText = `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${desc.join('\n')}`;
+            const records = await processTextSection(response, userId, descriptionText);
+            await upsertRecords(records, userId);
+            await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
+            console.log(`${type} vectorized successfully`);
+          } catch (vectorError) {
+            console.error(`Failed to vectorize dominance ${type}:`, vectorError.message);
+            await updateVectorizationStatus(userId, { [`dominance.${type}`]: false });
+          }
 
-        completed++;
-        await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-        console.log(`${type} completed (${completed}/${totalTasks})`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+          console.log(`${type} completed`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }, 2); // 2 retries for dominance patterns
       } catch (error) {
-        console.error(`Failed to process dominance ${type}:`, error.message);
+        console.error(`Failed to process dominance ${type} after retries:`, error.message);
         // Continue with other dominance patterns even if this one fails
       }
     });
@@ -276,41 +398,41 @@ async function executeProcessAllContent(userId: string) {
         const planetDescription = getPlanetDescription(planetName, user.birthChart, rulerPlanet);
 
         if (planetDescription) {
-          // Generate content
-          const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
-          
-          // Update in-memory object
-          basicAnalysis.planets[planetName] = {
-            description: planetDescription,
-            interpretation
-          };
+          await retryOperation(async () => {
+            // Generate content
+            const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
+            
+            // Update in-memory object
+            basicAnalysis.planets[planetName] = {
+              description: planetDescription,
+              interpretation
+            };
 
-          // Save immediately (includes all content generated so far)
-          await saveBasicAnalysis(userId, { 
-            basicAnalysis, 
-            timestamp: new Date().toISOString(), 
-            metadata: { generatedBy: 'workflow', version: '1.0' } 
-          });
-          console.log(`Planet ${planetName} saved to database`);
+            // Save immediately (includes all content generated so far)
+            await saveBasicAnalysis(userId, { 
+              basicAnalysis, 
+              timestamp: new Date().toISOString(), 
+              metadata: { generatedBy: 'workflow', version: '1.0' } 
+            });
+            console.log(`Planet ${planetName} saved to database`);
 
-          // Vectorize - but don't fail the whole task if this fails
-          try {
-            const planetRecords = await processTextSection(interpretation, userId, planetDescription || `planet_${planetName}`);
-            await upsertRecords(planetRecords, userId);
-            await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
-            console.log(`Planet ${planetName} vectorized successfully`);
-          } catch (vectorError) {
-            console.error(`Failed to vectorize planet ${planetName}:`, vectorError.message);
-            await updateVectorizationStatus(userId, { [`planets.${planetName}`]: false });
-          }
+            // Vectorize - but don't fail the whole task if this fails
+            try {
+              const planetRecords = await processTextSection(interpretation, userId, planetDescription || `planet_${planetName}`);
+              await upsertRecords(planetRecords, userId);
+              await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
+              console.log(`Planet ${planetName} vectorized successfully`);
+            } catch (vectorError) {
+              console.error(`Failed to vectorize planet ${planetName}:`, vectorError.message);
+              await updateVectorizationStatus(userId, { [`planets.${planetName}`]: false });
+            }
 
-          completed++;
-          await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-          console.log(`Planet ${planetName} completed (${completed}/${totalTasks})`);
-          await new Promise(resolve => setTimeout(resolve, 2000));
+            console.log(`Planet ${planetName} completed`);
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }, 2); // 2 retries for planets
         }
       } catch (error) {
-        console.error(`Failed to process planet ${planetName}:`, error.message);
+        console.error(`Failed to process planet ${planetName} after retries:`, error.message);
         // Continue with other planets even if this one fails
       }
     });
@@ -339,14 +461,154 @@ async function executeProcessAllContent(userId: string) {
         console.log(`Processing subtopic: ${subtopicKey} (${subtopicLabel})`);
         topicTasks.push(async () => {
           try {
+            await retryOperation(async () => {
+              console.log(`Attempting ${subtopicKey} generation...`);
+              
+              const RAGResponse = await retrieveTopicContext(userId, subtopicLabel);
+              console.log(`RAG Response for ${subtopicLabel}:`, JSON.stringify(RAGResponse, null, 2));
+          
+              // Verify we have RAG data before proceeding
+              if (!RAGResponse || !RAGResponse.matches) {
+                  throw new Error(`No RAG matches found for subtopic: ${subtopicLabel}`);
+              }
+
+              // Format RAG response for the completion
+              const formattedRAGContext = RAGResponse.matches
+                .map(match => {
+                  const description = match.description ? `Context: ${match.description}\n` : '';
+                  return `${description}${match.text}`;
+                })
+                .join('\n\n');
+
+              console.log(`Getting completion for ${subtopicLabel} with formatted context length: ${formattedRAGContext.length}`);
+              const response = await getCompletionShortOverviewForTopic(subtopicLabel, topicMapping[topicData.label] || '', formattedRAGContext);
+              console.log(`Got completion for ${subtopicLabel}, response length: ${response?.length || 0}`);
+
+              if (!response || typeof response !== 'string') {
+                throw new Error(`Invalid response format for ${subtopicLabel}`);
+              }
+
+              results[broadTopic].subtopics[subtopicKey] = response;
+
+              // Save the individual subtopic immediately
+              await saveTopicAnalysis(userId, {
+                [broadTopic]: {
+                  label: topicData.label,
+                  relevantPositions: relevantPositions,
+                  subtopics: { [subtopicKey]: response }
+                }
+              });
+              console.log(`Topic ${subtopicKey} saved to database`);
+
+              // Vectorize - but don't fail the whole task if this fails
+              try {
+                const description = `${topicData.label} - ${BroadTopicsEnum[broadTopic].subtopics[subtopicKey]}\n\nRelevant Positions:\n${relevantPositions || 'None specified'}`;
+                console.log(`Processing text section for ${subtopicLabel} with description length: ${description.length}`);
+                const topicRecords = await processTextSection(response, userId, description);
+                console.log(`Generated ${topicRecords?.length || 0} records for ${subtopicLabel}`);
+
+                if (topicRecords && topicRecords.length > 0) {
+                  await upsertRecords(topicRecords, userId);
+                  await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
+                  console.log(`Topic ${subtopicKey} vectorized successfully`);
+                } else {
+                  console.warn(`No records generated for ${subtopicLabel}`);
+                  await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
+                }
+              } catch (vectorError) {
+                console.error(`Failed to vectorize topic ${subtopicKey}:`, vectorError.message);
+                await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
+              }
+
+              console.log(`Topic ${subtopicKey} completed`);
+              await new Promise(resolve => setTimeout(resolve, 2000));
+            }, 3); // 3 retries for each topic
+            
+          } catch (error) {
+            // Final failure after all retries - save error message
+            console.error(`Final failure for subtopic ${subtopicLabel} after retries:`, error);
+            const errorMessage = `Error: ${error.message}`;
+            results[broadTopic].subtopics[subtopicKey] = errorMessage;
+            
+            // Save the error message to database so the content exists
+            try {
+              await saveTopicAnalysis(userId, {
+                [broadTopic]: {
+                  label: topicData.label,
+                  relevantPositions: relevantPositions,
+                  subtopics: { [subtopicKey]: errorMessage }
+                }
+              });
+              console.log(`Topic ${subtopicKey} saved to database (final error after retries)`);
+              
+              // Mark vectorization as failed since content generation failed
+              await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
+              console.log(`Topic ${subtopicKey} vectorization marked as failed (final error)`);
+            } catch (saveError) {
+              console.error(`Failed to save error message for topic ${subtopicKey}:`, saveError.message);
+            }
+          }
+        });
+      }
+    }
+
+    console.log('Executing all topic tasks...');
+    await Promise.all(topicTasks.map(fn => fn()));
+    console.log('All topic tasks completed');
+
+    // AUTO-RETRY FAILED TASKS
+    const maxWorkflowRetries = 3;
+    let workflowRetryAttempt = 0;
+    
+    while (workflowRetryAttempt < maxWorkflowRetries) {
+      console.log(`\n=== CHECKING FOR FAILED TASKS (Workflow Retry ${workflowRetryAttempt + 1}/${maxWorkflowRetries}) ===`);
+      
+      const analysisData = await getAllAnalysisByUserId(userId);
+      const jobs = analyzeIncompleteJobs(analysisData);
+      
+      // Count remaining tasks that need work
+      let remainingTasks = 0;
+      const failedTopics = [];
+      
+      Object.entries(jobs.topics).forEach(([broadTopic, broadTopicJobs]: any) => {
+        Object.entries(broadTopicJobs).forEach(([subtopicKey, job]: any) => {
+          if (job.needsGeneration || job.needsVectorization) {
+            remainingTasks++;
+            failedTopics.push({ broadTopic, subtopicKey, job });
+          }
+        });
+      });
+      
+      if (remainingTasks === 0) {
+        console.log('✅ All topics completed successfully!');
+        await updateVectorizationStatus(userId, {
+          'topicAnalysis.isComplete': true,
+          'topicAnalysis.completedAt': new Date().toISOString(),
+          lastUpdated: new Date().toISOString()
+        });
+        break;
+      }
+      
+      console.log(`Found ${remainingTasks} remaining tasks. Retrying failed topics...`);
+      
+      // Retry only the failed topics
+      const retryTasks = failedTopics.map(({ broadTopic, subtopicKey, job }) => async () => {
+        const topicData = BroadTopicsEnum[broadTopic];
+        const subtopicLabel = topicData.subtopics[subtopicKey];
+        const relevantPositions = topicMapping[topicData.label] || null;
+        
+        console.log(`🔄 Retrying ${broadTopic}.${subtopicKey} (${subtopicLabel})`);
+        
+        try {
+          await retryOperation(async () => {
+            console.log(`Attempting ${subtopicKey} retry generation...`);
+            
             const RAGResponse = await retrieveTopicContext(userId, subtopicLabel);
             console.log(`RAG Response for ${subtopicLabel}:`, JSON.stringify(RAGResponse, null, 2));
         
             // Verify we have RAG data before proceeding
             if (!RAGResponse || !RAGResponse.matches) {
-                console.warn(`No RAG matches found for subtopic: ${subtopicLabel}`);
-                results[broadTopic].subtopics[subtopicKey] = "No relevant context found";
-                return;
+                throw new Error(`No RAG matches found for subtopic: ${subtopicLabel}`);
             }
 
             // Format RAG response for the completion
@@ -362,9 +624,7 @@ async function executeProcessAllContent(userId: string) {
             console.log(`Got completion for ${subtopicLabel}, response length: ${response?.length || 0}`);
 
             if (!response || typeof response !== 'string') {
-              console.error(`Invalid response for ${subtopicLabel}:`, response);
-              results[broadTopic].subtopics[subtopicKey] = "Error: Invalid response format";
-              return;
+              throw new Error(`Invalid response format for ${subtopicLabel}`);
             }
 
             results[broadTopic].subtopics[subtopicKey] = response;
@@ -377,7 +637,7 @@ async function executeProcessAllContent(userId: string) {
                 subtopics: { [subtopicKey]: response }
               }
             });
-            console.log(`Topic ${subtopicKey} saved to database`);
+            console.log(`Topic ${subtopicKey} saved to database (retry)`);
 
             // Vectorize - but don't fail the whole task if this fails
             try {
@@ -389,53 +649,96 @@ async function executeProcessAllContent(userId: string) {
               if (topicRecords && topicRecords.length > 0) {
                 await upsertRecords(topicRecords, userId);
                 await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
-                console.log(`Topic ${subtopicKey} vectorized successfully`);
+                console.log(`Topic ${subtopicKey} vectorized successfully (retry)`);
               } else {
-                console.warn(`No records generated for ${subtopicLabel}`);
+                console.warn(`No records generated for ${subtopicLabel} (retry)`);
                 await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
               }
             } catch (vectorError) {
-              console.error(`Failed to vectorize topic ${subtopicKey}:`, vectorError.message);
+              console.error(`Failed to vectorize topic ${subtopicKey} (retry):`, vectorError.message);
               await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
             }
 
-            completed++;
-            await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-            console.log(`Topic ${subtopicKey} completed (${completed}/${totalTasks})`);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-          } catch (error) {
-            console.error(`Error processing subtopic ${subtopicLabel}:`, error);
-            console.error('Error details:', {
-              error: error.message,
-              stack: error.stack,
-              subtopicKey,
-              subtopicLabel,
-              broadTopic
+            console.log(`Topic ${subtopicKey} retry completed`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }, 2); // 2 retries for each failed topic
+          
+        } catch (error) {
+          // Final failure after all retries - save error message
+          console.error(`Final failure for subtopic ${subtopicLabel} after workflow retries:`, error);
+          const errorMessage = `Error: ${error.message}`;
+          results[broadTopic].subtopics[subtopicKey] = errorMessage;
+          
+          // Save the error message to database so the content exists
+          try {
+            await saveTopicAnalysis(userId, {
+              [broadTopic]: {
+                label: topicData.label,
+                relevantPositions: relevantPositions,
+                subtopics: { [subtopicKey]: errorMessage }
+              }
             });
-            results[broadTopic].subtopics[subtopicKey] = `Error: ${error.message}`;
+            console.log(`Topic ${subtopicKey} saved to database (final workflow error)`);
+            
+            // Mark vectorization as failed since content generation failed
+            await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
+            console.log(`Topic ${subtopicKey} vectorization marked as failed (final workflow error)`);
+          } catch (saveError) {
+            console.error(`Failed to save error message for topic ${subtopicKey}:`, saveError.message);
           }
-        });
+        }
+      });
+      
+      // Execute all retry tasks in parallel
+      console.log(`Executing ${retryTasks.length} retry tasks...`);
+      await Promise.all(retryTasks.map(fn => fn()));
+      
+      workflowRetryAttempt++;
+      
+      // Add delay between workflow retry attempts
+      if (workflowRetryAttempt < maxWorkflowRetries) {
+        console.log(`Waiting 5 seconds before next workflow retry attempt...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
-
-    console.log('Executing all topic tasks...');
-    await Promise.all(topicTasks.map(fn => fn()));
-    console.log('All topic tasks completed');
-
-    // Mark topic analysis as complete
-    await updateVectorizationStatus(userId, {
-      'topicAnalysis.isComplete': true,
-      lastUpdated: new Date().toISOString()
+    
+    // Final status check after all retries
+    const finalAnalysisData = await getAllAnalysisByUserId(userId);
+    const finalJobs = analyzeIncompleteJobs(finalAnalysisData);
+    
+    // Count remaining tasks
+    let remainingTasks = 0;
+    Object.values(finalJobs.topics).forEach((broadTopicJobs: any) => {
+      Object.values(broadTopicJobs).forEach((job: any) => {
+        if (job.needsGeneration || job.needsVectorization) remainingTasks++;
+      });
     });
+    
+    if (remainingTasks === 0) {
+      console.log('✅ All topics completed successfully after retries!');
+      await updateVectorizationStatus(userId, {
+        'topicAnalysis.isComplete': true,
+        'topicAnalysis.completedAt': new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      });
+    } else {
+      console.log(`⚠️ Workflow completed with ${remainingTasks} remaining tasks after ${maxWorkflowRetries} retry attempts`);
+      await updateVectorizationStatus(userId, {
+        'topicAnalysis.isComplete': false,
+        'topicAnalysis.completedWithFailures': true,
+        'topicAnalysis.remainingTasks': remainingTasks,
+        'topicAnalysis.completedAt': new Date().toISOString(),
+        'topicAnalysis.maxRetriesReached': true,
+        lastUpdated: new Date().toISOString()
+      });
+    }
 
     console.log(`All content processing completed for userId: ${userId}`);
 
   } catch (error) {
     console.error(`Content processing failed for userId: ${userId}`, {
       error: error.message,
-      stack: error.stack,
-      completed: completed,
-      total: totalTasks
+      stack: error.stack
     });
     throw error;
   }

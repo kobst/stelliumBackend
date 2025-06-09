@@ -24,8 +24,6 @@ const chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth
 const chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
 const transitEphemerisCollection = db.collection('transit_ephemeris');
 const horoscopesCollection = db.collection('horoscopes');
-const workflowStatusCollection = db.collection('workflow_status');
-const relationshipWorkflowStatusCollection = db.collection('relationship_workflow_status');
 // const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
 export async function initializeDatabase() {
@@ -972,6 +970,25 @@ export async function updateRelationshipVectorizationStatus(compositeChartId, an
     }
 }
 
+export async function updateRelationshipAnalysisVectorization(compositeChartId, updateFields) {
+    try {
+        const updateData = { $set: updateFields };
+        
+        const result = await relationshipAnalysisCollection.updateOne(
+            { 'debug.inputSummary.compositeChartId': compositeChartId },
+            updateData
+        );
+        
+        return {
+            success: result.modifiedCount > 0,
+            modifiedCount: result.modifiedCount
+        };
+    } catch (error) {
+        console.error(`Error updating relationship analysis for compositeChartId ${compositeChartId}:`, error);
+        throw error;
+    }
+}
+
 
 // chat
 
@@ -1304,137 +1321,3 @@ export async function getExistingHoroscope(userId: string, startDate: Date, endD
     }
 }
 
-// Workflow Status Functions
-export async function createWorkflowStatus(userId, workflowStatus) {
-    try {
-        // Use upsert to prevent duplicate workflow statuses for the same user
-        const result = await workflowStatusCollection.updateOne(
-            { userId },
-            {
-                $set: {
-                    ...workflowStatus,
-                    updatedAt: new Date()
-                },
-                $setOnInsert: {
-                    createdAt: new Date()
-                }
-            },
-            { upsert: true }
-        );
-        return result.upsertedId || result.matchedCount;
-    } catch (error) {
-        console.error('Error creating workflow status:', error);
-        throw error;
-    }
-}
-
-export async function getWorkflowStatus(userId) {
-    try {
-        return await workflowStatusCollection.findOne({ userId });
-    } catch (error) {
-        console.error('Error getting workflow status:', error);
-        throw error;
-    }
-}
-
-export async function updateWorkflowStatus(userId, updates) {
-    try {
-        const updateDoc = { $set: { ...updates, updatedAt: new Date() } };
-        
-        // Handle nested updates (e.g., "progress.generateBasic.status")
-        for (const [key, value] of Object.entries(updates)) {
-            if (key.includes('.')) {
-                delete updateDoc.$set[key];
-                updateDoc.$set[key] = value;
-            }
-        }
-        
-        const result = await workflowStatusCollection.updateOne(
-            { userId },
-            updateDoc
-        );
-        
-        return result.modifiedCount > 0;
-    } catch (error) {
-        console.error('Error updating workflow status:', error);
-        throw error;
-    }
-}
-
-// Relationship Workflow Status Functions
-export async function createRelationshipWorkflowStatus(compositeChartId, workflowStatus) {
-    try {
-        // Use upsert to prevent duplicate workflow statuses for the same composite chart
-        const result = await relationshipWorkflowStatusCollection.updateOne(
-            { compositeChartId },
-            {
-                $set: {
-                    ...workflowStatus,
-                    compositeChartId,
-                    updatedAt: new Date()
-                },
-                $setOnInsert: {
-                    createdAt: new Date()
-                }
-            },
-            { upsert: true }
-        );
-        return result.upsertedId || result.matchedCount;
-    } catch (error) {
-        console.error('Error creating relationship workflow status:', error);
-        throw error;
-    }
-}
-
-export async function getRelationshipWorkflowStatus(compositeChartId) {
-    try {
-        return await relationshipWorkflowStatusCollection.findOne({ compositeChartId });
-    } catch (error) {
-        console.error('Error getting relationship workflow status:', error);
-        throw error;
-    }
-}
-
-export async function updateRelationshipWorkflowStatus(compositeChartId, updates) {
-    try {
-        const updateDoc = { $set: { ...updates, updatedAt: new Date() } };
-        
-        // Handle nested updates for progress object
-        for (const [key, value] of Object.entries(updates)) {
-            if (key.startsWith('progress.')) {
-                delete updateDoc.$set[key];
-                updateDoc.$set[key] = value;
-            }
-        }
-        
-        const result = await relationshipWorkflowStatusCollection.updateOne(
-            { compositeChartId },
-            updateDoc
-        );
-        
-        return result.modifiedCount > 0;
-    } catch (error) {
-        console.error('Error updating relationship workflow status:', error);
-        throw error;
-    }
-}
-
-// Update relationship analysis with vectorization status
-export async function updateRelationshipAnalysisVectorization(compositeChartId, updates) {
-    try {
-        const result = await relationshipAnalysisCollection.updateOne(
-            { compositeChartId },
-            { 
-                $set: {
-                    ...updates,
-                    lastUpdated: new Date()
-                }
-            }
-        );
-        
-        return result.modifiedCount > 0;
-    } catch (error) {
-        console.error('Error updating relationship analysis vectorization:', error);
-        throw error;
-    }
-}

@@ -84,9 +84,9 @@ export const relevantPromptAspects = {
       label: "Career, Purpose, and Public Image",
       subtopics: {
         CAREER_MOTIVATIONS: "Career_Motivations_and_Aspirations",
-        PUBLIC_IMAGE: "Public_Image,_Reputation,_and_Leadership_Style",
+        PUBLIC_IMAGE: "Public_Image_Reputation_and_Leadership_Style",
         CAREER_CHALLENGES: "Career_Challenges_and_Opportunities",
-        SKILLS_TALENTS: "Skills,_Talents,_and_Strengths",
+        SKILLS_TALENTS: "Skills_Talents_and_Strengths",
         // CAREER_SUMMARY: "Summary_of_Career_Path_and_Success",
       }
     },
