@@ -2,7 +2,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 
-const connection_string = process.env.MONGO_CONNECTION_STRING;
+const connection_string = process.env.MONGO_CONNECTION_STRING
 const client = new MongoClient(connection_string);
 
 client.connect();

@@ -57,16 +57,13 @@ export async function startWorkflow(req, res) {
       });
     }
 
-    // Initialize or reset workflow status
+    // Initialize or reset workflow status with unified step
   const workflowStatus = {
       userId,
       status: 'running',
-      currentStep: 'generateBasic',
+      currentStep: 'processAllContent',
       progress: {
-        generateBasic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 },
-        vectorizeBasic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 },
-        generateTopic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 },
-        vectorizeTopic: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 }
+        processAllContent: { status: 'pending', startedAt: null, completedAt: null, completed: 0, total: 0 }
       },
       error: null,
       startedAt: new Date(),
@@ -76,7 +73,7 @@ export async function startWorkflow(req, res) {
     await createWorkflowStatus(userId, workflowStatus);
 
     // Start the workflow in the background
-    processWorkflowStep(userId, 'generateBasic').catch(error => {
+    processWorkflowStep(userId, 'processAllContent').catch(error => {
       console.error('Error in workflow processing:', error);
       updateWorkflowStatus(userId, {
         status: 'error',
@@ -136,17 +133,8 @@ async function processWorkflowStep(userId: string, step: string) {
     });
 
     switch (step) {
-      case 'generateBasic':
-        await executeGenerateBasic(userId);
-        break;
-      case 'vectorizeBasic':
-        await executeVectorizeBasic(userId);
-        break;
-      case 'generateTopic':
-        await executeGenerateTopic(userId);
-        break;
-      case 'vectorizeTopic':
-        await executeVectorizeTopic(userId);
+      case 'processAllContent':
+        await executeProcessAllContent(userId);
         break;
       default:
         throw new Error(`Unknown workflow step: ${step}`);
@@ -157,19 +145,12 @@ async function processWorkflowStep(userId: string, step: string) {
       [`progress.${step}.completedAt`]: new Date()
     });
 
-    // Determine next step
-    const nextStep = getNextStep(step);
-    if (nextStep) {
-      // Continue to next step
-      await processWorkflowStep(userId, nextStep);
-    } else {
-      // Workflow complete
-      await updateWorkflowStatus(userId, {
-        status: 'completed',
-        currentStep: null,
-        completedAt: new Date()
-      });
-    }
+    // Workflow complete (only one step now)
+    await updateWorkflowStatus(userId, {
+      status: 'completed',
+      currentStep: null,
+      completedAt: new Date()
+    });
 
   } catch (error) {
     console.error(`Error in workflow step ${step}:`, error);
@@ -183,14 +164,214 @@ async function processWorkflowStep(userId: string, step: string) {
   }
 }
 
-function getNextStep(currentStep: string): string | null {
-  const stepOrder = ['generateBasic', 'vectorizeBasic', 'generateTopic', 'vectorizeTopic'];
-  const currentIndex = stepOrder.indexOf(currentStep);
-  return currentIndex >= 0 && currentIndex < stepOrder.length - 1 
-    ? stepOrder[currentIndex + 1] 
-    : null;
+async function executeProcessAllContent(userId: string) {
+  const user = await getUserSingle(userId);
+  if (!user || !user.birthChart) {
+    throw new Error('User or birth chart not found');
+  }
+
+  console.log(`Starting unified content processing for userId: ${userId}`);
+
+  const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
+  
+  // Calculate total items: overview + dominance(4) + planets + topic analysis
+  const totalSubtopics = Object.values(BroadTopicsEnum).reduce((acc: number, t: any) => acc + Object.keys(t.subtopics).length, 0);
+  const totalTasks = 1 + 4 + planetNames.length + totalSubtopics; // overview + dominance + planets + topics
+  let completed = 0;
+
+  await updateWorkflowStatus(userId, {
+    'progress.processAllContent.total': totalTasks,
+    'progress.processAllContent.completed': 0
+  });
+
+  // Initialize basic analysis object
+  const basicAnalysis: any = { userId, dominance: {}, planets: {}, createdAt: new Date() };
+  
+  try {
+    // 1. PROCESS OVERVIEW (generate → vectorize)
+    console.log('Processing overview...');
+    const relevantNatalPositions = generateNatalPromptsShortOverview(user.birthChart);
+    const overviewResponse = await getCompletionShortOverview(relevantNatalPositions);
+    basicAnalysis.overview = overviewResponse;
+    
+    // Save and vectorize overview immediately
+    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+    const overviewRecords = await processTextSection(overviewResponse, userId, 'overview');
+    await upsertRecords(overviewRecords, userId);
+    await updateVectorizationStatus(userId, { overview: true });
+    
+    completed++;
+    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+    console.log(`Overview completed (${completed}/${totalTasks})`);
+    
+    // Add delay and memory management
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    const memUsage = process.memoryUsage();
+    console.log(`Memory usage: RSS=${Math.round(memUsage.rss/1024/1024)}MB, Heap=${Math.round(memUsage.heapUsed/1024/1024)}MB`);
+    if (memUsage.heapUsed > 1024 * 1024 * 1024 && global.gc) {
+      console.log('High memory usage detected, running garbage collection');
+      global.gc();
+    }
+
+    // 2. PROCESS DOMINANCE PATTERNS (generate → vectorize each)
+    const dominanceDescriptions = generateDominanceDescriptions(user.birthChart);
+    console.log('Processing dominance patterns...');
+
+    const elementsResponse = await getCompletionForDominancePattern('elements', overviewResponse, dominanceDescriptions.elements.join('\n'));
+    basicAnalysis.dominance.elements = {
+      description: dominanceDescriptions.elements,
+      interpretation: elementsResponse
+    };
+    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+    
+    const elementsRecords = await processTextSection(elementsResponse, userId, `Elements Distribution:\n${dominanceDescriptions.elements.join('\n')}`);
+    await upsertRecords(elementsRecords, userId);
+    await updateVectorizationStatus(userId, { 'dominance.elements': true });
+    
+    completed++;
+    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+    console.log(`Elements completed (${completed}/${totalTasks})`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Modalities
+    const modalitiesResponse = await getCompletionForDominancePattern('modalities', overviewResponse, dominanceDescriptions.modalities.join('\n'));
+    basicAnalysis.dominance.modalities = {
+      description: dominanceDescriptions.modalities,
+      interpretation: modalitiesResponse
+    };
+    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+    
+    const modalitiesRecords = await processTextSection(modalitiesResponse, userId, `Modalities Distribution:\n${dominanceDescriptions.modalities.join('\n')}`);
+    await upsertRecords(modalitiesRecords, userId);
+    await updateVectorizationStatus(userId, { 'dominance.modalities': true });
+    
+    completed++;
+    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+    console.log(`Modalities completed (${completed}/${totalTasks})`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Quadrants
+    const quadrantsResponse = await getCompletionForDominancePattern('quadrants', overviewResponse, dominanceDescriptions.quadrants.join('\n'));
+    basicAnalysis.dominance.quadrants = {
+      description: dominanceDescriptions.quadrants,
+      interpretation: quadrantsResponse
+    };
+    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+    
+    const quadrantsRecords = await processTextSection(quadrantsResponse, userId, `Quadrants Distribution:\n${dominanceDescriptions.quadrants.join('\n')}`);
+    await upsertRecords(quadrantsRecords, userId);
+    await updateVectorizationStatus(userId, { 'dominance.quadrants': true });
+    
+    completed++;
+    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+    console.log(`Quadrants completed (${completed}/${totalTasks})`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Patterns
+    const patternsResponse = await getCompletionForChartPattern('patterns', overviewResponse, dominanceDescriptions.patterns.join('\n'));
+    basicAnalysis.dominance.patterns = {
+      description: dominanceDescriptions.patterns,
+      interpretation: patternsResponse
+    };
+    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+    
+    const patternsRecords = await processTextSection(patternsResponse, userId, `Patterns Distribution:\n${dominanceDescriptions.patterns.join('\n')}`);
+    await upsertRecords(patternsRecords, userId);
+    await updateVectorizationStatus(userId, { 'dominance.patterns': true });
+    
+    completed++;
+    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+    console.log(`Patterns completed (${completed}/${totalTasks})`);
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 3. PROCESS PLANETS (generate → vectorize each)
+    console.log('Processing planets...');
+    for (const planetName of planetNames) {
+      const rulerPlanet = getRulerPlanet(planetName, user.birthChart);
+      const planetDescription = getPlanetDescription(planetName, user.birthChart, rulerPlanet);
+      
+      if (planetDescription) {
+        const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
+        basicAnalysis.planets[planetName] = {
+          description: planetDescription,
+          interpretation
+        };
+        await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+        
+        const planetRecords = await processTextSection(interpretation, userId, planetDescription || `planet_${planetName}`);
+        await upsertRecords(planetRecords, userId);
+        await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
+        
+        completed++;
+        await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+        console.log(`Planet ${planetName} completed (${completed}/${totalTasks})`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    await updateVectorizationStatus(userId, { basicAnalysis: true });
+
+    // 4. PROCESS TOPIC ANALYSIS (generate → vectorize each)
+    console.log('Processing topic analysis...');
+    const topicMapping = generateTopicMapping(user.birthChart);
+    const results = {};
+
+    for (const [broadTopic, topicData] of Object.entries(BroadTopicsEnum)) {
+      const relevantPositions = topicMapping[topicData.label] || null;
+      
+      results[broadTopic] = {
+        label: topicData.label,
+        relevantPositions: relevantPositions,
+        subtopics: {}
+      };
+
+      for (const [subtopicKey, subtopicLabel] of Object.entries(topicData.subtopics)) {
+        const response = await getCompletionShortOverviewForTopic(subtopicLabel, topicMapping[topicData.label] || '', '');
+        results[broadTopic].subtopics[subtopicKey] = response;
+
+        // Save and vectorize immediately
+        await saveTopicAnalysis(userId, {
+          [broadTopic]: {
+            label: topicData.label,
+            relevantPositions: relevantPositions,
+            subtopics: { [subtopicKey]: response }
+          }
+        });
+        
+        const description = `${topicData.label} - ${BroadTopicsEnum[broadTopic].subtopics[subtopicKey]}\n\nRelevant Positions:\n${relevantPositions || 'None specified'}`;
+        const topicRecords = await processTextSection(response, userId, description);
+        await upsertRecords(topicRecords, userId);
+        await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
+        
+        completed++;
+        await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+        console.log(`Topic ${subtopicKey} completed (${completed}/${totalTasks})`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+
+    // Final save and cleanup
+    await saveTopicAnalysis(userId, results);
+    await updateVectorizationStatus(userId, {
+      'topicAnalysis.isComplete': true,
+      lastUpdated: new Date().toISOString()
+    });
+
+    console.log(`All content processing completed for userId: ${userId}`);
+
+  } catch (error) {
+    console.error(`Content processing failed for userId: ${userId}`, {
+      error: error.message,
+      stack: error.stack,
+      completed: completed,
+      total: totalTasks
+    });
+    throw error;
+  }
 }
 
+// OLD FUNCTIONS BELOW - TO BE REMOVED
+/*
 async function executeGenerateBasic(userId: string) {
   const user = await getUserSingle(userId);
   if (!user || !user.birthChart) {
@@ -522,3 +703,4 @@ async function executeVectorizeTopic(userId: string) {
   });
   await updateWorkflowStatus(userId, { 'progress.vectorizeTopic.completed': totalSubtopics });
 }
+*/

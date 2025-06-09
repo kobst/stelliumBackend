@@ -8,6 +8,7 @@ provider:
   stage: dev
   region: us-east-1
 
+
 functions:
   app:
     handler: server.handler

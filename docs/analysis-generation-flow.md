@@ -4,15 +4,67 @@ This document describes how Stellium Backend generates astrological analyses fro
 
 ## Overview
 
-The system transforms Swiss Ephemeris calculations into personalized astrological interpretations through a multi-stage pipeline:
+The system transforms Swiss Ephemeris calculations into personalized astrological interpretations through a **unified generate→vectorize→update** pipeline:
 
 1. **Raw Calculation** → Swiss Ephemeris computes planetary positions
 2. **Pattern Recognition** → Identifies astrological patterns and configurations
-3. **AI Interpretation** → GPT-4 generates contextual analyses
+3. **Incremental Processing** → Each content piece is generated→vectorized→progress updated immediately
 4. **Vector Storage** → Embeddings enable semantic search
 5. **Interactive Chat** → Users explore their charts through conversation
 
+## **NEW: Unified Workflow Architecture**
+
+Both birth chart and relationship analyses now use a **single-step workflow** with incremental processing for better user experience and resource management.
+
 ## Birth Chart Analysis Pipeline
+
+### **NEW: Single-Step Workflow (processAllContent)**
+
+**API Endpoint:** `POST /workflow/start`
+
+**Workflow Structure:**
+```json
+{
+  "currentStep": "processAllContent",
+  "progress": {
+    "processAllContent": {
+      "status": "running",
+      "completed": 15,
+      "total": 48,
+      "startedAt": "2025-01-08T10:00:00Z"
+    }
+  }
+}
+```
+
+**Total Content Pieces:** ~48 items
+- Overview (1)
+- Dominance patterns (4): elements, modalities, quadrants, patterns  
+- Planets (13): Sun through Midheaven
+- Topic analysis (~30): Various life areas and subtopics
+
+### **Processing Flow: Generate → Vectorize → Update**
+
+Each content piece follows this pattern:
+
+1. **Generate Content**
+   - Call appropriate GPT function
+   - Create interpretation text
+
+2. **Vectorize Immediately**
+   - Split into semantic chunks
+   - Generate embeddings
+   - Store in Pinecone
+
+3. **Update Progress**
+   - Increment completed count
+   - Update database status
+   - Log completion
+
+4. **Resource Management**
+   - 2-second delay between items
+   - Memory monitoring and cleanup
+   - Garbage collection when needed
 
 ### 1. Data Generation
 
@@ -36,34 +88,33 @@ Output structure:
 }
 ```
 
-### 2. Basic Analysis Generation
+### 2. Content Generation Details
 
-The `handleBirthChartAnalysis` function creates:
-
-#### Overview Section
+#### Overview Section (Item 1/48)
 - Extracts Sun, Moon, and Ascendant positions
 - Identifies tight aspects (orb < 2°)
 - Generates coded references (e.g., `Pp-SusTa01` = Sun in Taurus, 1st house)
 - GPT creates holistic personality synthesis
+- **Immediately vectorized and progress updated**
 
-#### Dominance Patterns
-- **Elemental Balance**: Fire, Earth, Air, Water distribution
-- **Modal Balance**: Cardinal, Fixed, Mutable qualities
-- **Spatial Balance**: Quadrant emphasis in chart
-- Each pattern receives descriptive text + GPT interpretation
+#### Dominance Patterns (Items 2-5/48)
+- **Elements (2/48)**: Fire, Earth, Air, Water distribution
+- **Modalities (3/48)**: Cardinal, Fixed, Mutable qualities
+- **Quadrants (4/48)**: Spatial emphasis in chart
+- **Patterns (5/48)**: Chart configurations and aspects
+- Each pattern: generate→vectorize→update progress
 
-#### Planet-by-Planet Analysis
-For each of 12 celestial bodies:
+#### Planet-by-Planet Analysis (Items 6-18/48)
+For each of 13 celestial bodies:
 1. Gather position data (sign, house, retrograde)
 2. List all aspects within orb
 3. Generate coded descriptions
 4. GPT interprets within birth chart context
+5. **Immediately vectorize and update progress**
 
-### 3. Topic Analysis Generation
+#### Topic Analysis (Items 19-48/48)
+Each subtopic is processed individually:
 
-The `handleBirthChartTopicAnalysis` function provides focused insights:
-
-#### Topic Mapping
 Maps 7 life areas to relevant chart factors:
 - **Self-Expression** → Sun, Moon, Ascendant, 1st house
 - **Relationships** → Venus, Mars, 5th/7th houses
@@ -73,13 +124,53 @@ Maps 7 life areas to relevant chart factors:
 - **Growth** → Jupiter, 9th house, North Node
 - **Challenges** → Saturn, Pluto, 12th house
 
-#### Processing Flow
-1. Each topic has 4-5 subtopics
-2. Vector search retrieves relevant context
-3. GPT generates focused interpretation
-4. Results stored for future queries
+**Processing Flow per Subtopic:**
+1. Generate subtopic interpretation via GPT
+2. **Immediately vectorize** the content
+3. **Update progress** (completed++)
+4. **2-second delay** before next subtopic
+5. Save to database
 
 ## Relationship Analysis Pipeline
+
+### **NEW: Single-Step Workflow (processRelationshipAnalysis)**
+
+**API Endpoint:** `POST /relationship-workflow/start`
+
+**Workflow Structure:**
+```json
+{
+  "currentStep": "processRelationshipAnalysis",
+  "progress": {
+    "processRelationshipAnalysis": {
+      "status": "running", 
+      "completed": 3,
+      "total": 8,
+      "startedAt": "2025-01-08T10:00:00Z"
+    }
+  }
+}
+```
+
+**Total Items:** 8 pieces
+- Relationship scoring (1)
+- Seven relationship categories (7): each generated→vectorized→updated
+
+### **Processing Flow: Score → Generate → Vectorize → Update**
+
+Each relationship analysis follows this pattern:
+
+1. **Generate Scores First**
+   - Calculate synastry aspects
+   - Generate composite chart
+   - Score compatibility across 7 categories
+   - Update progress (1/8)
+
+2. **For Each Category:**
+   - Generate interpretation via GPT
+   - **Immediately vectorize** content
+   - **Update progress** (completed++)
+   - **2-second delay** + memory cleanup
 
 ### 1. Data Preparation
 
@@ -93,18 +184,18 @@ Maps 7 life areas to relevant chart factors:
 - Creates unified "relationship chart"
 - Handles missing birth times appropriately
 
-### 2. Compatibility Scoring
+### 2. Compatibility Scoring (Item 1/8)
 
 The scoring system (`relationshipScoring.ts`) evaluates:
 
 #### Seven Categories
-1. **Overall Attraction & Chemistry**
-2. **Emotional Security & Connection**
-3. **Sex & Intimacy**
-4. **Communication & Mental Connection**
-5. **Commitment & Long-Term Potential**
-6. **Karmic Lessons & Growth**
-7. **Practical Growth & Shared Goals**
+1. **Overall Attraction & Chemistry** (Item 2/8)
+2. **Emotional Security & Connection** (Item 3/8)
+3. **Sex & Intimacy** (Item 4/8)
+4. **Communication & Mental Connection** (Item 5/8)
+5. **Commitment & Long-Term Potential** (Item 6/8)
+6. **Karmic Lessons & Growth** (Item 7/8)
+7. **Practical Growth & Shared Goals** (Item 8/8)
 
 #### Scoring Methodology
 - Each category has specific aspect patterns
@@ -112,16 +203,16 @@ The scoring system (`relationshipScoring.ts`) evaluates:
 - Combines synastry (70-80%) + composite (20-30%)
 - Normalizes against statistical distribution
 
-### 3. Analysis Generation
+### 3. Category Analysis Generation (Items 2-8/8)
 
-The `generateRelationshipPrompt` function:
-1. Retrieves individual analyses for both users
-2. Filters by relationship category relevance
-3. Constructs comprehensive prompt with:
-   - Relationship scores
-   - Key astrological factors
-   - Individual context
-4. GPT generates integrated analysis
+**Per Category Processing:**
+1. Retrieve individual birth chart contexts for both users
+2. Filter contexts by category relevance
+3. Format astrological details for the category
+4. **Generate interpretation** via GPT
+5. **Immediately vectorize** the content
+6. **Update progress** and save to database
+7. **2-second delay** + memory management
 
 ## GPT Integration Layer
 
@@ -146,37 +237,44 @@ The `generateRelationshipPrompt` function:
 
 ## Vector Storage System
 
-### Text Processing Pipeline
+### **UPDATED: Simplified Text Processing Pipeline**
 
 1. **Chunking**
    - Splits at sentence boundaries
    - Target size: 900 characters
-   - Minimum size: 200 characters
+   - Minimum size: 50 characters (reduced)
    - Preserves semantic coherence
 
-2. **Tagging**
-   - GPT-4 generates topic tags
-   - Maintains astrological context
-   - Creates hierarchical references
+2. **~~Tagging~~ (REMOVED)**
+   - ~~GPT-4 generates topic tags~~ **Removed for performance**
+   - ~~Maintains astrological context~~
+   - ~~Creates hierarchical references~~
 
 3. **Embedding**
    - OpenAI's text-embedding-ada-002
    - 1536-dimensional vectors
-   - Stored in Pinecone
+   - Stored in Pinecone with retry logic and timeouts
 
-### Storage Structure
+### **UPDATED: Storage Structure**
 ```typescript
 {
   namespace: userId || compositeChartId,
   metadata: {
     text: "original content",
     description: "contextual description",
-    topics: ["Self-Expression", "Career"],
+    // topics: REMOVED for performance
     category: "birthChartAnalysis",
-    section: "planets"
+    section: "planets",
+    chunk_index: 0
   }
 }
 ```
+
+### **Performance Improvements**
+- **Removed topic classification** to eliminate GPT bottleneck
+- **Added timeouts**: 20s for embeddings, 60s for upserts
+- **Retry logic**: 3 attempts with exponential backoff
+- **Memory management**: Garbage collection after operations
 
 ## Interactive Chat System
 
@@ -208,8 +306,9 @@ The `generateRelationshipPrompt` function:
 - Synastry/composite ratios
 - Statistical normalization parameters
 
-## Data Flow Summary
+## **UPDATED: Data Flow Summary**
 
+### Birth Chart Analysis
 ```
 Swiss Ephemeris Calculation
          ↓
@@ -217,47 +316,164 @@ Swiss Ephemeris Calculation
          ↓
     Pattern Recognition
          ↓
-     GPT Interpretation
+┌────────────────────────────────────┐
+│  FOR EACH CONTENT PIECE (1-48):   │
+│  1. GPT Interpretation             │
+│  2. Vector Embedding               │
+│  3. Pinecone Storage               │
+│  4. Progress Update                │
+│  5. 2s Delay + Memory Cleanup      │
+└────────────────────────────────────┘
          ↓
-    Text Chunking & Tagging
-         ↓
-     Vector Embedding
-         ↓
-    Semantic Search
+    Semantic Search Ready
          ↓
     Interactive Chat
 ```
 
-## Design Principles
-
-1. **Layered Abstraction**: Each stage adds interpretive depth
-2. **Holistic Synthesis**: Avoids mechanical listing
-3. **Contextual Awareness**: Maintains element relationships
-4. **Flexible Retrieval**: Supports structured and open queries
-5. **Traceable References**: ID codes link to source data
-
-## Usage Examples
-
-### Generate Birth Chart Analysis
-```typescript
-// Full analysis with all sections
-await handleBirthChartAnalysis(userId, birthData);
-
-// Topic-focused analysis
-await handleBirthChartTopicAnalysis(userId);
+### Relationship Analysis
+```
+User A + User B Birth Charts
+         ↓
+  Synastry + Composite Calculation
+         ↓
+    Compatibility Scoring
+         ↓
+┌────────────────────────────────────┐
+│  FOR EACH CATEGORY (1-8):         │
+│  1. Context Retrieval              │
+│  2. GPT Category Analysis          │
+│  3. Vector Embedding               │
+│  4. Pinecone Storage               │
+│  5. Progress Update                │
+│  6. 2s Delay + Memory Cleanup      │
+└────────────────────────────────────┘
+         ↓
+    Interactive Relationship Chat
 ```
 
-### Generate Relationship Analysis
-```typescript
-// Complete relationship analysis
-await generateRelationshipLLMPrompts(userId1, userId2);
+## **UPDATED: Design Principles**
 
-// Query specific relationship aspect
-await handleProcessUserQueryForRelationshipAnalysis(
-  userId1, 
-  userId2, 
-  "How do we communicate?"
-);
+1. **Incremental Processing**: Generate→vectorize→update for each piece
+2. **Real-time Feedback**: Continuous progress updates for better UX
+3. **Resource Management**: Memory cleanup and rate limiting between operations
+4. **Error Isolation**: Individual pieces can fail without affecting others
+5. **Holistic Synthesis**: Avoids mechanical listing in interpretations
+6. **Contextual Awareness**: Maintains element relationships
+7. **Flexible Retrieval**: Supports structured and open queries
+8. **Traceable References**: ID codes link to source data
+
+## **UPDATED: Usage Examples**
+
+### Start Birth Chart Workflow
+```typescript
+// NEW: Single unified workflow
+POST /workflow/start
+{
+  "userId": "67f8a0a54edb7d81f72c78da"
+}
+
+// Response: immediate workflow start
+{
+  "success": true,
+  "workflowId": "67f8a0a54edb7d81f72c78da",
+  "status": {
+    "currentStep": "processAllContent",
+    "progress": {
+      "processAllContent": {
+        "status": "running",
+        "completed": 0,
+        "total": 48
+      }
+    }
+  }
+}
 ```
 
-This architecture enables transformation of complex astronomical calculations into accessible, personalized astrological insights while maintaining technical accuracy and interpretive depth.
+### Poll Progress
+```typescript
+// Check workflow status
+POST /workflow/status
+{
+  "userId": "67f8a0a54edb7d81f72c78da"  
+}
+
+// Response: real-time progress
+{
+  "success": true,
+  "status": {
+    "currentStep": "processAllContent", 
+    "progress": {
+      "processAllContent": {
+        "status": "running",
+        "completed": 23,
+        "total": 48
+      }
+    }
+  }
+}
+```
+
+### Start Relationship Workflow
+```typescript
+// NEW: Single unified relationship workflow
+POST /relationship-workflow/start
+{
+  "userIdA": "userId1",
+  "userIdB": "userId2", 
+  "compositeChartId": "composite123"
+}
+
+// Response: immediate start with progress tracking
+{
+  "success": true,
+  "workflowId": "composite123",
+  "status": {
+    "currentStep": "processRelationshipAnalysis",
+    "progress": {
+      "processRelationshipAnalysis": {
+        "status": "running",
+        "completed": 0,
+        "total": 8
+      }
+    }
+  }
+}
+```
+
+## **Frontend Integration Guide**
+
+### Polling Strategy
+```typescript
+// Poll every 3 seconds for progress updates
+const pollInterval = setInterval(async () => {
+  const response = await fetch('/workflow/status', {
+    method: 'POST',
+    body: JSON.stringify({ userId })
+  });
+  
+  const { status } = await response.json();
+  
+  // Update progress bar
+  const progress = status.progress.processAllContent;
+  updateProgressBar(progress.completed, progress.total);
+  
+  // Check completion
+  if (status.status === 'completed') {
+    clearInterval(pollInterval);
+    onWorkflowComplete();
+  }
+}, 3000);
+```
+
+### Progress Display
+```typescript
+// Show granular progress with descriptive text
+const getProgressText = (completed, total) => {
+  if (completed <= 5) return "Analyzing chart patterns...";
+  if (completed <= 18) return "Interpreting planetary influences...";
+  if (completed <= 48) return "Generating life area insights...";
+  return "Finalizing analysis...";
+};
+```
+
+This **unified workflow architecture** provides better user experience through continuous feedback while maintaining technical accuracy and improving resource management in serverless environments.

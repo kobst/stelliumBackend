@@ -11,7 +11,7 @@ import { RELATIONSHIP_CATEGORY_PROMPTS } from '../utilities/relationshipScoringC
 // import { PineconeClient } from '@pinecone-database/pinecone';
 
   // Initialize OpenAI
-const apiKey = process.env.OPENAI_API_KEY;
+const apiKey = process.env.OPENAI_API_KEY
 const openAiClient = new OpenAI({ 
     apiKey: apiKey,
     timeout: 30000, // 30 second timeout

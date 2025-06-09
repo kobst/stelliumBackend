@@ -110,9 +110,9 @@ router.post('/fetchUserChatRelationshipAnalysis',  handleFetchUserChatRelationsh
 
 router.post('/getTransitWindows', handleGetTransitWindows);
 
-// Workflow routes
-router.post('/startWorkflow', startWorkflow);
-router.post('/getWorkflowStatus', getWorkflowStatusHandler);
+// Individual Workflow routes
+router.post('/workflow/individual/start', startWorkflow);
+router.post('/workflow/individual/status', getWorkflowStatusHandler);
 
 // Relationship Workflow routes
 router.post('/workflow/relationship/start', startRelationshipWorkflow);

@@ -51,6 +51,10 @@ The application includes a sophisticated relationship compatibility scoring syst
 - Ephemeris data files (`.se1`) must be present in `data/` directory
 - `initializeEphemeris()` must be called before any calculations
 - Supports natal charts, progressions, transits, and composite charts
+- **Platform Compatibility**: The `sweph` native module requires platform-specific compilation:
+  - Production (AWS Lambda): Compiled for Linux ARM64
+  - Local Development (macOS): Automatically rebuilds via `postinstall` script
+  - The `postinstall` script in `package.json` handles macOS rebuilding automatically
 
 ### Transit Tracking
 Advanced transit calculation utilities:
