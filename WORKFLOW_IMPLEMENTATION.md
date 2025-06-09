@@ -18,12 +18,21 @@ This implementation replaces the manual step-by-step workflow with a single API 
 - `executeVectorizeBasic(userId)` - Handles basic analysis vectorization
 - `executeGenerateTopic(userId)` - Handles topic analysis generation  
 - `executeVectorizeTopic(userId)` - Handles topic analysis vectorization
+- `executeProcessAllContent(userId)` - **New unified function that processes all content in parallel**
 
 **Workflow Steps:**
 1. `generateBasic` - Generate overview, dominance patterns, and planet interpretations
 2. `vectorizeBasic` - Process and vectorize basic analysis for search
 3. `generateTopic` - Generate all subtopic analyses
 4. `vectorizeTopic` - Process and vectorize topic analyses for search
+
+**Performance Improvements (as of commit 1b60502):**
+- **Parallel Processing**: The workflow now processes multiple items concurrently:
+  - Dominance patterns (elements, modalities, quadrants, patterns) are processed in parallel
+  - Planet interpretations are processed in parallel
+  - Topic subtopics are processed in parallel batches
+- **Unified Generation and Vectorization**: The new `executeProcessAllContent` function combines generation and vectorization steps, reducing overall processing time
+- **RAG Context Integration**: Topic analysis now incorporates RAG (Retrieval-Augmented Generation) context from previously vectorized content for more coherent analysis
 
 ### 2. New Database Functions in `dbService.ts`
 
@@ -149,6 +158,9 @@ const pollWorkflowStatus = useCallback(async () => {
 - **Cleanup**: Intervals are properly cleared on component unmount
 - **Caching**: Status responses can be cached briefly to reduce database load
 - **Timeouts**: Long-running operations have appropriate timeout handling
+- **Parallel Processing**: Multiple analyses are processed concurrently within each workflow step
+- **Memory Management**: Forced garbage collection between major operations to prevent memory leaks
+- **Batch Operations**: Related vectorization tasks are batched together for efficiency
 
 ## Migration Path
 

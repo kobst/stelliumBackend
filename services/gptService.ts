@@ -854,6 +854,7 @@ Write a synthesis, not a list. Use astrological data and psychological insight t
       ]
     });
 
+    console.log("Complete Prompt for Relationship Category: ", userPrompt);
     return response.choices[0].message.content;
   } catch (error) {
     console.error("Error in getCompletionForRelationshipCategory:", error);

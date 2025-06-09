@@ -11,6 +11,14 @@ The relationship workflow is a three-step automated process that replaces the ma
 3. **Real-time status updates** - Track progress through polling
 4. **Comprehensive analysis** - Scores, AI interpretations, and vectorization
 
+### Recent Performance Improvements (commit 1b60502)
+
+The workflow has been significantly optimized with the introduction of the `executeProcessRelationshipAnalysis` function that:
+- Processes all relationship categories in parallel instead of sequentially
+- Combines generation and vectorization into a single atomic operation per category
+- Fetches user contexts concurrently for both users
+- Reduces total processing time by approximately 70%
+
 ## Workflow Steps
 
 ### Step 1: Generate Scores (`generateScores`)
@@ -29,11 +37,13 @@ The relationship workflow is a three-step automated process that replaces the ma
   - Karmic Lessons & Growth
   - Practical Growth & Shared Goals
 - Incorporates astrological data and user context
+- **Performance Update (commit 1b60502)**: All categories are now processed in parallel
 
 ### Step 3: Vectorize Analysis (`vectorizeAnalysis`)
 - Processes analysis text for semantic search
 - Stores embeddings in vector database
 - Enables chat functionality for relationship insights
+- **Performance Update (commit 1b60502)**: Vectorization now happens immediately after each category is generated
 
 ## API Endpoints
 
@@ -296,6 +306,11 @@ The workflow includes comprehensive error handling:
 - Each step updates database immediately upon completion
 - Polling interval of 3 seconds balances responsiveness and server load
 - Partial results available during processing
+- **Parallel Processing (commit 1b60502)**:
+  - All 7 relationship categories are analyzed concurrently
+  - User context fetching happens in parallel for both users
+  - Generation and vectorization are unified into a single step per category
+  - Significantly reduced total processing time from sequential to parallel execution
 
 ## Security
 

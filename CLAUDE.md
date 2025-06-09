@@ -86,3 +86,10 @@ Scripts in `scripts/` directory handle data generation and maintenance:
 - Birth chart bulk processing
 - LLM prompt generation
 - Statistical analysis for scoring normalization
+
+### Performance Optimizations (as of commit 1b60502)
+The codebase now includes significant performance improvements for workflow processing:
+- **Parallel Processing**: Both user and relationship workflows now process multiple analyses concurrently
+- **Unified Operations**: Generation and vectorization steps are combined to reduce redundant operations
+- **RAG Integration**: Topic analysis incorporates previously vectorized content for enhanced coherence
+- **Memory Management**: Strategic garbage collection prevents memory leaks during long operations
