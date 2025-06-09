@@ -268,10 +268,9 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
     ]);
     console.log(`[executeProcessRelationshipAnalysis] Contexts fetched for ${userAName} and ${userBName}`);
 
-    // 3. PROCESS EACH CATEGORY (generate → vectorize)
-    const categoryAnalysis = {};
-
-    for (const categoryKey of Object.keys(RELATIONSHIP_CATEGORIES)) {
+    // 3. PROCESS EACH CATEGORY (generate → vectorize) IN PARALLEL
+    const categoryAnalysis = {} as any;
+    const categoryTasks = Object.keys(RELATIONSHIP_CATEGORIES).map(async categoryKey => {
       try {
         const categoryValue = RELATIONSHIP_CATEGORIES[categoryKey];
         const categoryDisplayName = categoryValue.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
@@ -283,7 +282,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
         const contextA = contextsUserA[categoryValue] || "No specific context found for User A in this category.";
         const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
         const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
-        
+
         // Generate interpretation
         const interpretation = await getCompletionForRelationshipCategory(
             userAName,
@@ -308,10 +307,10 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
         });
 
         // Vectorize immediately
-        const richDescription = formattedAstrology ? 
+        const richDescription = formattedAstrology ?
           `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
           `Relationship analysis for ${categoryValue}`;
-        
+
         const records = await processTextSectionRelationship(
           interpretation,
           compositeChartId,
@@ -319,7 +318,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
           categoryValue,
           formattedAstrology
         );
-        
+
         if (records && records.length > 0) {
           await upsertRecords(records, compositeChartId);
           await updateRelationshipAnalysisVectorization(compositeChartId, {
@@ -345,7 +344,9 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
         console.error(`Category ${categoryKey} processing failed:`, error.message);
         throw new Error(`Failed to process category ${categoryKey}: ${error.message}`);
       }
-    }
+    });
+
+    await Promise.all(categoryTasks);
 
     // Final updates
     await updateRelationshipAnalysisVectorization(compositeChartId, {

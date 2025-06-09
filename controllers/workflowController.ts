@@ -213,112 +213,65 @@ async function executeProcessAllContent(userId: string) {
       global.gc();
     }
 
-    // 2. PROCESS DOMINANCE PATTERNS (generate → vectorize each)
+    // 2. PROCESS DOMINANCE PATTERNS (generate → vectorize each) IN PARALLEL
     const dominanceDescriptions = generateDominanceDescriptions(user.birthChart);
     console.log('Processing dominance patterns...');
 
-    const elementsResponse = await getCompletionForDominancePattern('elements', overviewResponse, dominanceDescriptions.elements.join('\n'));
-    basicAnalysis.dominance.elements = {
-      description: dominanceDescriptions.elements,
-      interpretation: elementsResponse
-    };
-    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-    
-    const elementsRecords = await processTextSection(elementsResponse, userId, `Elements Distribution:\n${dominanceDescriptions.elements.join('\n')}`);
-    await upsertRecords(elementsRecords, userId);
-    await updateVectorizationStatus(userId, { 'dominance.elements': true });
-    
-    completed++;
-    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-    console.log(`Elements completed (${completed}/${totalTasks})`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const dominanceTasks = Object.entries(dominanceDescriptions).map(async ([type, desc]) => {
+      const response = type === 'patterns'
+        ? await getCompletionForChartPattern('patterns', overviewResponse, desc.join('\n'))
+        : await getCompletionForDominancePattern(type, overviewResponse, desc.join('\n'));
+      basicAnalysis.dominance[type] = { description: desc, interpretation: response };
 
-    // Modalities
-    const modalitiesResponse = await getCompletionForDominancePattern('modalities', overviewResponse, dominanceDescriptions.modalities.join('\n'));
-    basicAnalysis.dominance.modalities = {
-      description: dominanceDescriptions.modalities,
-      interpretation: modalitiesResponse
-    };
-    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-    
-    const modalitiesRecords = await processTextSection(modalitiesResponse, userId, `Modalities Distribution:\n${dominanceDescriptions.modalities.join('\n')}`);
-    await upsertRecords(modalitiesRecords, userId);
-    await updateVectorizationStatus(userId, { 'dominance.modalities': true });
-    
-    completed++;
-    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-    console.log(`Modalities completed (${completed}/${totalTasks})`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+      const descriptionText = `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${desc.join('\n')}`;
+      const records = await processTextSection(response, userId, descriptionText);
+      await upsertRecords(records, userId);
+      await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
 
-    // Quadrants
-    const quadrantsResponse = await getCompletionForDominancePattern('quadrants', overviewResponse, dominanceDescriptions.quadrants.join('\n'));
-    basicAnalysis.dominance.quadrants = {
-      description: dominanceDescriptions.quadrants,
-      interpretation: quadrantsResponse
-    };
-    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-    
-    const quadrantsRecords = await processTextSection(quadrantsResponse, userId, `Quadrants Distribution:\n${dominanceDescriptions.quadrants.join('\n')}`);
-    await upsertRecords(quadrantsRecords, userId);
-    await updateVectorizationStatus(userId, { 'dominance.quadrants': true });
-    
-    completed++;
-    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-    console.log(`Quadrants completed (${completed}/${totalTasks})`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
+      completed++;
+      await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+      console.log(`${type} completed (${completed}/${totalTasks})`);
+      await new Promise(resolve => setTimeout(resolve, 2000));
+    });
+    await Promise.all(dominanceTasks);
 
-    // Patterns
-    const patternsResponse = await getCompletionForChartPattern('patterns', overviewResponse, dominanceDescriptions.patterns.join('\n'));
-    basicAnalysis.dominance.patterns = {
-      description: dominanceDescriptions.patterns,
-      interpretation: patternsResponse
-    };
-    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-    
-    const patternsRecords = await processTextSection(patternsResponse, userId, `Patterns Distribution:\n${dominanceDescriptions.patterns.join('\n')}`);
-    await upsertRecords(patternsRecords, userId);
-    await updateVectorizationStatus(userId, { 'dominance.patterns': true });
-    
-    completed++;
-    await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-    console.log(`Patterns completed (${completed}/${totalTasks})`);
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    // 3. PROCESS PLANETS (generate → vectorize each)
+    // 3. PROCESS PLANETS (generate → vectorize each) IN PARALLEL
     console.log('Processing planets...');
-    for (const planetName of planetNames) {
+    const planetTasks = planetNames.map(async planetName => {
       const rulerPlanet = getRulerPlanet(planetName, user.birthChart);
       const planetDescription = getPlanetDescription(planetName, user.birthChart, rulerPlanet);
-      
+
       if (planetDescription) {
         const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
         basicAnalysis.planets[planetName] = {
           description: planetDescription,
           interpretation
         };
-        await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-        
+
         const planetRecords = await processTextSection(interpretation, userId, planetDescription || `planet_${planetName}`);
         await upsertRecords(planetRecords, userId);
         await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
-        
+
         completed++;
         await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
         console.log(`Planet ${planetName} completed (${completed}/${totalTasks})`);
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
-    }
+    });
+    await Promise.all(planetTasks);
 
+    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
     await updateVectorizationStatus(userId, { basicAnalysis: true });
 
     // 4. PROCESS TOPIC ANALYSIS (generate → vectorize each)
     console.log('Processing topic analysis...');
     const topicMapping = generateTopicMapping(user.birthChart);
-    const results = {};
+    const results = {} as any;
+    const topicTasks: Array<() => Promise<void>> = [];
 
     for (const [broadTopic, topicData] of Object.entries(BroadTopicsEnum)) {
       const relevantPositions = topicMapping[topicData.label] || null;
-      
+
       results[broadTopic] = {
         label: topicData.label,
         relevantPositions: relevantPositions,
@@ -326,29 +279,24 @@ async function executeProcessAllContent(userId: string) {
       };
 
       for (const [subtopicKey, subtopicLabel] of Object.entries(topicData.subtopics)) {
-        const response = await getCompletionShortOverviewForTopic(subtopicLabel, topicMapping[topicData.label] || '', '');
-        results[broadTopic].subtopics[subtopicKey] = response;
+        topicTasks.push(async () => {
+          const response = await getCompletionShortOverviewForTopic(subtopicLabel, topicMapping[topicData.label] || '', '');
+          results[broadTopic].subtopics[subtopicKey] = response;
 
-        // Save and vectorize immediately
-        await saveTopicAnalysis(userId, {
-          [broadTopic]: {
-            label: topicData.label,
-            relevantPositions: relevantPositions,
-            subtopics: { [subtopicKey]: response }
-          }
+          const description = `${topicData.label} - ${BroadTopicsEnum[broadTopic].subtopics[subtopicKey]}\n\nRelevant Positions:\n${relevantPositions || 'None specified'}`;
+          const topicRecords = await processTextSection(response, userId, description);
+          await upsertRecords(topicRecords, userId);
+          await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
+
+          completed++;
+          await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+          console.log(`Topic ${subtopicKey} completed (${completed}/${totalTasks})`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
         });
-        
-        const description = `${topicData.label} - ${BroadTopicsEnum[broadTopic].subtopics[subtopicKey]}\n\nRelevant Positions:\n${relevantPositions || 'None specified'}`;
-        const topicRecords = await processTextSection(response, userId, description);
-        await upsertRecords(topicRecords, userId);
-        await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
-        
-        completed++;
-        await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-        console.log(`Topic ${subtopicKey} completed (${completed}/${totalTasks})`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
+
+    await Promise.all(topicTasks.map(fn => fn()));
 
     // Final save and cleanup
     await saveTopicAnalysis(userId, results);
