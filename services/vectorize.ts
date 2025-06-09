@@ -567,7 +567,7 @@ export async function retrieveTopicContext(userId, topic) {
         // Query by vector similarity only (topics removed)
         const vectorResults = await index.query({
             vector: promptEmbedding,
-            topK: 10, // Increased since we're not using topic filtering
+            topK: 5, // Increased since we're not using topic filtering
             includeMetadata: true,
             filter: {
                 userId: userId

@@ -7,6 +7,7 @@ async function loadSweph() {
   console.log('Attempting to load sweph module...');
   console.log('NODE_PATH:', process.env.NODE_PATH);
   console.log('Process cwd:', process.cwd());
+  console.log('LAMBDA_TASK_ROOT:', process.env.LAMBDA_TASK_ROOT);
   
   // Check filesystem first
   try {
@@ -24,6 +25,9 @@ async function loadSweph() {
       console.log('Layer contents:', fs.readdirSync(layerPath));
       const binaryPath = path.join(layerPath, 'build/Release/sweph.node');
       console.log('Binary exists:', fs.existsSync(binaryPath));
+      if (fs.existsSync(binaryPath)) {
+        console.log('Binary size:', fs.statSync(binaryPath).size);
+      }
     }
   } catch (err) {
     console.warn('Filesystem check failed:', err.message);
@@ -33,7 +37,8 @@ async function loadSweph() {
   const pathsToTry = [
     'sweph', // Standard import
     '/opt/nodejs/node_modules/sweph', // Layer path
-    'file:///opt/nodejs/node_modules/sweph/index.mjs' // Direct layer ESM path
+    'file:///opt/nodejs/node_modules/sweph/index.mjs', // Direct layer ESM path
+    '/var/task/node_modules/sweph' // Local path
   ];
   
   for (const path of pathsToTry) {
@@ -43,9 +48,13 @@ async function loadSweph() {
       sweph = swephModule.default || swephModule;
       console.log('Successfully loaded sweph module from:', path);
       console.log('Sweph constants available:', sweph?.constants ? 'Yes' : 'No');
+      if (sweph?.constants) {
+        console.log('Available constants:', Object.keys(sweph.constants));
+      }
       return true;
     } catch (error) {
       console.warn(`Failed to load sweph from ${path}:`, error.message);
+      console.warn('Error stack:', error.stack);
     }
   }
   
