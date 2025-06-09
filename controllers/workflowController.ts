@@ -195,11 +195,20 @@ async function executeProcessAllContent(userId: string) {
     const overviewResponse = await getCompletionShortOverview(relevantNatalPositions);
     basicAnalysis.overview = overviewResponse;
     
-    // Save and vectorize overview immediately
+    // Save overview immediately
     await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
-    const overviewRecords = await processTextSection(overviewResponse, userId, 'overview');
-    await upsertRecords(overviewRecords, userId);
-    await updateVectorizationStatus(userId, { overview: true });
+    console.log('Overview saved to database');
+    
+    // Vectorize - but don't fail the whole task if this fails
+    try {
+      const overviewRecords = await processTextSection(overviewResponse, userId, 'overview');
+      await upsertRecords(overviewRecords, userId);
+      await updateVectorizationStatus(userId, { overview: true });
+      console.log('Overview vectorized successfully');
+    } catch (vectorError) {
+      console.error('Failed to vectorize overview:', vectorError.message);
+      await updateVectorizationStatus(userId, { overview: false });
+    }
     
     completed++;
     await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
@@ -214,54 +223,100 @@ async function executeProcessAllContent(userId: string) {
       global.gc();
     }
 
-    // 2. PROCESS DOMINANCE PATTERNS (generate → vectorize each) IN PARALLEL
+    // 2. PROCESS DOMINANCE PATTERNS (generate → save → vectorize each) IN PARALLEL
     const dominanceDescriptions = generateDominanceDescriptions(user.birthChart);
     console.log('Processing dominance patterns...');
 
     const dominanceTasks = Object.entries(dominanceDescriptions).map(async ([type, desc]) => {
-      const response = type === 'patterns'
-        ? await getCompletionForChartPattern('patterns', overviewResponse, desc.join('\n'))
-        : await getCompletionForDominancePattern(type, overviewResponse, desc.join('\n'));
-      basicAnalysis.dominance[type] = { description: desc, interpretation: response };
+      try {
+        // Generate content
+        const response = type === 'patterns'
+          ? await getCompletionForChartPattern('patterns', overviewResponse, desc.join('\n'))
+          : await getCompletionForDominancePattern(type, overviewResponse, desc.join('\n'));
+        
+        // Update in-memory object
+        basicAnalysis.dominance[type] = { description: desc, interpretation: response };
 
-      const descriptionText = `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${desc.join('\n')}`;
-      const records = await processTextSection(response, userId, descriptionText);
-      await upsertRecords(records, userId);
-      await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
+        // Save immediately (includes all content generated so far)
+        await saveBasicAnalysis(userId, { 
+          basicAnalysis, 
+          timestamp: new Date().toISOString(), 
+          metadata: { generatedBy: 'workflow', version: '1.0' } 
+        });
+        console.log(`${type} saved to database`);
 
-      completed++;
-      await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-      console.log(`${type} completed (${completed}/${totalTasks})`);
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    });
-    await Promise.all(dominanceTasks);
-
-    // 3. PROCESS PLANETS (generate → vectorize each) IN PARALLEL
-    console.log('Processing planets...');
-    const planetTasks = planetNames.map(async planetName => {
-      const rulerPlanet = getRulerPlanet(planetName, user.birthChart);
-      const planetDescription = getPlanetDescription(planetName, user.birthChart, rulerPlanet);
-
-      if (planetDescription) {
-        const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
-        basicAnalysis.planets[planetName] = {
-          description: planetDescription,
-          interpretation
-        };
-
-        const planetRecords = await processTextSection(interpretation, userId, planetDescription || `planet_${planetName}`);
-        await upsertRecords(planetRecords, userId);
-        await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
+        // Vectorize - but don't fail the whole task if this fails
+        try {
+          const descriptionText = `${type.charAt(0).toUpperCase() + type.slice(1)} Distribution:\n${desc.join('\n')}`;
+          const records = await processTextSection(response, userId, descriptionText);
+          await upsertRecords(records, userId);
+          await updateVectorizationStatus(userId, { [`dominance.${type}`]: true });
+          console.log(`${type} vectorized successfully`);
+        } catch (vectorError) {
+          console.error(`Failed to vectorize dominance ${type}:`, vectorError.message);
+          await updateVectorizationStatus(userId, { [`dominance.${type}`]: false });
+        }
 
         completed++;
         await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
-        console.log(`Planet ${planetName} completed (${completed}/${totalTasks})`);
+        console.log(`${type} completed (${completed}/${totalTasks})`);
         await new Promise(resolve => setTimeout(resolve, 2000));
+      } catch (error) {
+        console.error(`Failed to process dominance ${type}:`, error.message);
+        // Continue with other dominance patterns even if this one fails
+      }
+    });
+    await Promise.all(dominanceTasks);
+
+    // 3. PROCESS PLANETS (generate → save → vectorize each) IN PARALLEL
+    console.log('Processing planets...');
+    const planetTasks = planetNames.map(async planetName => {
+      try {
+        const rulerPlanet = getRulerPlanet(planetName, user.birthChart);
+        const planetDescription = getPlanetDescription(planetName, user.birthChart, rulerPlanet);
+
+        if (planetDescription) {
+          // Generate content
+          const interpretation = await getCompletionForNatalPlanet(planetName, planetDescription, overviewResponse);
+          
+          // Update in-memory object
+          basicAnalysis.planets[planetName] = {
+            description: planetDescription,
+            interpretation
+          };
+
+          // Save immediately (includes all content generated so far)
+          await saveBasicAnalysis(userId, { 
+            basicAnalysis, 
+            timestamp: new Date().toISOString(), 
+            metadata: { generatedBy: 'workflow', version: '1.0' } 
+          });
+          console.log(`Planet ${planetName} saved to database`);
+
+          // Vectorize - but don't fail the whole task if this fails
+          try {
+            const planetRecords = await processTextSection(interpretation, userId, planetDescription || `planet_${planetName}`);
+            await upsertRecords(planetRecords, userId);
+            await updateVectorizationStatus(userId, { [`planets.${planetName}`]: true });
+            console.log(`Planet ${planetName} vectorized successfully`);
+          } catch (vectorError) {
+            console.error(`Failed to vectorize planet ${planetName}:`, vectorError.message);
+            await updateVectorizationStatus(userId, { [`planets.${planetName}`]: false });
+          }
+
+          completed++;
+          await updateWorkflowStatus(userId, { 'progress.processAllContent.completed': completed });
+          console.log(`Planet ${planetName} completed (${completed}/${totalTasks})`);
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
+      } catch (error) {
+        console.error(`Failed to process planet ${planetName}:`, error.message);
+        // Continue with other planets even if this one fails
       }
     });
     await Promise.all(planetTasks);
 
-    await saveBasicAnalysis(userId, { basicAnalysis, timestamp: new Date().toISOString(), metadata: { generatedBy: 'workflow', version: '1.0' } });
+    // Mark basic analysis as complete
     await updateVectorizationStatus(userId, { basicAnalysis: true });
 
     // 4. PROCESS TOPIC ANALYSIS (generate → vectorize each)
@@ -314,16 +369,34 @@ async function executeProcessAllContent(userId: string) {
 
             results[broadTopic].subtopics[subtopicKey] = response;
 
-            const description = `${topicData.label} - ${BroadTopicsEnum[broadTopic].subtopics[subtopicKey]}\n\nRelevant Positions:\n${relevantPositions || 'None specified'}`;
-            console.log(`Processing text section for ${subtopicLabel} with description length: ${description.length}`);
-            const topicRecords = await processTextSection(response, userId, description);
-            console.log(`Generated ${topicRecords?.length || 0} records for ${subtopicLabel}`);
+            // Save the individual subtopic immediately
+            await saveTopicAnalysis(userId, {
+              [broadTopic]: {
+                label: topicData.label,
+                relevantPositions: relevantPositions,
+                subtopics: { [subtopicKey]: response }
+              }
+            });
+            console.log(`Topic ${subtopicKey} saved to database`);
 
-            if (topicRecords && topicRecords.length > 0) {
-              await upsertRecords(topicRecords, userId);
-              await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
-            } else {
-              console.warn(`No records generated for ${subtopicLabel}`);
+            // Vectorize - but don't fail the whole task if this fails
+            try {
+              const description = `${topicData.label} - ${BroadTopicsEnum[broadTopic].subtopics[subtopicKey]}\n\nRelevant Positions:\n${relevantPositions || 'None specified'}`;
+              console.log(`Processing text section for ${subtopicLabel} with description length: ${description.length}`);
+              const topicRecords = await processTextSection(response, userId, description);
+              console.log(`Generated ${topicRecords?.length || 0} records for ${subtopicLabel}`);
+
+              if (topicRecords && topicRecords.length > 0) {
+                await upsertRecords(topicRecords, userId);
+                await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: true });
+                console.log(`Topic ${subtopicKey} vectorized successfully`);
+              } else {
+                console.warn(`No records generated for ${subtopicLabel}`);
+                await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
+              }
+            } catch (vectorError) {
+              console.error(`Failed to vectorize topic ${subtopicKey}:`, vectorError.message);
+              await updateVectorizationStatus(userId, { [`topicAnalysis.${broadTopic}.${subtopicKey}`]: false });
             }
 
             completed++;
@@ -349,9 +422,7 @@ async function executeProcessAllContent(userId: string) {
     await Promise.all(topicTasks.map(fn => fn()));
     console.log('All topic tasks completed');
 
-    // Final save and cleanup
-    console.log('Saving final topic analysis...');
-    await saveTopicAnalysis(userId, results);
+    // Mark topic analysis as complete
     await updateVectorizationStatus(userId, {
       'topicAnalysis.isComplete': true,
       lastUpdated: new Date().toISOString()

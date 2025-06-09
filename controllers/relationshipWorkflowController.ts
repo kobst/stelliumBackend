@@ -378,26 +378,39 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
           [`categoryAnalysis.${categoryValue}`]: categoryAnalysis[categoryValue],
           analysisGeneratedAt: new Date()
         });
+        console.log(`Category ${categoryDisplayName} saved to database`);
 
-        // Vectorize immediately
-        const richDescription = formattedAstrology ?
-          `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
-          `Relationship analysis for ${categoryValue}`;
+        // Vectorize - but don't fail the whole task if this fails
+        try {
+          const richDescription = formattedAstrology ?
+            `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
+            `Relationship analysis for ${categoryValue}`;
 
-        const records = await processTextSectionRelationship(
-          interpretation,
-          compositeChartId,
-          richDescription,
-          categoryValue,
-          formattedAstrology
-        );
+          const records = await processTextSectionRelationship(
+            interpretation,
+            compositeChartId,
+            richDescription,
+            categoryValue,
+            formattedAstrology
+          );
 
-        if (records && records.length > 0) {
-          await upsertRecords(records, compositeChartId);
+          if (records && records.length > 0) {
+            await upsertRecords(records, compositeChartId);
+            await updateRelationshipAnalysisVectorization(compositeChartId, {
+              [`vectorizationStatus.categoryAnalysis.${categoryValue}`]: true
+            });
+            console.log(`Category ${categoryDisplayName} vectorized successfully`);
+          } else {
+            console.warn(`No records generated for category ${categoryDisplayName}`);
+            await updateRelationshipAnalysisVectorization(compositeChartId, {
+              [`vectorizationStatus.categoryAnalysis.${categoryValue}`]: false
+            });
+          }
+        } catch (vectorError) {
+          console.error(`Failed to vectorize category ${categoryDisplayName}:`, vectorError.message);
           await updateRelationshipAnalysisVectorization(compositeChartId, {
-            [`vectorizationStatus.categoryAnalysis.${categoryValue}`]: true
+            [`vectorizationStatus.categoryAnalysis.${categoryValue}`]: false
           });
-          console.log(`Category ${categoryDisplayName} vectorization completed`);
         }
 
         completed++;
@@ -414,8 +427,10 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
         }
 
       } catch (error) {
-        console.error(`Category ${categoryKey} processing failed:`, error.message);
-        throw new Error(`Failed to process category ${categoryKey}: ${error.message}`);
+        console.error(`Failed to process category ${categoryKey}:`, error.message);
+        // Continue with other categories even if this one fails
+        completed++;
+        await updateRelationshipWorkflowStatus(compositeChartId, { 'progress.processRelationshipAnalysis.completed': completed });
       }
     });
 
