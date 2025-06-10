@@ -361,6 +361,12 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
             analysis: analysis.analysis || analysis.categoryAnalysis, // Support both field names
             categoryAnalysis: analysis.categoryAnalysis || analysis.analysis, // Backward compatibility
             vectorizationStatus: analysis.vectorizationStatus || defaultVectorizationStatus,
+            workflowStatus: analysis.workflowStatus || {
+                isRunning: false,
+                startedAt: null,
+                completedAt: null,
+                lastUpdated: null
+            },
             _id: analysis._id
         };
     } catch (error) {
@@ -999,6 +1005,39 @@ export async function updateRelationshipVectorizationStatus(compositeChartId, an
         };
     } catch (error) {
         console.error(`Error updating vectorization status for compositeChartId ${compositeChartId}:`, error);
+        throw error;
+    }
+}
+
+export async function updateRelationshipWorkflowRunningStatus(compositeChartId, isRunning, additionalData = {}) {
+    try {
+        const updateData = {
+            'workflowStatus.isRunning': isRunning,
+            'workflowStatus.lastUpdated': new Date(),
+            ...additionalData
+        };
+        
+        if (isRunning) {
+            updateData['workflowStatus.startedAt'] = new Date();
+        } else {
+            updateData['workflowStatus.completedAt'] = new Date();
+        }
+        
+        const result = await relationshipAnalysisCollection.updateOne(
+            { 'debug.inputSummary.compositeChartId': compositeChartId },
+            { $set: updateData },
+            { upsert: true }
+        );
+        
+        console.log(`✅ Updated relationship workflow running status for ${compositeChartId}: isRunning=${isRunning}`);
+        
+        return {
+            success: result.modifiedCount > 0 || result.upsertedCount > 0,
+            modifiedCount: result.modifiedCount,
+            upsertedCount: result.upsertedCount
+        };
+    } catch (error) {
+        console.error(`Error updating relationship workflow running status:`, error);
         throw error;
     }
 }
