@@ -18,7 +18,7 @@ This implementation replaces the manual step-by-step workflow with a single API 
 - `executeVectorizeBasic(userId)` - Handles basic analysis vectorization
 - `executeGenerateTopic(userId)` - Handles topic analysis generation  
 - `executeVectorizeTopic(userId)` - Handles topic analysis vectorization
-- `executeProcessAllContent(userId)` - **New unified function that processes all content in parallel**
+- `executeProcessAllContent(userId)` - **Unified function that processes all content with atomic save operations and retry logic**
 
 **Workflow Steps:**
 1. `generateBasic` - Generate overview, dominance patterns, and planet interpretations
@@ -26,23 +26,35 @@ This implementation replaces the manual step-by-step workflow with a single API 
 3. `generateTopic` - Generate all subtopic analyses
 4. `vectorizeTopic` - Process and vectorize topic analyses for search
 
-**Performance Improvements (as of commit 1b60502):**
-- **Parallel Processing**: The workflow now processes multiple items concurrently:
+**Performance Improvements (as of recent commits):**
+- **Parallel Processing**: The workflow processes multiple items concurrently:
   - Dominance patterns (elements, modalities, quadrants, patterns) are processed in parallel
   - Planet interpretations are processed in parallel
   - Topic subtopics are processed in parallel batches
-- **Unified Generation and Vectorization**: The new `executeProcessAllContent` function combines generation and vectorization steps, reducing overall processing time
-- **RAG Context Integration**: Topic analysis now incorporates RAG (Retrieval-Augmented Generation) context from previously vectorized content for more coherent analysis
+- **Atomic Generation and Vectorization**: Each section is generated and vectorized immediately, then saved atomically to prevent data loss
+- **RAG Context Integration**: Topic analysis incorporates RAG (Retrieval-Augmented Generation) context from previously vectorized content for more coherent analysis
+- **Comprehensive Retry Logic**: Individual operation resilience with exponential backoff for:
+  - API calls (OpenAI completions)
+  - Database operations  
+  - Vector operations
+  - RAG context retrieval
+- **Workflow-Level Auto-Recovery**: Intelligent retry system that:
+  - Detects exactly which tasks failed
+  - Retries only the failed tasks (not everything)
+  - Repeats until completion or max attempts
+  - Provides detailed logging
+- **Proper Error Handling**: Failed operations save error messages and mark vectorization status correctly
 
-### 2. New Database Functions in `dbService.ts`
+### 2. Enhanced Database Functions in `dbService.ts`
 
 **Collections:**
-- `workflow_status` - Stores workflow progress and status
+- `birth_chart_analysis` - Stores analysis data with workflow and vectorization status tracking
 
 **Functions:**
-- `createWorkflowStatus(userId, workflowStatus)` - Initialize workflow tracking
-- `getWorkflowStatus(userId)` - Retrieve current workflow status
-- `updateWorkflowStatus(userId, updates)` - Update workflow progress
+- `updateWorkflowRunningStatus(userId, isRunning, additionalData)` - Track workflow execution state
+- `updateVectorizationStatus(userId, statusUpdates)` - Update vectorization progress per section
+- `saveBasicAnalysis(userId, analysis)` - Atomic save operations for basic analysis
+- `saveTopicAnalysis(userId, topicAnalysis)` - Atomic save operations for topic analysis with merging
 
 ### 3. New Routes in `indexRoutes.ts`
 
@@ -92,17 +104,30 @@ const pollWorkflowStatus = useCallback(async () => {
 ```javascript
 {
   userId: string,
-  status: 'running' | 'completed' | 'error',
-  currentStep: 'generateBasic' | 'vectorizeBasic' | 'generateTopic' | 'vectorizeTopic' | null,
+  status: 'not_started' | 'running' | 'incomplete' | 'completed' | 'completed_with_failures',
   progress: {
-    generateBasic: { status: 'pending' | 'running' | 'completed' | 'error', startedAt: Date, completedAt: Date },
-    vectorizeBasic: { status: 'pending' | 'running' | 'completed' | 'error', startedAt: Date, completedAt: Date },
-    generateTopic: { status: 'pending' | 'running' | 'completed' | 'error', startedAt: Date, completedAt: Date },
-    vectorizeTopic: { status: 'pending' | 'running' | 'completed' | 'error', startedAt: Date, completedAt: Date }
+    completed: number,     // Number of completed tasks
+    total: number,         // Total number of tasks
+    percentage: number     // Completion percentage
   },
-  error: string | null,
-  startedAt: Date,
-  completedAt: Date | null
+  workflowStatus: {
+    isRunning: boolean,
+    startedAt: Date,
+    completedAt: Date,
+    lastUpdated: Date
+  },
+  vectorizationStatus: {
+    overview: boolean,
+    basicAnalysis: boolean,
+    dominance: { elements: boolean, modalities: boolean, quadrants: boolean, patterns: boolean },
+    planets: { [planetName]: boolean },
+    topicAnalysis: {
+      isComplete: boolean,
+      completedWithFailures: boolean,
+      remainingTasks: number,
+      topics: { [broadTopic]: { [subtopic]: boolean } }
+    }
+  }
 }
 ```
 
@@ -147,10 +172,22 @@ const pollWorkflowStatus = useCallback(async () => {
 
 ## Error Handling
 
+### Comprehensive Retry System
+- **Individual Operation Retries**: Each API call, database operation, and vectorization has built-in retry with exponential backoff
+- **Topic-Level Retries**: Failed topics are retried up to 3 times at the workflow level
+- **Selective Recovery**: Only failed tasks are retried, successful tasks are preserved
+
+### Error Types and Handling
+- **Validation Errors**: Missing users or birth charts (immediate failure)
+- **API Errors**: OpenAI rate limits, network issues (retry with backoff)
+- **Database Errors**: Connection issues, timeout (retry with backoff)
+- **Vectorization Errors**: Pinecone API issues (retry with graceful degradation)
+
+### Manual Recovery
 - **Frontend**: Displays errors with retry button
-- **Backend**: Captures errors in workflow status
-- **Database**: Stores error messages and timestamps
-- **Recovery**: Users can restart failed workflows
+- **Backend**: Captures errors in workflow status with detailed messages
+- **Database**: Stores error messages and failed operation details
+- **Recovery**: Users can restart failed workflows, which automatically skip completed tasks
 
 ## Performance Considerations
 
@@ -160,7 +197,9 @@ const pollWorkflowStatus = useCallback(async () => {
 - **Timeouts**: Long-running operations have appropriate timeout handling
 - **Parallel Processing**: Multiple analyses are processed concurrently within each workflow step
 - **Memory Management**: Forced garbage collection between major operations to prevent memory leaks
-- **Batch Operations**: Related vectorization tasks are batched together for efficiency
+- **Atomic Operations**: Each section saves immediately upon completion to prevent data loss
+- **Intelligent Task Management**: Dynamic task counting and completion tracking
+- **Auto-Recovery**: Failed workflows automatically resume from last successful checkpoint
 
 ## Migration Path
 
