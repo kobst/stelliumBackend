@@ -795,6 +795,12 @@ export async function getAllAnalysisByUserId(userId) {
                     isComplete: false
                 },
                 lastUpdated: null
+            },
+            workflowStatus: document.workflowStatus || {
+                isRunning: false,
+                startedAt: null,
+                completedAt: null,
+                lastUpdated: null
             }
         };
     } catch (error) {
@@ -937,6 +943,33 @@ export async function updateVectorizationStatus(userId, statusUpdates) {
         }
     } catch (error) {
         console.error(`Error updating vectorization status:`, error);
+        throw error;
+    }
+}
+
+export async function updateWorkflowRunningStatus(userId, isRunning, additionalData = {}) {
+    try {
+        const updateData = {
+            'workflowStatus.isRunning': isRunning,
+            'workflowStatus.lastUpdated': new Date(),
+            ...additionalData
+        };
+        
+        if (isRunning) {
+            updateData['workflowStatus.startedAt'] = new Date();
+        } else {
+            updateData['workflowStatus.completedAt'] = new Date();
+        }
+        
+        await birthChartAnalysisCollection.updateOne(
+            { userId: new ObjectId(userId) },
+            { $set: updateData },
+            { upsert: true }
+        );
+        
+        console.log(`✅ Updated workflow running status for user ${userId}: isRunning=${isRunning}`);
+    } catch (error) {
+        console.error(`Error updating workflow running status:`, error);
         throw error;
     }
 }

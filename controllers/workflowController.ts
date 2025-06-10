@@ -35,7 +35,8 @@ import {
   updateVectorizationStatus,
   getAllAnalysisByUserId,
   saveTopicAnalysis,
-  getTopicAnalysisByUserId
+  getTopicAnalysisByUserId,
+  updateWorkflowRunningStatus
 } from '../services/dbService.js';
 import {
   getCompletionShortOverview,
@@ -72,6 +73,9 @@ export async function startWorkflow(req, res) {
       return res.status(404).json({ success: false, error: 'User not found' });
     }
 
+    // Mark workflow as running
+    await updateWorkflowRunningStatus(userId, true);
+    
     // Start the workflow in the background
     executeProcessAllContent(userId).catch(error => {
       console.error('Error in workflow processing:', error);
@@ -80,6 +84,11 @@ export async function startWorkflow(req, res) {
         message: error.message,
         name: error.name,
         userId: userId
+      });
+      // Mark workflow as not running on error
+      updateWorkflowRunningStatus(userId, false, {
+        'workflowStatus.error': error.message,
+        'workflowStatus.errorAt': new Date()
       });
     });
 
@@ -97,6 +106,7 @@ export async function startWorkflow(req, res) {
 
 export async function getWorkflowStatusHandler(req, res) {
   try {
+    console.log('🚀 NEW WORKFLOW STATUS HANDLER CALLED - VERSION 2.0');
     const { userId } = req.body;
     
     if (!userId) {
@@ -109,11 +119,29 @@ export async function getWorkflowStatusHandler(req, res) {
     console.log('Retrieved analysisData:', analysisData ? 'found' : 'null/empty');
     console.log('AnalysisData keys:', analysisData ? Object.keys(analysisData) : 'none');
     
+    // Check if workflow is running
+    const workflowStatus = analysisData?.workflowStatus || {};
+    const isCurrentlyRunning = workflowStatus.isRunning === true;
+    const lastStarted = workflowStatus.startedAt ? new Date(workflowStatus.startedAt) : null;
+    const lastCompleted = workflowStatus.completedAt ? new Date(workflowStatus.completedAt) : null;
+    
+    // Check for stale running status (running for more than 30 minutes)
+    if (isCurrentlyRunning && lastStarted) {
+      const runningTime = Date.now() - lastStarted.getTime();
+      const thirtyMinutes = 30 * 60 * 1000;
+      
+      if (runningTime > thirtyMinutes) {
+        console.log(`⚠️ Workflow has been marked as running for ${Math.round(runningTime / 60000)} minutes - may be stale`);
+        // Optionally auto-clear stale running status
+        // await updateWorkflowRunningStatus(userId, false, { 'workflowStatus.staleDetected': true });
+      }
+    }
+    
     // If no analysis data exists, user hasn't started any workflow yet
     if (!analysisData) {
       return res.json({ 
         success: true, 
-        status: {
+        workflowStatus: {
           status: 'not_started',
           progress: {
             completed: 0,
@@ -121,43 +149,123 @@ export async function getWorkflowStatusHandler(req, res) {
             percentage: 0
           }
         },
-        analysisData: null
+        analysisData: null,
+        jobs: {
+          overview: { needsGeneration: true, needsVectorization: true },
+          dominance: {},
+          planets: {},
+          topics: {}
+        },
+        workflowBreakdown: {
+          needsGeneration: [],
+          needsVectorization: [],
+          completed: [],
+          totalNeedsGeneration: 0,
+          totalNeedsVectorization: 0,
+          totalCompleted: 0
+        },
+        debug: {
+          fixesApplied: false,
+          isWorkflowComplete: false,
+          isTopicAnalysisComplete: false,
+          completedWithFailures: false,
+          remainingTasks: 0,
+          totalTasks: 0,
+          completedTasks: 0,
+          isCurrentlyRunning: false,
+          workflowStatus: {}
+        }
       });
     }
     
-    const jobs = analyzeIncompleteJobs(analysisData);
-    console.log('Jobs analysis for status check:', JSON.stringify(jobs, null, 2));
+    let jobs = analyzeIncompleteJobs(analysisData);
+    console.log('Jobs analysis for status check (before fixes):', JSON.stringify(jobs, null, 2));
     
-    // Calculate completion statistics
-    // Each field needs both generation AND vectorization to be complete
+    // Fix impossible states in the database
+    const fixesApplied = await fixImpossibleStates(userId, jobs, analysisData);
+    
+    // If fixes were applied, re-analyze with corrected data
+    if (fixesApplied) {
+      console.log('Re-analyzing jobs after database fixes...');
+      const updatedAnalysisData = await getAllAnalysisByUserId(userId);
+      jobs = analyzeIncompleteJobs(updatedAnalysisData);
+      console.log('Jobs analysis after fixes:', JSON.stringify(jobs, null, 2));
+    }
+    
+    // Calculate completion statistics and create detailed breakdown
     let totalTasks = 0;
     let completedTasks = 0;
     
+    // Track what specifically needs work
+    const needsGeneration = [];
+    const needsVectorization = [];
+    const completed = [];
+    
     // Count overview (generation + vectorization = 2 tasks)
     totalTasks += 2;
-    if (!jobs.overview.needsGeneration) completedTasks++;
-    if (!jobs.overview.needsVectorization) completedTasks++;
+    if (!jobs.overview.needsGeneration) {
+      completedTasks++;
+      completed.push('overview-generation');
+    } else {
+      needsGeneration.push('overview');
+    }
+    if (!jobs.overview.needsVectorization) {
+      completedTasks++;
+      completed.push('overview-vectorization');
+    } else {
+      needsVectorization.push('overview');
+    }
     
     // Count dominance patterns (generation + vectorization = 2 tasks each)
-    Object.values(jobs.dominance).forEach((job: any) => {
+    Object.entries(jobs.dominance).forEach(([type, job]: any) => {
       totalTasks += 2;
-      if (!job.needsGeneration) completedTasks++;
-      if (!job.needsVectorization) completedTasks++;
+      if (!job.needsGeneration) {
+        completedTasks++;
+        completed.push(`dominance-${type}-generation`);
+      } else {
+        needsGeneration.push(`dominance-${type}`);
+      }
+      if (!job.needsVectorization) {
+        completedTasks++;
+        completed.push(`dominance-${type}-vectorization`);
+      } else {
+        needsVectorization.push(`dominance-${type}`);
+      }
     });
     
     // Count planets (generation + vectorization = 2 tasks each)
-    Object.values(jobs.planets).forEach((job: any) => {
+    Object.entries(jobs.planets).forEach(([planet, job]: any) => {
       totalTasks += 2;
-      if (!job.needsGeneration) completedTasks++;
-      if (!job.needsVectorization) completedTasks++;
+      if (!job.needsGeneration) {
+        completedTasks++;
+        completed.push(`planet-${planet}-generation`);
+      } else {
+        needsGeneration.push(`planet-${planet}`);
+      }
+      if (!job.needsVectorization) {
+        completedTasks++;
+        completed.push(`planet-${planet}-vectorization`);
+      } else {
+        needsVectorization.push(`planet-${planet}`);
+      }
     });
     
     // Count topics (generation + vectorization = 2 tasks each)
-    Object.values(jobs.topics).forEach((broadTopicJobs: any) => {
-      Object.values(broadTopicJobs).forEach((job: any) => {
+    Object.entries(jobs.topics).forEach(([broadTopic, broadTopicJobs]: any) => {
+      Object.entries(broadTopicJobs).forEach(([subtopicKey, job]: any) => {
         totalTasks += 2;
-        if (!job.needsGeneration) completedTasks++;
-        if (!job.needsVectorization) completedTasks++;
+        if (!job.needsGeneration) {
+          completedTasks++;
+          completed.push(`topic-${broadTopic}-${subtopicKey}-generation`);
+        } else {
+          needsGeneration.push(`topic-${broadTopic}-${subtopicKey}`);
+        }
+        if (!job.needsVectorization) {
+          completedTasks++;
+          completed.push(`topic-${broadTopic}-${subtopicKey}-vectorization`);
+        } else {
+          needsVectorization.push(`topic-${broadTopic}-${subtopicKey}`);
+        }
       });
     });
     
@@ -165,24 +273,46 @@ export async function getWorkflowStatusHandler(req, res) {
     const vectorStatus = analysisData?.vectorizationStatus || {};
     const completedWithFailures = vectorStatus.topicAnalysis?.completedWithFailures === true;
     const remainingTasks = vectorStatus.topicAnalysis?.remainingTasks || 0;
+    const isTopicAnalysisComplete = vectorStatus.topicAnalysis?.isComplete === true;
     
-    const isComplete = completedTasks >= totalTasks;
+    // The REAL workflow completion check
+    const isWorkflowComplete = completedTasks >= totalTasks;
     let status;
     
-    if (isComplete) {
+    // Determine status more intelligently
+    if (isWorkflowComplete) {
       status = 'completed';
-    } else if (completedWithFailures) {
-      status = 'completed_with_failures';
-    } else {
+    } else if (completedWithFailures && remainingTasks > 0) {
+      status = 'completed_with_failures';  
+    } else if (isCurrentlyRunning) {
+      // Workflow is actively running
       status = 'running';
+    } else if (completedTasks === 0) {
+      // Nothing has been processed yet
+      status = 'not_started';
+    } else if (completedTasks > 0 && completedTasks < totalTasks) {
+      // Has some completed work but not all - and no active process
+      // This is INCOMPLETE, not running
+      status = 'incomplete';
+    } else {
+      // Fallback
+      status = 'unknown';
     }
     
-    console.log(`Progress calculation: ${completedTasks}/${totalTasks} tasks completed`);
-    console.log(`Workflow status: ${status}`);
+    // Debug status determination
+    console.log(`📊 Status Debug: isCurrentlyRunning=${isCurrentlyRunning}, isWorkflowComplete=${isWorkflowComplete}, isTopicAnalysisComplete=${isTopicAnalysisComplete}, completedWithFailures=${completedWithFailures}, completedTasks=${completedTasks}, totalTasks=${totalTasks}`);
+    if (status === 'incomplete') {
+      console.log(`⚠️ Workflow is incomplete: ${completedTasks}/${totalTasks} tasks done. Process is NOT running.`);
+      console.log(`📋 Missing items:`, needsGeneration);
+    }
     
-    res.json({ 
+    console.log(`👤 BIRTH CHART WORKFLOW Progress calculation: ${completedTasks}/${totalTasks} tasks completed`);
+    console.log(`👤 BIRTH CHART WORKFLOW status: ${status}`);
+    console.log(`👤 BIRTH CHART WORKFLOW userId: ${userId}`);
+    
+    const responseData = { 
       success: true, 
-      status: {
+      workflowStatus: {
         status,
         progress: {
           completed: completedTasks,
@@ -190,8 +320,32 @@ export async function getWorkflowStatusHandler(req, res) {
           percentage: totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
         }
       },
-      analysisData
-    });
+      analysisData,
+      jobs: jobs, // Include jobs analysis for debugging
+      workflowBreakdown: {
+        needsGeneration: needsGeneration,
+        needsVectorization: needsVectorization,
+        completed: completed,
+        totalNeedsGeneration: needsGeneration.length,
+        totalNeedsVectorization: needsVectorization.length,
+        totalCompleted: completed.length
+      },
+      debug: {
+        fixesApplied,
+        isWorkflowComplete,
+        isTopicAnalysisComplete,
+        completedWithFailures,
+        remainingTasks,
+        totalTasks,
+        completedTasks,
+        isCurrentlyRunning,
+        workflowStatus: workflowStatus
+      }
+    };
+    
+    console.log('🔥 RETURNING NEW RESPONSE STRUCTURE:', JSON.stringify(responseData, null, 2));
+    
+    res.json(responseData);
 
   } catch (error) {
     console.error('Error getting workflow status:', error);
@@ -229,12 +383,21 @@ function analyzeIncompleteJobs(existingData: any) {
     };
   });
 
-  // Check planets
+  // Check planets - ensure vectorization status aligns with generation status
   const planetNames = ['Sun', 'Moon', 'Mercury', 'Venus', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune', 'Pluto', 'Ascendant', 'Node', 'Midheaven'];
   planetNames.forEach(planet => {
+    const hasContent = !!basicAnalysis.planets?.[planet];
+    const isVectorized = vectorStatus.planets?.[planet] === true;
+    
+    // Fix impossible states: if no content but marked as vectorized, reset vectorization
+    if (!hasContent && isVectorized) {
+      console.log(`🔧 Fixing impossible state for planet ${planet}: no content but marked as vectorized`);
+      // Note: We'll fix this in the database later
+    }
+    
     jobs.planets[planet] = {
-      needsGeneration: !basicAnalysis.planets?.[planet],
-      needsVectorization: vectorStatus.planets?.[planet] !== true
+      needsGeneration: !hasContent,
+      needsVectorization: hasContent ? !isVectorized : true // If no content, will need vectorization after generation
     };
   });
 
@@ -258,6 +421,10 @@ function analyzeIncompleteJobs(existingData: any) {
       const topicsPath = vectorStatus.topics?.[broadTopic]?.[subtopicKey];
       const flatTopicsPath = vectorStatus[`topics.${broadTopic}.${subtopicKey}`];
       
+      // NEW: Check the nested topics structure that appears in the user's data
+      const nestedTopicsPath = vectorStatus.topicAnalysis?.topics?.[broadTopic]?.subtopics?.[subtopicKey];
+      const deepNestedPath = vectorStatus.topicAnalysis?.topics?.[broadTopic]?.[subtopicKey];
+      
       if (nestedPath === true) {
         isVectorized = true;
       } else if (flatPath === true) {
@@ -269,9 +436,15 @@ function analyzeIncompleteJobs(existingData: any) {
       } else if (flatTopicsPath === true) {
         // Handle new flattened topics with dot notation
         isVectorized = true;
+      } else if (nestedTopicsPath === true) {
+        // Handle nested topics structure: topicAnalysis.topics.BROADTOPIC.subtopics.SUBTOPIC
+        isVectorized = true;
+      } else if (deepNestedPath === true) {
+        // Handle: topicAnalysis.topics.BROADTOPIC.SUBTOPIC
+        isVectorized = true;
       }
       
-      console.log(`${broadTopic}.${subtopicKey}: hasContent=${!!hasContent}, nestedPath=${nestedPath}, flatPath=${flatPath}, topicsPath=${topicsPath}, flatTopicsPath=${flatTopicsPath}, isVectorized=${isVectorized}`);
+      console.log(`${broadTopic}.${subtopicKey}: hasContent=${!!hasContent}, nestedPath=${nestedPath}, flatPath=${flatPath}, topicsPath=${topicsPath}, flatTopicsPath=${flatTopicsPath}, nestedTopicsPath=${nestedTopicsPath}, deepNestedPath=${deepNestedPath}, isVectorized=${isVectorized}`);
       
       // Special case: if content exists but we have no vectorization status (neither nested nor flat),
       // and we only have the general isComplete flag, assume it needs vectorization
@@ -279,9 +452,15 @@ function analyzeIncompleteJobs(existingData: any) {
         console.log(`Found content without specific vectorization status for ${broadTopic}.${subtopicKey} - marking as needing vectorization`);
       }
       
+      // Fix impossible states: if no content but marked as vectorized, reset vectorization
+      if (!hasContent && isVectorized) {
+        console.log(`🔧 Fixing impossible state for topic ${broadTopic}.${subtopicKey}: no content but marked as vectorized`);
+        // Note: We'll fix this in the database later
+      }
+      
       // Calculate the boolean values explicitly
       const needsGeneration = !hasContent;
-      const needsVectorization = hasContent ? !isVectorized : true;
+      const needsVectorization = hasContent ? !isVectorized : true; // If no content, will need vectorization after generation
       
       console.log(`${broadTopic}.${subtopicKey}: needsGeneration=${needsGeneration}, needsVectorization=${needsVectorization}, hasContent=${!!hasContent}, isVectorized=${isVectorized}`);
       
@@ -293,6 +472,69 @@ function analyzeIncompleteJobs(existingData: any) {
   }
 
   return jobs;
+}
+
+// Helper function to fix impossible states in the database
+async function fixImpossibleStates(userId: string, jobs: any, analysisData: any): Promise<boolean> {
+  const fixes = {};
+  let needsFix = false;
+
+  // Check planets for impossible states
+  Object.entries(jobs.planets).forEach(([planet, job]: any) => {
+    const hasContent = !!analysisData?.interpretation?.basicAnalysis?.planets?.[planet];
+    const isVectorized = analysisData?.vectorizationStatus?.planets?.[planet] === true;
+    
+    if (!hasContent && isVectorized) {
+      console.log(`🔧 DATABASE FIX: Planet ${planet} has no content but is marked as vectorized`);
+      fixes[`planets.${planet}`] = false;
+      needsFix = true;
+    }
+  });
+
+  // Check topics for impossible states
+  Object.entries(jobs.topics).forEach(([broadTopic, subtopics]: any) => {
+    Object.entries(subtopics).forEach(([subtopicKey, job]: any) => {
+      const hasContent = !!analysisData?.interpretation?.SubtopicAnalysis?.[broadTopic]?.subtopics?.[subtopicKey];
+      const vectorStatus = analysisData?.vectorizationStatus || {};
+      
+      // Check multiple vectorization path formats (same as analyzeIncompleteJobs)
+      const nestedPath = vectorStatus.topicAnalysis?.[broadTopic]?.[subtopicKey];
+      const flatPath = vectorStatus[`topicAnalysis.${broadTopic}.${subtopicKey}`];
+      const topicsPath = vectorStatus.topics?.[broadTopic]?.[subtopicKey];
+      const flatTopicsPath = vectorStatus[`topics.${broadTopic}.${subtopicKey}`];
+      const nestedTopicsPath = vectorStatus.topicAnalysis?.topics?.[broadTopic]?.subtopics?.[subtopicKey];
+      const deepNestedPath = vectorStatus.topicAnalysis?.topics?.[broadTopic]?.[subtopicKey];
+      
+      const isVectorized = nestedPath === true || flatPath === true || topicsPath === true || flatTopicsPath === true || nestedTopicsPath === true || deepNestedPath === true;
+      
+      console.log(`🔍 Topic ${broadTopic}.${subtopicKey}: hasContent=${hasContent}, isVectorized=${isVectorized}, nestedPath=${nestedPath}, flatPath=${flatPath}, topicsPath=${topicsPath}, flatTopicsPath=${flatTopicsPath}, nestedTopicsPath=${nestedTopicsPath}, deepNestedPath=${deepNestedPath}`);
+      
+      if (!hasContent && isVectorized) {
+        console.log(`🔧 DATABASE FIX: Topic ${broadTopic}.${subtopicKey} has no content but is marked as vectorized`);
+        fixes[`topicAnalysis.${broadTopic}.${subtopicKey}`] = false;
+        needsFix = true;
+      }
+      
+      // ALSO CHECK: If there's content but vectorization shows as true in the nested structure 
+      // but job analysis shows it needs vectorization, there might be a mismatch
+      if (hasContent && isVectorized && job.needsVectorization) {
+        console.log(`⚠️ POTENTIAL MISMATCH: Topic ${broadTopic}.${subtopicKey} has content and is marked as vectorized, but job analysis says it needs vectorization`);
+        // Let's reset the vectorization status to false to force re-vectorization
+        fixes[`topicAnalysis.${broadTopic}.${subtopicKey}`] = false;
+        needsFix = true;
+      }
+    });
+  });
+
+  // Apply fixes if needed
+  if (needsFix) {
+    console.log('🔧 Applying database fixes for impossible states...');
+    await updateVectorizationStatus(userId, fixes);
+    console.log('✅ Database fixes applied');
+    return true;
+  }
+  
+  return false;
 }
 
 async function executeProcessAllContent(userId: string) {
@@ -721,6 +963,10 @@ async function executeProcessAllContent(userId: string) {
         'topicAnalysis.completedAt': new Date().toISOString(),
         lastUpdated: new Date().toISOString()
       });
+      // Mark workflow as not running - completed successfully
+      await updateWorkflowRunningStatus(userId, false, {
+        'workflowStatus.completedSuccessfully': true
+      });
     } else {
       console.log(`⚠️ Workflow completed with ${remainingTasks} remaining tasks after ${maxWorkflowRetries} retry attempts`);
       await updateVectorizationStatus(userId, {
@@ -731,6 +977,11 @@ async function executeProcessAllContent(userId: string) {
         'topicAnalysis.maxRetriesReached': true,
         lastUpdated: new Date().toISOString()
       });
+      // Mark workflow as not running - completed with failures
+      await updateWorkflowRunningStatus(userId, false, {
+        'workflowStatus.completedWithFailures': true,
+        'workflowStatus.remainingTasks': remainingTasks
+      });
     }
 
     console.log(`All content processing completed for userId: ${userId}`);
@@ -739,6 +990,11 @@ async function executeProcessAllContent(userId: string) {
     console.error(`Content processing failed for userId: ${userId}`, {
       error: error.message,
       stack: error.stack
+    });
+    // Mark workflow as not running - failed with error
+    await updateWorkflowRunningStatus(userId, false, {
+      'workflowStatus.error': error.message,
+      'workflowStatus.errorAt': new Date()
     });
     throw error;
   }
