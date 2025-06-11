@@ -714,16 +714,40 @@ export async function saveBasicAnalysis(userId, analysis) {
     });
 
     if (existingDocument) {
-        // Only update the basicAnalysis portion to allow incremental saves
+        // Use atomic field updates to prevent overwriting existing data
+        const updateFields = {
+            'interpretation.timestamp': analysis.timestamp,
+            'interpretation.metadata': analysis.metadata
+        };
+
+        // Only update specific fields that exist in the new analysis
+        if (analysis.basicAnalysis.overview !== undefined) {
+            updateFields['interpretation.basicAnalysis.overview'] = analysis.basicAnalysis.overview;
+        }
+        
+        if (analysis.basicAnalysis.dominance) {
+            Object.entries(analysis.basicAnalysis.dominance).forEach(([type, data]) => {
+                updateFields[`interpretation.basicAnalysis.dominance.${type}`] = data;
+            });
+        }
+        
+        if (analysis.basicAnalysis.planets) {
+            Object.entries(analysis.basicAnalysis.planets).forEach(([planet, data]) => {
+                updateFields[`interpretation.basicAnalysis.planets.${planet}`] = data;
+            });
+        }
+
+        if (analysis.basicAnalysis.userId) {
+            updateFields['interpretation.basicAnalysis.userId'] = analysis.basicAnalysis.userId;
+        }
+        
+        if (analysis.basicAnalysis.createdAt) {
+            updateFields['interpretation.basicAnalysis.createdAt'] = analysis.basicAnalysis.createdAt;
+        }
+
         const result = await birthChartAnalysisCollection.updateOne(
             { userId: new ObjectId(userId) },
-            {
-                $set: {
-                    'interpretation.basicAnalysis': analysis.basicAnalysis,
-                    'interpretation.timestamp': analysis.timestamp,
-                    'interpretation.metadata': analysis.metadata
-                }
-            }
+            { $set: updateFields }
         );
         return result;
     } else {
@@ -849,37 +873,27 @@ export async function saveTopicAnalysis(userId, topicAnalysis) {
     });
     
     if (existingDocument) {
-        // Get existing analysis
-        const existingAnalysis = existingDocument.interpretation?.SubtopicAnalysis || {};
-        
-        // Deep merge the new topic analysis with existing ones
-        const mergedAnalysis = { ...existingAnalysis };
+        // Use atomic field updates to prevent race conditions
+        const updateFields = {};
         
         // Iterate through each broad topic in the new analysis
         Object.entries(topicAnalysis).forEach(([broadTopic, topicData]) => {
-            if (!mergedAnalysis[broadTopic]) {
-                mergedAnalysis[broadTopic] = {
-                    label: topicData.label,
-                    relevantPositions: topicData.relevantPositions,
-                    subtopics: {}
-                };
-            }
+            // Set the topic metadata
+            updateFields[`interpretation.SubtopicAnalysis.${broadTopic}.label`] = topicData.label;
+            updateFields[`interpretation.SubtopicAnalysis.${broadTopic}.relevantPositions`] = topicData.relevantPositions;
             
-            // Merge subtopics
-            mergedAnalysis[broadTopic].subtopics = {
-                ...mergedAnalysis[broadTopic].subtopics,
-                ...topicData.subtopics
-            };
+            // Set each individual subtopic atomically
+            if (topicData.subtopics) {
+                Object.entries(topicData.subtopics).forEach(([subtopicKey, subtopicContent]) => {
+                    updateFields[`interpretation.SubtopicAnalysis.${broadTopic}.subtopics.${subtopicKey}`] = subtopicContent;
+                });
+            }
         });
 
-        // Update with merged results
+        // Atomic update - only sets the specific fields that are changing
         const result = await birthChartAnalysisCollection.updateOne(
             { userId: new ObjectId(userId) },
-            { 
-                $set: { 
-                    'interpretation.SubtopicAnalysis': mergedAnalysis 
-                }
-            }
+            { $set: updateFields }
         );
         return result;
     } else {
@@ -1048,15 +1062,57 @@ export async function updateRelationshipAnalysisVectorization(compositeChartId, 
         
         const result = await relationshipAnalysisCollection.updateOne(
             { 'debug.inputSummary.compositeChartId': compositeChartId },
-            updateData
+            updateData,
+            { upsert: true } // Add upsert to handle new documents
         );
         
         return {
-            success: result.modifiedCount > 0,
-            modifiedCount: result.modifiedCount
+            success: result.modifiedCount > 0 || result.upsertedCount > 0,
+            modifiedCount: result.modifiedCount,
+            upsertedCount: result.upsertedCount || 0
         };
     } catch (error) {
         console.error(`Error updating relationship analysis for compositeChartId ${compositeChartId}:`, error);
+        throw error;
+    }
+}
+
+// Safe function for saving initial relationship scores without overwriting existing analysis
+export async function saveRelationshipScoresAndDebug(compositeChartId, relationshipScores) {
+    try {
+        const existingDocument = await relationshipAnalysisCollection.findOne({
+            'debug.inputSummary.compositeChartId': compositeChartId
+        });
+
+        if (existingDocument) {
+            // Only update specific fields to preserve existing analysis and vectorization
+            const updateFields = {
+                scores: relationshipScores.scores,
+                'debug.categories': relationshipScores.debug.categories,
+                'debug.inputSummary': relationshipScores.debug.inputSummary,
+                compositeChartId: relationshipScores.compositeChartId,
+                userIdA: relationshipScores.userIdA,
+                userIdB: relationshipScores.userIdB,
+                lastUpdated: relationshipScores.lastUpdated
+            };
+
+            // Only set createdAt if it doesn't exist
+            if (!existingDocument.createdAt) {
+                updateFields.createdAt = relationshipScores.createdAt;
+            }
+
+            const result = await relationshipAnalysisCollection.updateOne(
+                { 'debug.inputSummary.compositeChartId': compositeChartId },
+                { $set: updateFields }
+            );
+            return result;
+        } else {
+            // Create new document with full data
+            const result = await relationshipAnalysisCollection.insertOne(relationshipScores);
+            return result;
+        }
+    } catch (error) {
+        console.error(`Error saving relationship scores for compositeChartId ${compositeChartId}:`, error);
         throw error;
     }
 }

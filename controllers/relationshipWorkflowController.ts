@@ -33,6 +33,7 @@ import {
   saveRelationshipScoring,
   getRelationshipAnalysisByCompositeId,
   updateRelationshipAnalysisVectorization,
+  saveRelationshipScoresAndDebug,
   saveCompositeChart,
   saveRelationshipAnalysis,
   fetchRelationshipAnalysisByCompositeId,
@@ -417,51 +418,62 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
   console.log(`Starting unified relationship analysis processing for ${compositeChartId}`);
 
   try {
-    // 1. GENERATE SCORES FIRST
-    console.log(`Generating relationship scores for ${compositeChartId}`);
+    // First, check what's already been done
+    const existingAnalysisData = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
+    const jobs = analyzeIncompleteRelationshipJobs(existingAnalysisData);
     
-    // Generate synastry aspects
-    const synastryAspects = await findSynastryAspects(userA.birthChart.planets, userB.birthChart.planets);
-    
-    // Generate composite chart
-    const compositeChart = await generateCompositeChart(userA.birthChart, userB.birthChart);
-    
-    // Calculate relationship scores
-    const relationshipScores = scoreRelationshipCompatibility(
-      synastryAspects,
-      compositeChart,
-      userA,
-      userB,
-      compositeChartId,
-      true // debug mode
-    );
+    console.log('🔍 RELATIONSHIP WORKFLOW CONTINUATION: Checking what needs to be done...');
+    console.log('Jobs analysis:', JSON.stringify(jobs, null, 2));
 
-    // Add metadata with proper structure for status checking
-    relationshipScores.compositeChartId = compositeChartId;
-    relationshipScores.userIdA = userA._id.toString();
-    relationshipScores.userIdB = userB._id.toString();
-    relationshipScores.createdAt = new Date();
-    relationshipScores.lastUpdated = new Date();
-    
-    // Merge debug structure (don't overwrite existing debug.categories)
-    if (!relationshipScores.debug) {
-      relationshipScores.debug = {};
-    }
-    if (!relationshipScores.debug.inputSummary) {
-      relationshipScores.debug.inputSummary = {};
-    }
-    
-    // Add/update only the inputSummary part
-    relationshipScores.debug.inputSummary.compositeChartId = compositeChartId;
-    relationshipScores.debug.inputSummary.userAId = userA._id.toString();
-    relationshipScores.debug.inputSummary.userBId = userB._id.toString();
-    relationshipScores.debug.inputSummary.userAName = userA.firstName + ' ' + userA.lastName;
-    relationshipScores.debug.inputSummary.userBName = userB.firstName + ' ' + userB.lastName;
+    // 1. GENERATE SCORES - ONLY IF NEEDED
+    if (jobs.scores.needsGeneration) {
+      console.log(`⚡ Generating relationship scores for ${compositeChartId} (generation needed)...`);
+      
+      // Generate synastry aspects
+      const synastryAspects = await findSynastryAspects(userA.birthChart.planets, userB.birthChart.planets);
+      
+      // Generate composite chart
+      const compositeChart = await generateCompositeChart(userA.birthChart, userB.birthChart);
+      
+      // Calculate relationship scores
+      const relationshipScores = scoreRelationshipCompatibility(
+        synastryAspects,
+        compositeChart,
+        userA,
+        userB,
+        compositeChartId,
+        true // debug mode
+      );
 
-    // Save relationship scores using upsert to ensure single document
-    await updateRelationshipAnalysisVectorization(compositeChartId, relationshipScores);
-    
-    console.log('Relationship scores completed');
+      // Add metadata with proper structure for status checking
+      relationshipScores.compositeChartId = compositeChartId;
+      relationshipScores.userIdA = userA._id.toString();
+      relationshipScores.userIdB = userB._id.toString();
+      relationshipScores.createdAt = new Date();
+      relationshipScores.lastUpdated = new Date();
+      
+      // Merge debug structure (don't overwrite existing debug.categories)
+      if (!relationshipScores.debug) {
+        relationshipScores.debug = {};
+      }
+      if (!relationshipScores.debug.inputSummary) {
+        relationshipScores.debug.inputSummary = {};
+      }
+      
+      // Add/update only the inputSummary part
+      relationshipScores.debug.inputSummary.compositeChartId = compositeChartId;
+      relationshipScores.debug.inputSummary.userAId = userA._id.toString();
+      relationshipScores.debug.inputSummary.userBId = userB._id.toString();
+      relationshipScores.debug.inputSummary.userAName = userA.firstName + ' ' + userA.lastName;
+      relationshipScores.debug.inputSummary.userBName = userB.firstName + ' ' + userB.lastName;
+
+      // Save relationship scores safely without overwriting existing analysis
+      await saveRelationshipScoresAndDebug(compositeChartId, relationshipScores);
+      
+      console.log('Relationship scores generated and saved');
+    } else {
+      console.log('✅ Relationship scores already generated, skipping generation');
+    }
 
     // 2. GET RELATIONSHIP ANALYSIS DATA
     const relationshipAnalysis = await fetchRelationshipAnalysisByCompositeId(compositeChartId);
@@ -474,95 +486,129 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
       throw new Error('User IDs or names missing in relationship analysis data.');
     }
 
-    console.log(`[executeProcessRelationshipAnalysis] Fetching contexts for users.`);
-    const [contextsUserA, contextsUserB] = await Promise.all([
-      fetchAllContextsForUser(userAId, userAName, RELATIONSHIP_CATEGORIES),
-      fetchAllContextsForUser(userBId, userBName, RELATIONSHIP_CATEGORIES)
-    ]);
-    console.log(`[executeProcessRelationshipAnalysis] Contexts fetched for ${userAName} and ${userBName}`);
+    // Only fetch contexts if there are categories that need processing
+    let contextsUserA = {};
+    let contextsUserB = {};
+    const needsContextFetching = Object.values(jobs.categories).some((job: any) => job.needsGeneration);
+    
+    if (needsContextFetching) {
+      console.log(`[executeProcessRelationshipAnalysis] Fetching contexts for users (${Object.values(jobs.categories).filter((job: any) => job.needsGeneration).length} categories need generation)...`);
+      [contextsUserA, contextsUserB] = await Promise.all([
+        fetchAllContextsForUser(userAId, userAName, RELATIONSHIP_CATEGORIES),
+        fetchAllContextsForUser(userBId, userBName, RELATIONSHIP_CATEGORIES)
+      ]);
+      console.log(`[executeProcessRelationshipAnalysis] Contexts fetched for ${userAName} and ${userBName}`);
+    } else {
+      console.log('✅ No categories need generation, skipping context fetching');
+    }
 
-    // 3. PROCESS EACH CATEGORY (generate → vectorize) IN PARALLEL
+    // 3. PROCESS EACH CATEGORY (generate → vectorize) - ONLY NEEDED ONES
     const categoryAnalysis = {} as any;
-    const categoryTasks = Object.keys(RELATIONSHIP_CATEGORIES).map(async categoryKey => {
-      try {
+    const categoryTasks = Object.keys(RELATIONSHIP_CATEGORIES)
+      .filter(categoryKey => {
         const categoryValue = RELATIONSHIP_CATEGORIES[categoryKey];
-        const categoryDisplayName = categoryValue.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+        return jobs.categories[categoryValue]?.needsGeneration || jobs.categories[categoryValue]?.needsVectorization;
+      })
+      .map(async categoryKey => {
+        try {
+          const categoryValue = RELATIONSHIP_CATEGORIES[categoryKey];
+          const categoryDisplayName = categoryValue.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase());
+          const needsGeneration = jobs.categories[categoryValue]?.needsGeneration;
+          const needsVectorization = jobs.categories[categoryValue]?.needsVectorization;
 
-        console.log(`Processing category: ${categoryDisplayName}`);
+          console.log(`📋 Processing category: ${categoryDisplayName} (generation: ${needsGeneration}, vectorization: ${needsVectorization})`);
 
-        await retryOperation(async () => {
-          const relationshipScoresForCategory = relationshipAnalysis.scores[categoryValue] || {};
-          const relationshipAstrologyDetails = relationshipAnalysis.debug.categories[categoryValue] || {};
-          const contextA = contextsUserA[categoryValue] || "No specific context found for User A in this category.";
-          const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
-          const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
+          // Get existing analysis if it exists
+          let existingAnalysis = relationshipAnalysis.analysis?.[categoryValue];
 
-          // Generate interpretation
-          const interpretation = await getCompletionForRelationshipCategory(
-              userAName,
-              userBName,
-              categoryDisplayName,
-              relationshipScoresForCategory,
-              formattedAstrology,
-              contextA,
-              contextB
-          );
+          if (needsGeneration) {
+            console.log(`⚡ Processing category ${categoryDisplayName} (generation needed)...`);
+            await retryOperation(async () => {
+              const relationshipScoresForCategory = relationshipAnalysis.scores[categoryValue] || {};
+              const relationshipAstrologyDetails = relationshipAnalysis.debug.categories[categoryValue] || {};
+              const contextA = contextsUserA[categoryValue] || "No specific context found for User A in this category.";
+              const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
+              const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-          categoryAnalysis[categoryValue] = {
-            interpretation: interpretation,
-            astrologyData: formattedAstrology,
-            generatedAt: new Date()
-          };
+              // Generate interpretation
+              const interpretation = await getCompletionForRelationshipCategory(
+                  userAName,
+                  userBName,
+                  categoryDisplayName,
+                  relationshipScoresForCategory,
+                  formattedAstrology,
+                  contextA,
+                  contextB
+              );
 
-          // Save analysis immediately
-          await updateRelationshipAnalysisVectorization(compositeChartId, {
-            [`analysis.${categoryValue}`]: categoryAnalysis[categoryValue],
-            analysisGeneratedAt: new Date()
-          });
-          console.log(`Category ${categoryDisplayName} saved to database`);
+              categoryAnalysis[categoryValue] = {
+                interpretation: interpretation,
+                astrologyData: formattedAstrology,
+                generatedAt: new Date()
+              };
 
-          // Vectorize - but don't fail the whole task if this fails
-          try {
-            console.log(`🔸 Starting vectorization for ${categoryDisplayName}`);
-            const richDescription = formattedAstrology ?
-              `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
-              `Relationship analysis for ${categoryValue}`;
-
-            console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName}`);
-            const records = await processTextSectionRelationship(
-              interpretation,
-              compositeChartId,
-              richDescription,
-              categoryValue,
-              formattedAstrology
-            );
-
-            console.log(`🔸 processTextSectionRelationship returned ${records ? records.length : 0} records for ${categoryDisplayName}`);
-
-            if (records && records.length > 0) {
-              console.log(`🔸 Calling upsertRecords for ${categoryDisplayName} with ${records.length} records`);
-              await upsertRecords(records, compositeChartId);
-              console.log(`🔸 upsertRecords completed for ${categoryDisplayName}`);
-              
+              // Save analysis immediately
               await updateRelationshipAnalysisVectorization(compositeChartId, {
-                [`vectorizationStatus.categories.${categoryValue}`]: true
+                [`analysis.${categoryValue}`]: categoryAnalysis[categoryValue],
+                analysisGeneratedAt: new Date()
               });
-              console.log(`✅ Category ${categoryDisplayName} vectorized successfully`);
-            } else {
-              console.warn(`⚠️ No records generated for category ${categoryDisplayName}`);
+              console.log(`Category ${categoryDisplayName} generated and saved to database`);
+            }, 2);
+          } else {
+            console.log(`✅ Category ${categoryDisplayName} already generated, skipping generation`);
+            categoryAnalysis[categoryValue] = existingAnalysis;
+          }
+
+          if (needsVectorization && (categoryAnalysis[categoryValue] || existingAnalysis)) {
+            console.log(`⚡ Processing category ${categoryDisplayName} vectorization...`);
+            try {
+              const analysisToVectorize = categoryAnalysis[categoryValue] || existingAnalysis;
+              const relationshipAstrologyDetails = relationshipAnalysis.debug.categories[categoryValue] || {};
+              const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
+              
+              console.log(`🔸 Starting vectorization for ${categoryDisplayName}`);
+              const richDescription = formattedAstrology ?
+                `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
+                `Relationship analysis for ${categoryValue}`;
+
+              console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName}`);
+              const records = await processTextSectionRelationship(
+                analysisToVectorize.interpretation,
+                compositeChartId,
+                richDescription,
+                categoryValue,
+                formattedAstrology
+              );
+
+              console.log(`🔸 processTextSectionRelationship returned ${records ? records.length : 0} records for ${categoryDisplayName}`);
+
+              if (records && records.length > 0) {
+                console.log(`🔸 Calling upsertRecords for ${categoryDisplayName} with ${records.length} records`);
+                await upsertRecords(records, compositeChartId);
+                console.log(`🔸 upsertRecords completed for ${categoryDisplayName}`);
+                
+                await updateRelationshipAnalysisVectorization(compositeChartId, {
+                  [`vectorizationStatus.categories.${categoryValue}`]: true
+                });
+                console.log(`✅ Category ${categoryDisplayName} vectorized successfully`);
+              } else {
+                console.warn(`⚠️ No records generated for category ${categoryDisplayName}`);
+                await updateRelationshipAnalysisVectorization(compositeChartId, {
+                  [`vectorizationStatus.categories.${categoryValue}`]: false
+                });
+              }
+            } catch (vectorError) {
+              console.error(`❌ Failed to vectorize category ${categoryDisplayName}:`, vectorError.message);
+              console.error(`❌ Full vectorization error for ${categoryDisplayName}:`, vectorError);
               await updateRelationshipAnalysisVectorization(compositeChartId, {
                 [`vectorizationStatus.categories.${categoryValue}`]: false
               });
             }
-          } catch (vectorError) {
-            console.error(`❌ Failed to vectorize category ${categoryDisplayName}:`, vectorError.message);
-            console.error(`❌ Full vectorization error for ${categoryDisplayName}:`, vectorError);
-            await updateRelationshipAnalysisVectorization(compositeChartId, {
-              [`vectorizationStatus.categories.${categoryValue}`]: false
-            });
+          } else if (categoryAnalysis[categoryValue] || existingAnalysis) {
+            console.log(`✅ Category ${categoryDisplayName} already vectorized, skipping vectorization`);
           }
 
-          console.log(`Category ${categoryDisplayName} completed`);
+          console.log(`Category ${categoryDisplayName} processing completed`);
 
           // Add delay and memory management
           await new Promise(resolve => setTimeout(resolve, 2000));
@@ -572,7 +618,6 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             console.log('High memory usage detected, running garbage collection');
             global.gc();
           }
-        }, 2); // 2 retries for each category
 
       } catch (error) {
         console.error(`Failed to process category ${categoryKey} after retries:`, error.message);
@@ -580,7 +625,13 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
       }
     });
 
-    await Promise.all(categoryTasks);
+    if (categoryTasks.length > 0) {
+      console.log(`Executing ${categoryTasks.length} category tasks...`);
+      await Promise.all(categoryTasks);
+      console.log('All category tasks completed');
+    } else {
+      console.log('✅ All relationship categories already completed, skipping category processing');
+    }
 
     // AUTO-RETRY FAILED CATEGORIES
     const maxWorkflowRetries = 3;
