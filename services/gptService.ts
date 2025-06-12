@@ -725,6 +725,7 @@ Write 2–3 paragraphs:
       ]
     });
 
+    console.log("Complete Prompt for Short Overview For Topic: ", userPrompt);
     console.log("GPT response:", response.choices[0].message.content);
     return response.choices[0].message.content;
   } catch (error) {
@@ -812,6 +813,11 @@ You do not list placements or aspects a la carte — instead, weave a holistic s
 - The relationship chart dynamics (synastry, composite, house overlays)
 - The individual birth chart traits of both people
 - Strengths, tension points, and advice for navigating them
+
+- Do not preface your response with any unnecessary filler or preamble. 
+- Do not restate the specific category name in your response.
+- Be direct and avoid overly elaborate phrasing. 
+- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
 
 Every interpretation should reflect how the unique energies between the two people blend or contrast in this relationship area. Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.
 `;
