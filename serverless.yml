@@ -12,10 +12,9 @@ provider:
       statements:
         - Effect: Allow
           Action:
-            - ssm:GetParameter
-            - ssm:GetParameters
+            - secretsmanager:GetSecretValue
           Resource:
-            - arn:aws:ssm:us-east-1:*:parameter/stellium/*
+            - arn:aws:secretsmanager:us-east-1:*:secret:stellium/*
 
 functions:
   app:

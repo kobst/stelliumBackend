@@ -1,6 +1,6 @@
-import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
-const ssmClient = new SSMClient({ region: process.env.AWS_REGION || 'us-east-1' });
+const secretsClient = new SecretsManagerClient({ region: process.env.AWS_REGION || 'us-east-1' });
 
 interface SecretCache {
   [key: string]: {
@@ -12,59 +12,74 @@ interface SecretCache {
 const secretCache: SecretCache = {};
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
-export async function getSecret(parameterName: string): Promise<string> {
+export async function getSecret(secretName: string, secretKey?: string): Promise<string> {
+  // First try environment variable (for local development)
+  const envKey = secretKey || secretName.replace('stellium/', '').replace(/-/g, '_').toUpperCase();
+  const envValue = process.env[envKey];
+  
+  if (envValue) {
+    console.log(`Using environment variable ${envKey} for ${secretName}`);
+    return envValue;
+  }
+
   // Check cache first
-  const cached = secretCache[parameterName];
+  const cacheKey = secretKey ? `${secretName}:${secretKey}` : secretName;
+  const cached = secretCache[cacheKey];
   if (cached && Date.now() < cached.expiry) {
     return cached.value;
   }
 
   try {
-    const command = new GetParameterCommand({
-      Name: parameterName,
-      WithDecryption: true
+    const command = new GetSecretValueCommand({
+      SecretId: secretName
     });
     
-    const response = await ssmClient.send(command);
+    const response = await secretsClient.send(command);
     
-    if (!response.Parameter?.Value) {
-      throw new Error(`Secret not found: ${parameterName}`);
+    if (!response.SecretString) {
+      throw new Error(`Secret not found: ${secretName}`);
+    }
+
+    let secretValue: string;
+    
+    if (secretKey) {
+      // Parse JSON and extract specific key
+      const secrets = JSON.parse(response.SecretString);
+      secretValue = secrets[secretKey];
+      if (!secretValue) {
+        throw new Error(`Secret key '${secretKey}' not found in secret '${secretName}'`);
+      }
+    } else {
+      // Use the entire secret string
+      secretValue = response.SecretString;
     }
 
     // Cache the secret
-    secretCache[parameterName] = {
-      value: response.Parameter.Value,
+    secretCache[cacheKey] = {
+      value: secretValue,
       expiry: Date.now() + CACHE_TTL
     };
 
-    return response.Parameter.Value;
+    return secretValue;
   } catch (error) {
-    console.error(`Failed to retrieve secret ${parameterName}:`, error);
-    
-    // Fallback to environment variable for local development
-    const envValue = process.env[parameterName.replace('/stellium/', '').toUpperCase()];
-    if (envValue) {
-      console.warn(`Using fallback environment variable for ${parameterName}`);
-      return envValue;
-    }
-    
-    throw error;
+    console.error(`Failed to retrieve secret ${secretName}${secretKey ? `:${secretKey}` : ''} and no environment variable ${envKey} found:`, error);
+    throw new Error(`Missing required secret: ${secretName}${secretKey ? `:${secretKey}` : ''} (env: ${envKey})`);
   }
 }
 
 // Pre-defined secret getters for commonly used secrets
 export async function getMongoConnectionString(): Promise<string> {
-  return getSecret('/stellium/mongo-connection-string');
+  return getSecret('stellium/api-keys', 'MONGO_CONNECTION_STRING');
 }
 
 export async function getOpenAIApiKey(): Promise<string> {
-  return getSecret('/stellium/openai-api-key');
+  return getSecret('stellium/api-keys', 'OPENAI_API_KEY');
 }
 
 export async function getPineconeApiKey(): Promise<string> {
-  return getSecret('/stellium/pinecone-api-key');
+  return getSecret('stellium/api-keys', 'PINECONE_API_KEY');
 }
 
 export async function getGoogleApiKey(): Promise<string> {
-  return getSecret('/stellium/google-api-key');
+  return getSecret('stellium/api-keys', 'REACT_APP_GOOGLE_API_KEY');
 }
