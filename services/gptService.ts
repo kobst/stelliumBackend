@@ -4,11 +4,22 @@ import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRul
 import { BroadTopicsEnum } from "../utilities/constants.js"
 import { processUserQueryForHoroscopeAnalysis } from "./vectorize.js"
 import { getBirthChart } from "./dbService.js"
+import { getOpenAIApiKey } from "./secretsService.js"
 
+// Lazy initialization of OpenAI client
+let client: OpenAI;
 
-
-const apiKey = process.env.OPENAI_API_KEY
-const client = new OpenAI({ apiKey: apiKey})
+async function getOpenAIClient(): Promise<OpenAI> {
+  if (!client) {
+    const apiKey = await getOpenAIApiKey();
+    client = new OpenAI({ 
+      apiKey: apiKey,
+      timeout: 30000, // 30 second timeout
+      maxRetries: 2   // Limit retries to prevent connection buildup
+    });
+  }
+  return client;
+}
 
 
 
@@ -38,6 +49,7 @@ ${description}
 
 Please write 2–3 paragraphs interpreting these placements holistically.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -82,6 +94,7 @@ ${description}
 
 Please write 2–3 paragraphs interpreting this in a relational context. Focus on connection, desire, vulnerability, and growth.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -126,6 +139,7 @@ ${description}
 
 Please write 2–3 paragraphs interpreting the role of ${planetName} in their life, weaving together the influences holistically. If you reference a particular aspect or placement, please use the ID code in parentheses.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -208,6 +222,7 @@ ${promptDescription}
 Please write 2–3 paragraphs interpreting these dynamics in the context of the topic "${heading}". Synthesize how the aspects influence the connection, and highlight both strengths and potential growth areas.
 `;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -247,6 +262,7 @@ ${promptDescription}
 
 Please write 2–3 paragraphs interpreting these placements, focusing on how they reflect dynamics in the area of "${heading}" in the relationship. Use a holistic summary rather than analyzing each aspect individually.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -286,6 +302,7 @@ ${promptDescription}
 
 Please write 2–3 paragraphs interpreting this planet in the relationship context, using a holistic perspective.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -302,6 +319,7 @@ Please write 2–3 paragraphs interpreting this planet in the relationship conte
 
 
 export async function getCompletionGptResponseForRelationshipAnalysis(relationshipAnalysisPrompts) {
+  const client = await getOpenAIClient();
   const response = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -345,6 +363,7 @@ Return format:
         setTimeout(() => reject(new Error('Topic classification timeout after 30 seconds')), 30000)
       );
       
+      const client = await getOpenAIClient();
       const completionPromise = client.chat.completions.create({
         model: "gpt-4o-mini", // Changed from gpt-4 to gpt-4o-mini for speed
         messages: [{ role: "user", content: prompt }],
@@ -416,6 +435,7 @@ create a flowing narrative, offering balance and pointing out sources of tension
 Use ID codes in parentheses when available.
 `;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -466,6 +486,7 @@ Write 2 to 3 paragraphs:
 
 Use supportive, intuitive language, and highlight the most meaningful patterns holistically.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -516,6 +537,7 @@ Write 2 to 3 paragraphs:
 
 Use supportive, intuitive language, and highlight how these patterns work together to create a unique astrological signature.`;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -583,6 +605,7 @@ Please answer my question using the relevant astrological information provided a
 
     console.log(`Sending ${messages.length} messages to GPT (1 system + ${chatHistory?.length || 0} history + 1 current)`);
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: messages,
@@ -661,6 +684,7 @@ Please answer my question about my relationship using the relevant astrological 
 
     console.log(`Sending ${messages.length} messages to GPT (1 system + ${chatHistory?.length || 0} history + 1 current)`);
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: messages,
@@ -717,6 +741,7 @@ Write 2–3 paragraphs:
 5. Offer practical insights and growth perspectives.
 `;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -852,6 +877,7 @@ Please write 3–5 paragraphs addressing the following:
 Write a synthesis, not a list. Use astrological data and psychological insight to offer grounded, helpful guidance.
 `;
 
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -874,6 +900,7 @@ Write a synthesis, not a list. Use astrological data and psychological insight t
 export async function expandPrompt(prompt) {
   console.log("expandPrompt")
   console.log("prompt: ", prompt)
+  const client = await getOpenAIClient();
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -896,6 +923,7 @@ export async function expandPrompt(prompt) {
 export async function expandPromptRelationship(prompt, userAName, userBName) {
   console.log("expandPromptRelationship")
   console.log("prompt: ", prompt)
+  const client = await getOpenAIClient();
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -923,6 +951,7 @@ export async function expandPromptRelationship(prompt, userAName, userBName) {
 export async function expandPromptRelationshipUserA(prompt) {
   console.log("expandPromptRelationshipUserA")
   console.log("prompt: ", prompt)
+  const client = await getOpenAIClient();
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -949,6 +978,7 @@ export async function expandPromptRelationshipUserA(prompt) {
 export async function expandPromptRelationshipUserB(prompt) {
   console.log("expandPromptRelationshipUserA")
   console.log("prompt: ", prompt)
+  const client = await getOpenAIClient();
   const completion = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -1030,6 +1060,7 @@ Generate a ${period} horoscope that integrates these elements into a meaningful 
 
 console.log("userPrompt X X X: ", userPrompt)
 
+  const client = await getOpenAIClient();
   const completion = await client.chat.completions.create({
     model: "gpt-4o",
     messages: [
@@ -1229,6 +1260,7 @@ Generate a focused horoscope interpretation for these specific transits.`;
 
   console.log("Custom horoscope userPrompt: ", userPrompt);
 
+  const client = await getOpenAIClient();
   const completion = await client.chat.completions.create({
     model: "gpt-4o",
     messages: [
