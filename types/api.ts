@@ -3,6 +3,10 @@ import { ObjectId } from 'mongodb';
 import { BirthChart, CompositeChart, RelationshipScores } from './astrology.js';
 
 // Extended Express Request types with common parameters
+export interface TypedRequestWithParams<T = any> extends Request {
+  params: T;
+}
+
 export interface AuthenticatedRequest extends Request {
   user?: {
     id: ObjectId;
@@ -70,6 +74,21 @@ export interface CompositeChartRequest extends Request {
 }
 
 // Horoscope API types
+export interface GenerateHoroscopeRequest extends UserParamsRequest {
+  query: {
+    period: 'daily' | 'weekly' | 'monthly';
+    date?: string;
+    regenerate?: string;
+  };
+}
+
+export interface GenerateHoroscopeParams {
+  userId: string;
+  period: 'daily' | 'weekly' | 'monthly';
+  date?: Date;
+  regenerate?: boolean;
+}
+
 export interface HoroscopeRequest extends UserParamsRequest {
   query: {
     period: 'daily' | 'weekly' | 'monthly';

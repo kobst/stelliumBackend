@@ -9,6 +9,21 @@ export interface BaseDocument {
 }
 
 // User-related types
+export interface UserDocument extends BaseDocument {
+  email: string;
+  firstName: string;
+  lastName: string;
+  dateOfBirth: Date;
+  timeOfBirth?: string;
+  placeOfBirth: string;
+  latitude: number;
+  longitude: number;
+  timezone: string;
+  birthChart?: BirthChart;
+  isTimeKnown?: boolean;
+}
+
+// Alias for backward compatibility
 export interface User extends BaseDocument {
   email: string;
   firstName: string;
@@ -85,6 +100,11 @@ export interface CompositeChartDocument extends BaseDocument {
 }
 
 // Chat Thread Documents
+export interface ChatThreadDocument extends BaseDocument {
+  userId: ObjectId;
+  messages: ChatMessage[];
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;

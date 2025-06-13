@@ -3,11 +3,39 @@
 // Re-export astrology types
 export * from './astrology.js';
 
-// Re-export database types
-export * from './database.js';
+// Re-export database types (selective to avoid conflicts)
+export type {
+  BaseDocument,
+  User,
+  BirthChartAnalysisDocument,
+  RelationshipAnalysisDocument,
+  CompositeChartDocument,
+  BirthChartChatThread,
+  RelationshipChatThread,
+  DailyTransitDocument,
+  DailyAspectDocument,
+  HoroscopeDocument,
+  InsertResult,
+  UpdateResult,
+  DeleteResult
+} from './database.js';
 
-// Re-export API types
-export * from './api.js';
+// Re-export API types (selective to avoid conflicts)
+export type {
+  AuthenticatedRequest,
+  CreateUserRequest,
+  UserParamsRequest,
+  BirthChartRequest,
+  RelationshipRequest,
+  WorkflowRequest,
+  APIResponse,
+  PaginatedResponse,
+  UserResponse,
+  BirthChartResponse,
+  RelationshipResponse,
+  AsyncRequestHandler,
+  RequestHandler
+} from './api.js';
 
 // Re-export GPT service types
 export * from './gpt.js';

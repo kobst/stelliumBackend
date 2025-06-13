@@ -453,15 +453,15 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
 
 
 
-export async function saveUserTransitAspects(groupedAspects, userId) {
-    const savePromises = groupedAspects.map(aspect => 
+export async function saveUserTransitAspects(groupedAspects: any[], userId: string): Promise<void> {
+    const savePromises = groupedAspects.map((aspect: any) => 
         userTransitAspectsCollection.insertOne({ ...aspect, userId })
     );
     await Promise.all(savePromises);
 }
 
 // get aspects from the general transit collection given a start and end date
-export async function getPeriodAspectsForUser(startDate, endDate, userId) {
+export async function getPeriodAspectsForUser(startDate: string | Date, endDate: string | Date, userId: string): Promise<any[]> {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const matchingAspects = await userTransitAspectsCollection.find({
@@ -474,7 +474,7 @@ export async function getPeriodAspectsForUser(startDate, endDate, userId) {
     return matchingAspects;
 }
 
-export async function saveBirthChartInterpretation(userId, heading, promptDescription, interpretation) {
+export async function saveBirthChartInterpretation(userId: string, heading: string, promptDescription: string, interpretation: string): Promise<any> {
     console.log("saveBirthChartInterpretation", { userId, heading, promptDescription, interpretation });
     try {
         if (!ObjectId.isValid(userId)) {
@@ -588,7 +588,7 @@ export async function saveCompositeChartInterpretation(compositeChartId: string,
 }
 
 // save synastry chart interpretation
-export async function saveSynastryChartInterpretation(compositeChartId, heading, promptDescription, interpretation) {
+export async function saveSynastryChartInterpretation(compositeChartId: string, heading: string, promptDescription: string, interpretation: string): Promise<any> {
     console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation});
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -634,7 +634,7 @@ export async function saveSynastryChartInterpretation(compositeChartId, heading,
 
 
 
-export async function getCompositeChartInterpretation(compositeChartId) {
+export async function getCompositeChartInterpretation(compositeChartId: string): Promise<any> {
     console.log("getCompositeChartInterpretation", { compositeChartId });
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -652,7 +652,7 @@ export async function getCompositeChartInterpretation(compositeChartId) {
     }
 }
 
-export async function getSynastryInterpretation(compositeChartId) {
+export async function getSynastryInterpretation(compositeChartId: string): Promise<any> {
     console.log("getSynastryInterpretation", { compositeChartId });
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -672,7 +672,7 @@ export async function getSynastryInterpretation(compositeChartId) {
 
 
 
-export async function getSynastryChartInterpretation(synastryChartId) {
+export async function getSynastryChartInterpretation(synastryChartId: string): Promise<any> {
     console.log("getSynastryChartInterpretation", { synastryChartId });
     try {
         if (!ObjectId.isValid(synastryChartId)) {
@@ -688,7 +688,7 @@ export async function getSynastryChartInterpretation(synastryChartId) {
 }
 
 
-export async function saveDailyTransitInterpretationData(date, combinedAspectsDescription, dailyTransitInterpretation) {
+export async function saveDailyTransitInterpretationData(date: string | Date, combinedAspectsDescription: any[], dailyTransitInterpretation: string): Promise<any> {
 
     // Convert the date string to a Date object
     const isoDate = new Date(date);
@@ -719,7 +719,7 @@ export async function saveDailyTransitInterpretationData(date, combinedAspectsDe
 }
 
 
-export async function getDailyTransitInterpretationData(date) {
+export async function getDailyTransitInterpretationData(date: string | Date): Promise<any[]> {
     const startDate = new Date(date);
     startDate.setUTCHours(0, 0, 0, 0);
 
@@ -737,7 +737,7 @@ export async function getDailyTransitInterpretationData(date) {
 }
 
 
-export async function saveWeeklyTransitInterpretationData(date, combinedAspectsDescription, weeklyTransitInterpretation, sign) {
+export async function saveWeeklyTransitInterpretationData(date: string | Date, combinedAspectsDescription: any[], weeklyTransitInterpretation: string, sign: string): Promise<any> {
     const isoDate = new Date(date);
     isoDate.setUTCHours(0, 0, 0, 0);
 
@@ -765,7 +765,7 @@ export async function saveWeeklyTransitInterpretationData(date, combinedAspectsD
 
 }
 
-export async function getWeeklyTransitInterpretationData(date) {
+export async function getWeeklyTransitInterpretationData(date: string | Date): Promise<any[]> {
     const startDate = new Date(date);
     startDate.setUTCHours(0, 0, 0, 0);
 
