@@ -136,6 +136,19 @@ export async function initializeDatabase(): Promise<void> {
                     }
                 } else if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
                     console.log(`Index already exists for ${collection.collectionName}: ${JSON.stringify(indexSpec)}`);
+                } else if (error.code === 86 || error.codeName === 'IndexKeySpecsConflict') {
+                    console.log(`Index name conflict for ${collection.collectionName}: ${JSON.stringify(indexSpec)}. An index with the same name but different options already exists.`);
+                    // Try to drop the existing index and recreate with new options
+                    try {
+                        const indexName = Object.keys(indexSpec).map(key => `${key}_${indexSpec[key]}`).join('_');
+                        await collection.dropIndex(indexName);
+                        console.log(`Dropped existing index ${indexName} for ${collection.collectionName}`);
+                        // Retry creating the index
+                        await collection.createIndex(indexSpec, options);
+                        console.log(`Successfully recreated index for ${collection.collectionName}: ${JSON.stringify(indexSpec)}`);
+                    } catch (dropError: any) {
+                        console.log(`Could not drop/recreate index for ${collection.collectionName}: ${dropError.message}`);
+                    }
                 } else {
                     throw error;
                 }

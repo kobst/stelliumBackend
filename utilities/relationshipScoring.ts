@@ -1,4 +1,6 @@
 // @ts-nocheck
+import path from 'path';
+import fs from 'fs';
 import { relationshipScoringStats } from './relationshipScoringStats.js';
 
 const statsData = relationshipScoringStats;

@@ -92,10 +92,11 @@ async function getEmbedding(text: string, model: string = 'text-embedding-ada-00
             
             // Add timeout to embedding request
             const timeoutPromise = new Promise((_, reject) => 
-                setTimeout(() => reject(new Error('Embedding timeout after 20 seconds')), 20000)
+                setTimeout(() => reject(new Error('Embedding timeout after 60 seconds')), 60000)
             );
             
-            const embeddingPromise = openAiClient.embeddings.create({
+            const client = await getOpenAIClient();
+            const embeddingPromise = client.embeddings.create({
                 model: model,
                 input: text
             });
