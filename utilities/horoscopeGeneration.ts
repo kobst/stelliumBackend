@@ -117,7 +117,7 @@ function extractNatalPoints(birthChart: any): NatalPoint[] {
 function transformDbTransitData(dbData: any[]): TransitSeriesEntry[] {
   return dbData.map(entry => ({
     date: entry.date instanceof Date ? entry.date : new Date(entry.date),
-    planets: entry.planets.map(planet => ({
+    planets: entry.planets.map((planet: any) => ({
       name: planet.name,
       lon: planet.lon || planet.full_degree || planet.fullDegree,
       speed: planet.speed,
@@ -254,11 +254,11 @@ export async function generateHoroscope(
     endDate,
     transitData: {
       transits: mergedWindows,
-      retrogrades: [] // TODO: Add retrograde detection
+      retrogrades: [] as any[] // TODO: Add retrograde detection
     },
     analysis: {
       keyThemes: keyTransits,
-      detailedAnalysis: []
+      detailedAnalysis: [] as any[]
     },
     interpretation: horoscopeText,
     userPrompt: userPrompt,
@@ -288,8 +288,8 @@ function convertTransitToTransitToEvents(
       let priority = 5;
       
       // Both slow planets = higher priority
-      const planet1Speed = PLANET_SPEEDS[w.planet1] || 1;
-      const planet2Speed = PLANET_SPEEDS[w.planet2] || 1;
+      const planet1Speed = (PLANET_SPEEDS as { [key: string]: number })[w.planet1] || 1;
+      const planet2Speed = (PLANET_SPEEDS as { [key: string]: number })[w.planet2] || 1;
       
       if (planet1Speed < 0.1 && planet2Speed < 0.1) {
         priority += 2;

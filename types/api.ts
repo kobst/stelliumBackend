@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { BirthChart, CompositeChart, RelationshipScores } from './astrology.js';
 
 // Extended Express Request types with common parameters
-export interface TypedRequestWithParams<T = any> extends Request {
+export interface TypedRequestWithParams<T extends Record<string, string> = Record<string, string>> extends Request {
   params: T;
 }
 

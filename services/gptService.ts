@@ -230,6 +230,7 @@ Please write 2–3 paragraphs interpreting these dynamics in the context of the 
     return response.choices[0].message.content;
   } catch (error: unknown) {
     console.error('Error fetching response:', error);
+    return undefined;
   }
 }
 
@@ -269,6 +270,7 @@ Please write 2–3 paragraphs interpreting these placements, focusing on how the
     return response.choices[0].message.content;
   } catch (error: unknown) {
     console.error('Error fetching response:', error);
+    return undefined;
   }
 }
 
@@ -308,6 +310,7 @@ Please write 2–3 paragraphs interpreting this planet in the relationship conte
     return response.choices[0].message.content;
   } catch (error: unknown) {
     console.error('Error fetching response:', error);
+    return undefined;
   }
 }
 
@@ -329,7 +332,7 @@ export async function getCompletionGptResponseForRelationshipAnalysis(relationsh
 }
 
 
-export async function getTopicsForChunk(chunkText, retries = 3) {
+export async function getTopicsForChunk(chunkText: string, retries: number = 3) {
   console.log(`Getting topics for chunk (${chunkText.length} chars)`);
   
   // Dynamically extract the labels
@@ -363,7 +366,7 @@ Return format:
         max_tokens: 100 // Limit response size
       });
       
-      const completion = await Promise.race([completionPromise, timeoutPromise]);
+      const completion = await Promise.race([completionPromise, timeoutPromise]) as any;
       const response = JSON.parse(completion.choices[0].message.content);
       
       console.log(`Topics identified: ${response.topics}`);
@@ -386,7 +389,7 @@ Return format:
   }
 }
 
-export async function getCompletionForNatalPlanet(planet, context, description) {
+export async function getCompletionForNatalPlanet(planet: string, context: string, description: string) {
   try {
     console.log("getCompletionForNatalPlanet");
     console.log("planet:", planet);
@@ -443,7 +446,7 @@ Use ID codes in parentheses when available.
 }
 
 
-export async function getCompletionForDominancePattern(category, context, description) {
+export async function getCompletionForDominancePattern(category: string, context: string, description: string) {
   try {
     console.log("getCompletionForDominancePattern");
     console.log("category:", category);
@@ -493,7 +496,7 @@ Use supportive, intuitive language, and highlight the most meaningful patterns h
 }
 
 
-export async function getCompletionForChartPattern(category, context, description) {
+export async function getCompletionForChartPattern(category: string, context: string, description: string) {
   try {
     console.log("getCompletionForDominancePatternPatterns");
     console.log("category:", category);
@@ -542,13 +545,13 @@ Use supportive, intuitive language, and highlight how these patterns work togeth
   }
 }
 
-function formatCategoryName(category) {
+function formatCategoryName(category: string) {
   return category.split('_')
       .map(word => word.charAt(0) + word.slice(1).toLowerCase())
       .join(' ');
 }
 
-export async function getCompletionGptResponseChatThread(query, contextFromAnalysis, chatHistory) {
+export async function getCompletionGptResponseChatThread(query: string, contextFromAnalysis: string, chatHistory: any[]) {
   console.log("getCompletionGptResponseChatThread");
   console.log("query: ", query);
   console.log("contextFromAnalysis: ", contextFromAnalysis);
@@ -556,7 +559,7 @@ export async function getCompletionGptResponseChatThread(query, contextFromAnaly
   
   try {
     // Start with the system message
-    const messages = [{
+    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [{
       role: "system",
       content: "You are an expert astrological guide and counselor. You provide insightful, personalized astrological guidance based on birth chart data, relationship analysis, and astrological context. Your responses are thoughtful, supportive, and grounded in astrological knowledge while being accessible to users of all experience levels. Please adhere to these guidelines: 1) When you answer, assume you are already in a conversation and the user has some context about their birth chart. Do not preface your answer with any unnecessary filler or preamble. Be direct and avoid overly elaborate phrasing. 2) Also, avoid just listing off positions and explaining them in a laundry list manner. Instead, provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 3) When you reference the birth chart, please use the id of the aspect or position in parenthesis. 4) Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 5) Focus on answering the user's specific question using the provided astrological context as supporting information. Do not expand beyond the original scope of the question unless the extra context is relevant or neessary to answer the question"
     }];
@@ -568,7 +571,7 @@ export async function getCompletionGptResponseChatThread(query, contextFromAnaly
           // Validate that role is acceptable for OpenAI API
           if (['assistant', 'user'].includes(message.role)) {
             messages.push({
-              role: message.role,
+              role: message.role as 'assistant' | 'user',
               content: message.content
             });
           } else {
@@ -611,13 +614,13 @@ Please answer my question using the relevant astrological information provided a
 
 
 export async function getCompletionGptResponseRelationshipChatThread(
-  query,
-  contextFromRelationship,
-  contextFromUserA,
-  contextFromUserB,
-  chatHistory,
-  userAName = 'User A',
-  userBName = 'User B'
+  query: string,
+  contextFromRelationship: string,
+  contextFromUserA: string,
+  contextFromUserB: string,
+  chatHistory: any[],
+  userAName: string = 'User A',
+  userBName: string = 'User B'
 ) {
   console.log("getCompletionGptResponseRelationshipChatThread");
   console.log("query: ", query);
@@ -628,7 +631,7 @@ export async function getCompletionGptResponseRelationshipChatThread(
   
   try {
     // Start with the system message
-    const messages = [{
+    const messages: { role: 'system' | 'user' | 'assistant'; content: string }[] = [{
       role: "system",
       content: "You are an expert astrological guide and counselor. You provide insightful, personalized astrological guidance based on birth chart data, relationship analysis, and astrological context. Your responses are thoughtful, supportive, and grounded in astrological knowledge while being accessible to users of all experience levels. Please adhere to these guidelines: 1) When you answer, assume you are already in a conversation and the user has some context about their birth chart. Do not preface your answer with any unnecessary filler or preamble. Be direct and avoid overly elaborate phrasing. 2) Also, avoid just listing off positions and explaining them in a laundry list manner. Instead, provide a more holistic summary, showing how these aspects and positions may balance or accentuate one another. 3) When you reference the birth chart, please use the id of the aspect or position in parenthesis. 4) Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 5) Focus on answering the user's specific question using the provided astrological context as supporting information. Do not expand beyond the original scope of the question unless the extra context is relevant or neessary to answer the question."
     }];
@@ -640,7 +643,7 @@ export async function getCompletionGptResponseRelationshipChatThread(
           // Validate that role is acceptable for OpenAI API
           if (['assistant', 'user'].includes(message.role)) {
             messages.push({
-              role: message.role,
+              role: message.role as 'assistant' | 'user',
               content: message.content
             });
           } else {
@@ -687,7 +690,7 @@ Please answer my question about my relationship using the relevant astrological 
 }
 
 
-export async function getCompletionShortOverviewForTopic(topic, relevantNatalPositions, RAGResponse) {
+export async function getCompletionShortOverviewForTopic(topic: string, relevantNatalPositions: string, RAGResponse: string) {
   try {
     console.log("getCompletionShortOverviewForTopic");
     console.log("topic:", topic);
@@ -747,13 +750,13 @@ Write 2–3 paragraphs:
 
 
 export async function generateRelationshipPrompt(
-  userAName,
-  userBName,
-  categoryDisplayName,
-  relationshipScores,
-  formattedAstrology,
-  contextA,
-  contextB
+  userAName: string,
+  userBName: string,
+  categoryDisplayName: string,
+  relationshipScores: any,
+  formattedAstrology: string,
+  contextA: string,
+  contextB: string
 ) {
   return `
 You are an expert astrologer providing a relationship analysis.
@@ -801,13 +804,13 @@ Aim for a response of at least 300-500 words for this category.
 
 
 export async function getCompletionForRelationshipCategory(
-  userAName,
-  userBName,
-  categoryDisplayName,
-  relationshipScores,
-  formattedAstrology,
-  contextA,
-  contextB
+  userAName: string,
+  userBName: string,
+  categoryDisplayName: string,
+  relationshipScores: any,
+  formattedAstrology: string,
+  contextA: string,
+  contextB: string
 ) {
   try {
     console.log("getCompletionForRelationshipCategory");
@@ -880,17 +883,17 @@ Write a synthesis, not a list. Use astrological data and psychological insight t
 }
 
 export async function getRelationshipCategoryPanels(
-  userAName,
-  userBName,
-  categoryDisplayName,
-  relationshipScores,
-  formattedAstrology,
-  contextA,
-  contextB
+  userAName: string,
+  userBName: string,
+  categoryDisplayName: string,
+  relationshipScores: any,
+  formattedAstrology: string,
+  contextA: string,
+  contextB: string
 ) {
   const baseInfo = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}\n\nScores:\n- Overall: ${relationshipScores.overall ?? 'N/A'}\n- Synastry: ${relationshipScores.synastry ?? 'N/A'}\n- Composite: ${relationshipScores.composite ?? 'N/A'}\n- Synastry Houses: ${relationshipScores.synastryHousePlacements ?? 'N/A'}\n- Composite Houses: ${relationshipScores.compositeHousePlacements ?? 'N/A'}\n\nAstrological Factors:\n${formattedAstrology}\n\nContext for ${userAName}:\n${contextA}\n\nContext for ${userBName}:\n${contextB}`;
 
-  async function callPanel(task) {
+  async function callPanel(task: string) {
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.`;
     const userPrompt = `${baseInfo}\n\nTASK:\n${task}`;
     const response = await client.chat.completions.create({
@@ -925,7 +928,7 @@ export async function getRelationshipCategoryPanels(
 
 
 
-export async function expandPrompt(prompt) {
+export async function expandPrompt(prompt: string) {
   console.log("expandPrompt")
   console.log("prompt: ", prompt)
   const completion = await client.chat.completions.create({
@@ -947,7 +950,7 @@ export async function expandPrompt(prompt) {
   return completion.choices[0].message.content.trim();
 }
 
-export async function expandPromptRelationship(prompt, userAName, userBName) {
+export async function expandPromptRelationship(prompt: string, userAName: string, userBName: string) {
   console.log("expandPromptRelationship")
   console.log("prompt: ", prompt)
   const completion = await client.chat.completions.create({
@@ -974,7 +977,7 @@ export async function expandPromptRelationship(prompt, userAName, userBName) {
 }
 
 
-export async function expandPromptRelationshipUserA(prompt) {
+export async function expandPromptRelationshipUserA(prompt: string) {
   console.log("expandPromptRelationshipUserA")
   console.log("prompt: ", prompt)
   const completion = await client.chat.completions.create({
@@ -1000,7 +1003,7 @@ export async function expandPromptRelationshipUserA(prompt) {
   return completion.choices[0].message.content.trim();
 }
 
-export async function expandPromptRelationshipUserB(prompt) {
+export async function expandPromptRelationshipUserB(prompt: string) {
   console.log("expandPromptRelationshipUserA")
   console.log("prompt: ", prompt)
   const completion = await client.chat.completions.create({
@@ -1030,7 +1033,7 @@ export async function expandPromptRelationshipUserB(prompt) {
 
 // Horoscope generation functions
 
-export async function generateHoroscopeNarrative(data) {
+export async function generateHoroscopeNarrative(data: any) {
   const { 
     userId, 
     period, 
@@ -1064,19 +1067,19 @@ User Context from their birth chart analysis:
 ${contextChunks.join('\n')}
 
 Main Themes (slower-moving transits providing backdrop):
-${mainThemes.map(t => formatTransitForPrompt(t)).join('\n')}
+${mainThemes.map((t: any) => formatTransitForPrompt(t)).join('\n')}
 
 Immediate Events (faster transits, exact or prominent this period):
-${immediateEvents.map(t => formatTransitForPrompt(t)).join('\n')}
+${immediateEvents.map((t: any) => formatTransitForPrompt(t)).join('\n')}
 
 ${moonPhases.length > 0 ? `
 Significant Moon Phases:
-${moonPhases.map(t => formatMoonPhaseForPrompt(t)).join('\n')}
+${moonPhases.map((t: any) => formatMoonPhaseForPrompt(t)).join('\n')}
 ` : ''}
 
 ${transitToTransitAspects.length > 0 ? `
 Notable Sky Patterns (affecting everyone):
-${transitToTransitAspects.slice(0, 3).map(t => formatSkyPatternForPrompt(t)).join('\n')}
+${transitToTransitAspects.slice(0, 3).map((t: any) => formatSkyPatternForPrompt(t)).join('\n')}
 ` : ''}
 
 Generate a ${period} horoscope that integrates these elements into a meaningful narrative.`;
@@ -1101,13 +1104,13 @@ console.log("userPrompt X X X: ", userPrompt)
 }
 
 // Helper function to get relevant user context for horoscope
-async function getRelevantContextForHoroscope(userId, mainThemes) {
+async function getRelevantContextForHoroscope(userId: string, mainThemes: any[]) {
   // Get user's birth chart to access house positions
   const birthChart = await getBirthChart(userId);
   
   // First, create rich contextual queries for each transit
   const transitQueries = await Promise.all(
-    mainThemes.slice(0, 3).map(theme => createTransitContextQuery(theme, birthChart))
+    mainThemes.slice(0, 3).map((theme: any) => createTransitContextQuery(theme, birthChart))
   );
   
   // Perform vector searches for each transit query
@@ -1122,7 +1125,7 @@ async function getRelevantContextForHoroscope(userId, mainThemes) {
 }
 
 // Generate a rich, contextual query for a specific transit
-async function createTransitContextQuery(transit, birthChart) {
+async function createTransitContextQuery(transit: any, birthChart: any) {
   const { transitingPlanet, targetPlanet, aspect, description } = transit;
   
   // Define archetypal meanings for better context
@@ -1168,7 +1171,7 @@ async function createTransitContextQuery(transit, birthChart) {
   let targetHouse = null;
   let targetSign = null;
   if (targetPlanet && birthChart && birthChart.planets) {
-    const planet = birthChart.planets.find(p => p.name === targetPlanet);
+    const planet = birthChart.planets.find((p: any) => p.name === targetPlanet);
     if (planet) {
       targetHouse = planet.house;
       targetSign = planet.sign;
@@ -1182,10 +1185,10 @@ async function createTransitContextQuery(transit, birthChart) {
   const transitingSigns = transit.transitingSigns || [];
   
   // Build query components
-  const transitingArchetype = planetArchetypes[transitingPlanet] || transitingPlanet;
-  const targetArchetype = targetPlanet ? (planetArchetypes[targetPlanet] || targetPlanet) : 'personal energy';
-  const aspectMeaning = aspectMeanings[aspect] || aspect;
-  const houseContext = targetHouse ? houseMeanings[targetHouse] : null;
+  const transitingArchetype = (planetArchetypes as Record<string, any>)[transitingPlanet] || transitingPlanet;
+  const targetArchetype = targetPlanet ? ((planetArchetypes as Record<string, any>)[targetPlanet] || targetPlanet) : 'personal energy';
+  const aspectMeaning = (aspectMeanings as Record<string, any>)[aspect] || aspect;
+  const houseContext = targetHouse ? (houseMeanings as Record<string, any>)[targetHouse] : null;
   
   // Create a query that includes both technical terms and meanings
   let searchQuery = `${transitingPlanet}`;
@@ -1232,7 +1235,7 @@ import { formatMoonPhaseForPrompt } from '../utilities/moonPhaseAnalysis.js';
 import { formatSkyPatternForPrompt } from '../utilities/horoscopeGeneration.js';
 
 // Generate horoscope narrative from custom transit events
-export async function generateCustomTransitNarrative(data) {
+export async function generateCustomTransitNarrative(data: any) {
   const { 
     userId, 
     period, 
@@ -1246,9 +1249,9 @@ export async function generateCustomTransitNarrative(data) {
   const contextChunks = await getRelevantContextForHoroscope(userId, customTransitEvents.slice(0, 3));
   
   // Separate events by type for better organization
-  const transitToNatal = customTransitEvents.filter(e => e.type === 'transit-to-natal');
-  const transitToTransit = customTransitEvents.filter(e => e.type === 'transit-to-transit');
-  const moonPhaseEvents = customTransitEvents.filter(e => e.type === 'moon-phase');
+  const transitToNatal = customTransitEvents.filter((e: any) => e.type === 'transit-to-natal');
+  const transitToTransit = customTransitEvents.filter((e: any) => e.type === 'transit-to-transit');
+  const moonPhaseEvents = customTransitEvents.filter((e: any) => e.type === 'moon-phase');
   
   const systemPrompt = `You are StelliumAI, generating a custom horoscope based on specific transits selected by the user. Create a focused narrative that addresses these particular astrological events.
 
@@ -1267,16 +1270,16 @@ User Context from their birth chart analysis:
 ${contextChunks.join('\n')}
 
 Selected Transits for Interpretation:
-${transitToNatal.map(t => formatTransitForPrompt(t)).join('\n')}
+${transitToNatal.map((t: any) => formatTransitForPrompt(t)).join('\n')}
 
 ${moonPhaseEvents.length > 0 ? `
 Moon Phases:
-${moonPhaseEvents.map(t => formatMoonPhaseForPrompt(t)).join('\n')}
+${moonPhaseEvents.map((t: any) => formatMoonPhaseForPrompt(t)).join('\n')}
 ` : ''}
 
 ${transitToTransit.length > 0 ? `
 Sky Patterns (affecting everyone):
-${transitToTransit.map(t => formatSkyPatternForPrompt(t)).join('\n')}
+${transitToTransit.map((t: any) => formatSkyPatternForPrompt(t)).join('\n')}
 ` : ''}
 
 Generate a focused horoscope interpretation for these specific transits.`;

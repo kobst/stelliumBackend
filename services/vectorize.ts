@@ -117,6 +117,7 @@ async function getEmbedding(text: string, model: string = 'text-embedding-ada-00
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
+    throw new Error(`Failed to generate embedding after ${retries} attempts`);
 }
 
 
@@ -194,7 +195,7 @@ export async function processInterpretationSection(userId: string, heading: stri
 
 
 
-function generateConversationId(userId) {
+function generateConversationId(userId: string) {
   const timestamp = Date.now();
   return `${userId}-${timestamp}`;
 }
@@ -345,7 +346,7 @@ export async function processUserQueryRelationship(compositeChartId: string, que
       }
     });
     // Extract relevantAspects and text from each match
-    const extractedData = results.matches.map((match, index) => {
+    const extractedData = results.matches.map((match: any, index: number) => {
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       return {
         relevantAspects: match.metadata.relevantAspects,
@@ -356,7 +357,7 @@ export async function processUserQueryRelationship(compositeChartId: string, que
     console.log("Extracted data:", extractedData);
 
     // If you want to return a single string with all the information
-    const combinedText = extractedData.map(data => 
+    const combinedText = extractedData.map((data: any) => 
       `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
     ).join('\n\n');
     console.log("Combined text:", combinedText);
@@ -570,7 +571,7 @@ export async function retrieveTopicContext(userId: string, topic: string): Promi
     
     try {
 
-      const prompt = subTopicSearchPrompts[topic]
+      const prompt = subTopicSearchPrompts[topic as keyof typeof subTopicSearchPrompts]
       console.log("prompt: ", prompt)
         // Get embedding for the prompt
       const promptEmbedding = await getEmbedding(prompt);
@@ -586,7 +587,7 @@ export async function retrieveTopicContext(userId: string, topic: string): Promi
         });
 
         // Process results (topics removed)
-        const results = vectorResults.matches.map(match => ({
+        const results = vectorResults.matches.map((match: any) => ({
             text: match.metadata.text,
             description: match.metadata.description,
             score: match.score
@@ -620,7 +621,7 @@ export async function getRelationshipCategoryContextForUser(userId: string, rela
         });
 
         if (results && results.matches) {
-            return results.matches.map(match => ({
+            return results.matches.map((match: any) => ({
                 text: match.metadata.text,
                 description: match.metadata.description,
                 score: match.score,
@@ -655,7 +656,7 @@ export async function processUserQueryForBirthChartAnalysis(userId: string, quer
     });
 
     // Extract relevant data from each match
-    const extractedData = results.matches.map((match, index) => {
+    const extractedData = results.matches.map((match: any, index: number) => {
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Ensure metadata and its properties exist before accessing
       const text = match.metadata?.text || "";     // Default to empty string if text undefined
@@ -670,7 +671,7 @@ export async function processUserQueryForBirthChartAnalysis(userId: string, quer
     console.log("Extracted data:", extractedData);
 
     // Combine the extracted data into a single string for context
-    const combinedText = extractedData.map(data => {
+    const combinedText = extractedData.map((data: any) => {
       // Format topics nicely if it's an array
       let contextEntry = "";
       if (data.description) { // Optionally add the general description
@@ -705,7 +706,7 @@ export async function processUserQueryForHoroscopeAnalysis(userId: string, query
     });
 
     // Extract only the text from each match
-    const extractedText = results.matches.map((match, index) => {
+    const extractedText = results.matches.map((match: any, index: number) => {
       // console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Return only the text content
       return match.metadata?.text || "";
@@ -734,7 +735,7 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId: 
     });
 
     // Extract relevant data from each match
-    const extractedData = results.matches.map((match, index) => {
+    const extractedData = results.matches.map((match: any, index: number) => {
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Ensure metadata and its properties exist before accessing
       const text = match.metadata?.text || "";     // Default to empty string if text undefined
@@ -749,7 +750,7 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId: 
     console.log("Extracted data:", extractedData);
 
     // Combine the extracted data into a single string for context
-    const combinedText = extractedData.map(data => {
+    const combinedText = extractedData.map((data: any) => {
       // Format topics nicely if it's an array
       let contextEntry = "";
       if (data.description) { // Optionally add the general description

@@ -174,7 +174,7 @@ export async function getRawChartDataEphemeris(data: any): Promise<any> {
   const cusps = result.data.houses;
   const points = result.data.points;
 
-  const houses = cusps.map((deg, i) => ({
+  const houses = cusps.map((deg: number, i: number) => ({
     house: i + 1,
     degree: deg,
     sign: getSign(deg)
@@ -263,11 +263,11 @@ export function getRawChartDataEphemerisNoTime(base: any): any {
 
   // Filter out time-dependent points and set house to 0 for all planets
   const planets = base.planets
-    .filter(p => {
+    .filter((p: any) => {
       const name = p.name?.toLowerCase();
       return name !== 'ascendant' && name !== 'midheaven';
     })
-    .map(p => ({ ...p, house: 0 }));
+    .map((p: any) => ({ ...p, house: 0 }));
 
   // Return chart without house and angle data
   return { 
@@ -320,7 +320,7 @@ export const getHouse = (degree: number, houses: any): number => {
   } else if (typeof houses === 'object') {
     // If houses is an object with cusps property (like what sweph.houses returns)
     if (Array.isArray(houses.cusps)) {
-      housesArray = houses.cusps.map((degree, index) => ({
+      housesArray = houses.cusps.map((degree: number, index: number) => ({
         house: index + 1,
         degree: degree
       }));
@@ -414,7 +414,7 @@ export const findAspectsForBirthChart = (planets: any[]): any[] => {
   return aspects;
 }
 
-function getProperty(object, camelCase, snake_case) {
+function getProperty(object: any, camelCase: string, snake_case: string): any {
     // console.log("getProperty: ", object.name)
     return object[camelCase] !== undefined ? object[camelCase] : object[snake_case];
   }
@@ -484,9 +484,9 @@ export const fetchTimeZone = async (lat: number, lon: number, epochTimeSeconds: 
 export const generateCompositeChart = (birthChart1: any, birthChart2: any): any => {
     console.log("generateCompositeChart");
     const compositeChart = {
-        planets: [],
-        houses: [],
-        aspects: [],
+        planets: [] as any[],
+        houses: [] as any[],
+        aspects: [] as any[],
     };
 
     const planets1 = birthChart1.planets
@@ -495,7 +495,7 @@ export const generateCompositeChart = (birthChart1: any, birthChart2: any): any 
     // Calculate midpoints for planets
     for (let i = 0; i < planets1.length; i++) {
         const planet1 = planets1[i];
-        const planet2 = planets2.find((p) => p.name === planet1.name);
+        const planet2 = planets2.find((p: any) => p.name === planet1.name);
 
         console.log("planet1: ", planet1)
         console.log("planet2: ", planet2)
@@ -521,10 +521,10 @@ export const generateCompositeChart = (birthChart1: any, birthChart2: any): any 
     console.log("compositeChart.planets: ", compositeChart.planets)
     
     // Check if both users have birth times (ascendant/midheaven data)
-    const ascendant1 = planets1.find((p) => p.name === 'ascendant' || p.name === 'Ascendant');
-    const ascendant2 = planets2.find((p) => p.name === 'ascendant' || p.name === 'Ascendant');
-    const mc1 = planets1.find((p) => p.name === 'midheaven' || p.name === 'MC' || p.name === 'Midheaven');
-    const mc2 = planets2.find((p) => p.name === 'midheaven' || p.name === 'MC' || p.name === 'Midheaven');
+    const ascendant1 = planets1.find((p: any) => p.name === 'ascendant' || p.name === 'Ascendant');
+    const ascendant2 = planets2.find((p: any) => p.name === 'ascendant' || p.name === 'Ascendant');
+    const mc1 = planets1.find((p: any) => p.name === 'midheaven' || p.name === 'MC' || p.name === 'Midheaven');
+    const mc2 = planets2.find((p: any) => p.name === 'midheaven' || p.name === 'MC' || p.name === 'Midheaven');
 
     let ascendantMidpoint;
     let mcMidpoint;
@@ -560,7 +560,7 @@ export const generateCompositeChart = (birthChart1: any, birthChart2: any): any 
     }
 
     // Calculate house position for each planet
-    compositeChart.planets.forEach((planet) => {
+    compositeChart.planets.forEach((planet: any) => {
         for (let i = 0; i < compositeChart.houses.length - 1; i++) {
             const currentHouse = compositeChart.houses[i];
             const nextHouse = compositeChart.houses[i + 1];
@@ -608,8 +608,8 @@ export const generateCompositeChart = (birthChart1: any, birthChart2: any): any 
   
   export const findSynastryAspects = (birthChart1: any, birthChart2: any): any[] => {
     console.log("findSynastryAspects");
-    birthChart1.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
-    birthChart2.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
+    birthChart1.sort((a: any, b: any) => sortOrder[a.name] - sortOrder[b.name]);
+    birthChart2.sort((a: any, b: any) => sortOrder[a.name] - sortOrder[b.name]);
     // console.log("birthChart1: ", birthChart1[0])
     // console.log("birthChart2: ", birthChart2[0])
     const synastryAspects = [];
@@ -644,7 +644,7 @@ export const generateCompositeChart = (birthChart1: any, birthChart2: any): any 
     return synastryAspects;
 };
 
-function calculateAspectObject(degree1, degree2, isRetro, transitName, isNatal) {
+function calculateAspectObject(degree1: number, degree2: number, isRetro: boolean, transitName: string, isNatal: boolean): any {
     // console.log("calculateAspectObject")
     let diff = Math.abs(degree1 - degree2);
     diff = diff > 180 ? 360 - diff : diff;
@@ -686,7 +686,7 @@ function calculateAspectObject(degree1, degree2, isRetro, transitName, isNatal) 
 }
 
 // Helper function to calculate the midpoint between two degrees
-const calculateMidpoint = (degree1, degree2) => {
+const calculateMidpoint = (degree1: number, degree2: number): number => {
     const shortestDistance = Math.abs(degree1 - degree2) > 180 ? 360 - Math.abs(degree1 - degree2) : Math.abs(degree1 - degree2);
     const midpoint = (degree1 + degree2) / 2;
     return shortestDistance > 180 ? (midpoint + 180) % 360 : midpoint;
@@ -768,7 +768,7 @@ export function generateTransitSeries(fromDate: Date, toDate: Date): any[] {
   return series;
 }
 
-function angularDifference(a, b) {
+function angularDifference(a: number, b: number): number {
   return Math.abs(((a - b + 180) % 360) - 180);
 }
 
@@ -823,7 +823,7 @@ export function* scanTransitSeries(transitSeries: any[], natalPoints: any[]): Ge
  * Assumes events are generated from a transit series that has varying time steps.
  */
 export function mergeTransitWindows(events: any[]): any[] {
-  const byKey = {};
+  const byKey: Record<string, any> = {};
   for (const e of events) {
     // Ensure date is a Date object for proper sorting and comparison
     const eventDate = e.date instanceof Date ? e.date : new Date(e.date);
@@ -835,7 +835,7 @@ export function mergeTransitWindows(events: any[]): any[] {
   const windows = [];
   for (const key of Object.keys(byKey)) {
     // Sort events chronologically for this specific aspect combination
-    const eventGroup = byKey[key].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const eventGroup = byKey[key].sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
 
     if (eventGroup.length > 0) {
       // All events in eventGroup are considered part of the same continuous aspect occurrence
@@ -850,7 +850,7 @@ export function mergeTransitWindows(events: any[]): any[] {
  * representing one continuous aspect.
  * @param {Array<Object>} eventGroup - A sorted array of raw event objects.
  */
-function buildWindowFromEventGroup(eventGroup) {
+function buildWindowFromEventGroup(eventGroup: any[]): any {
   const startEvent = eventGroup[0];
   const endEvent = eventGroup[eventGroup.length - 1];
 
@@ -1012,8 +1012,8 @@ export function* scanTransitToTransitAspects(transitSeries: any[]): Generator<an
         const p2 = planets[j];
         
         // Skip if both are fast-moving (> 2 degrees/day)
-        const p1Speed = PLANET_SPEEDS[p1.name] || 1;
-        const p2Speed = PLANET_SPEEDS[p2.name] || 1;
+        const p1Speed = (PLANET_SPEEDS as Record<string, number>)[p1.name] || 1;
+        const p2Speed = (PLANET_SPEEDS as Record<string, number>)[p2.name] || 1;
         
         if (p1Speed > 2 && p2Speed > 2) {
           continue;
@@ -1050,7 +1050,7 @@ export function* scanTransitToTransitAspects(transitSeries: any[]): Generator<an
  * Similar to mergeTransitWindows but for transit-to-transit aspects.
  */
 export function mergeTransitToTransitWindows(events: any[]): any[] {
-  const byKey = {};
+  const byKey: Record<string, any> = {};
   
   for (const e of events) {
     const eventDate = e.date instanceof Date ? e.date : new Date(e.date);
@@ -1065,7 +1065,7 @@ export function mergeTransitToTransitWindows(events: any[]): any[] {
   const windows = [];
   
   for (const key of Object.keys(byKey)) {
-    const eventGroup = byKey[key].sort((a, b) => a.date.getTime() - b.date.getTime());
+    const eventGroup = byKey[key].sort((a: any, b: any) => a.date.getTime() - b.date.getTime());
     
     if (eventGroup.length > 0) {
       const [planet1, planet2, aspect] = key.split('|');
@@ -1079,7 +1079,7 @@ export function mergeTransitToTransitWindows(events: any[]): any[] {
 /**
  * Builds a single window object for transit-to-transit aspects.
  */
-function buildTransitToTransitWindow(eventGroup, planet1, planet2, aspect) {
+function buildTransitToTransitWindow(eventGroup: any[], planet1: string, planet2: string, aspect: string): any {
   const startEvent = eventGroup[0];
   const endEvent = eventGroup[eventGroup.length - 1];
   

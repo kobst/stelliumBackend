@@ -58,7 +58,7 @@ export const PLANET_SPEEDS = {
   'South Node': 0.05
 };
 
-const ASPECT_WEIGHTS = {
+const ASPECT_WEIGHTS: { [key: string]: number } = {
   conjunction: 3,
   opposition: 2.5,
   square: 2,
@@ -231,7 +231,7 @@ export function calculateTransitPriority(
   }
   
   // 2. Planet speed factor (slower = more important for themes)
-  const speed = PLANET_SPEEDS[window.transiting] || 1;
+  const speed = (PLANET_SPEEDS as { [key: string]: number })[window.transiting] || 1;
   if (speed < 0.1) {
     priority += 2;  // Very slow (outer planets)
   } else if (speed < 1) {
@@ -239,7 +239,7 @@ export function calculateTransitPriority(
   }
   
   // 3. Aspect strength
-  priority += ASPECT_WEIGHTS[window.aspect] || 0;
+  priority += (ASPECT_WEIGHTS as { [key: string]: number })[window.aspect] || 0;
   
   // 4. Personal planet involvement
   if (PERSONAL_PLANETS.includes(window.natal)) {
@@ -263,7 +263,7 @@ export function categorizeTransits(
   const immediateEvents: TransitEvent[] = [];
   
   for (const transit of transits) {
-    const planetSpeed = PLANET_SPEEDS[transit.transitingPlanet] || 1;
+    const planetSpeed = (PLANET_SPEEDS as { [key: string]: number })[transit.transitingPlanet] || 1;
     
     if (type === 'weekly') {
       // For weekly: fast transits are immediate, slow are themes
@@ -291,7 +291,7 @@ export function categorizeTransits(
 
 // Format transit for display or logging
 export function formatTransitForPrompt(transit: TransitEvent): string {
-  const speed = PLANET_SPEEDS[transit.transitingPlanet] || 1;
+  const speed = (PLANET_SPEEDS as { [key: string]: number })[transit.transitingPlanet] || 1;
   const speedDesc = speed < 0.1 ? 'very slow' : speed < 1 ? 'medium' : 'fast';
   
   if (transit.type === 'transit-to-natal') {
