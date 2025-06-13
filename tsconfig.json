@@ -1,16 +1,30 @@
 {
   "compilerOptions": {
-    "target": "es2021",
+    "target": "ES2022",
     "module": "Node16",
     "moduleResolution": "Node16",
     "esModuleInterop": true,
     "allowJs": false,
     "strict": false,
+    "noImplicitAny": true,
+    "strictNullChecks": false,
+    "strictFunctionTypes": false,
+    "strictBindCallApply": false,
+    "strictPropertyInitialization": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "outDir": "dist",
-    "rootDir": "."
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@types/*": ["types/*"],
+      "@services/*": ["services/*"],
+      "@utilities/*": ["utilities/*"],
+      "@controllers/*": ["controllers/*"]
+    }
   },
   "include": ["**/*.ts"],
   "exclude": ["node_modules", "dist", ".serverless"]

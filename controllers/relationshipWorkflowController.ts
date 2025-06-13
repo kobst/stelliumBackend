@@ -42,7 +42,8 @@ import {
 } from '../services/dbService.js';
 import {
   getCompletionForRelationshipCategory,
-  generateRelationshipPrompt
+  generateRelationshipPrompt,
+  getRelationshipCategoryPanels
 } from '../services/gptService.js';
 import {
   scoreRelationshipCompatibility
@@ -530,8 +531,8 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
               const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
               const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-              // Generate interpretation
-              const interpretation = await getCompletionForRelationshipCategory(
+              // Generate panel analyses
+              const panels = await getRelationshipCategoryPanels(
                   userAName,
                   userBName,
                   categoryDisplayName,
@@ -542,8 +543,8 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
               );
 
               categoryAnalysis[categoryValue] = {
-                interpretation: interpretation,
-                astrologyData: formattedAstrology,
+                relevantPosition: formattedAstrology,
+                panels,
                 generatedAt: new Date()
               };
 
@@ -573,7 +574,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
 
               console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName}`);
               const records = await processTextSectionRelationship(
-                analysisToVectorize.interpretation,
+                analysisToVectorize.panels?.fullAnalysis || analysisToVectorize.interpretation,
                 compositeChartId,
                 richDescription,
                 categoryValue,
@@ -685,8 +686,8 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
             const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-            // Generate interpretation
-            const interpretation = await getCompletionForRelationshipCategory(
+            // Generate panel analyses
+            const panels = await getRelationshipCategoryPanels(
                 userAName,
                 userBName,
                 categoryDisplayName,
@@ -697,8 +698,8 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             );
 
             categoryAnalysis[categoryValue] = {
-              interpretation: interpretation,
-              astrologyData: formattedAstrology,
+              relevantPosition: formattedAstrology,
+              panels,
               generatedAt: new Date()
             };
 
@@ -718,7 +719,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
 
               console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName} (retry)`);
               const records = await processTextSectionRelationship(
-                interpretation,
+                panels.fullAnalysis,
                 compositeChartId,
                 richDescription,
                 categoryValue,
@@ -759,8 +760,14 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
           // Mark category as failed
           await updateRelationshipAnalysisVectorization(compositeChartId, {
             [`analysis.${categoryValue}`]: {
-              interpretation: `Error: ${error.message}`,
-              astrologyData: "Failed to generate",
+              relevantPosition: "Failed to generate",
+              panels: {
+                shortSynopsis: `Error: ${error.message}`,
+                viewA: "",
+                viewB: "",
+                composite: "",
+                fullAnalysis: ""
+              },
               generatedAt: new Date(),
               failed: true
             },

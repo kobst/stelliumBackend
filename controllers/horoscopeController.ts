@@ -1,6 +1,7 @@
 // Horoscope generation controller
 
 import { Request, Response } from 'express';
+import { TypedRequestWithParams, GenerateHoroscopeRequest, GenerateHoroscopeParams } from '../types/api.js';
 import { generateHoroscope } from '../utilities/horoscopeGeneration.js';
 import { 
   getHoroscopesByUserId, 
@@ -61,11 +62,12 @@ export async function generateWeeklyHoroscope(req: Request, res: Response) {
       cached: false
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error generating weekly horoscope:', error);
     return res.status(500).json({ 
       error: 'Failed to generate weekly horoscope',
-      message: error.message 
+      message 
     });
   }
 }
@@ -118,11 +120,12 @@ export async function generateMonthlyHoroscope(req: Request, res: Response) {
       cached: false
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error generating monthly horoscope:', error);
     return res.status(500).json({ 
       error: 'Failed to generate monthly horoscope',
-      message: error.message 
+      message 
     });
   }
 }
@@ -162,11 +165,12 @@ export async function getUserHoroscopes(req: Request, res: Response) {
       count: horoscopes.length
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching user horoscopes:', error);
     return res.status(500).json({ 
       error: 'Failed to fetch horoscopes',
-      message: error.message 
+      message 
     });
   }
 }
@@ -204,11 +208,12 @@ export async function getLatestUserHoroscope(req: Request, res: Response) {
       horoscope
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error fetching latest horoscope:', error);
     return res.status(500).json({ 
       error: 'Failed to fetch latest horoscope',
-      message: error.message 
+      message 
     });
   }
 }
@@ -235,11 +240,12 @@ export async function deleteUserHoroscope(req: Request, res: Response) {
       message: 'Horoscope deleted successfully'
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error deleting horoscope:', error);
     return res.status(500).json({ 
       error: 'Failed to delete horoscope',
-      message: error.message 
+      message 
     });
   }
 }
@@ -294,9 +300,10 @@ export async function generateCustomTransitHoroscope(req: Request, res: Response
           event.end = endDate;
         }
       } catch (error) {
+        const message = error instanceof Error ? error.message : 'Unknown error';
         return res.status(400).json({
           error: `Error parsing dates for event: ${event.transitingPlanet}`,
-          message: error.message
+          message
         });
       }
     }
@@ -369,11 +376,12 @@ export async function generateCustomTransitHoroscope(req: Request, res: Response
       }
     });
     
-  } catch (error) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error generating custom transit horoscope:', error);
     return res.status(500).json({ 
       error: 'Failed to generate custom transit horoscope',
-      message: error.message 
+      message 
     });
   }
 }

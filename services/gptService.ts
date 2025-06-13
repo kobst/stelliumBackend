@@ -1,5 +1,16 @@
-// @ts-nocheck
 import OpenAI from "openai";
+import type {
+  ChatMessage,
+  NatalPlanetCompletionParams,
+  RelationshipCategoryParams,
+  TopicAnalysisParams,
+  HoroscopeGenerationParams,
+  ChatThreadParams,
+  RelationshipChatThreadParams,
+  TopicClassificationResult,
+  HoroscopeResponse,
+  RelationshipPanelsResponse
+} from '../types/gpt.js';
 import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRulerCode } from "../utilities/archive/decoder.js"
 import { BroadTopicsEnum } from "../utilities/constants.js"
 import { processUserQueryForHoroscopeAnalysis } from "./vectorize.js"
@@ -7,12 +18,12 @@ import { getBirthChart } from "./dbService.js"
 
 
 
-const apiKey = process.env.OPENAI_API_KEY
-const client = new OpenAI({ apiKey: apiKey})
+const apiKey = process.env.OPENAI_API_KEY || '';
+const client = new OpenAI({ apiKey: apiKey });
 
 
 
-export async function getCompletionShortOverview(description) {
+export async function getCompletionShortOverview(description: string): Promise<string> {
   try {
     console.log("getCompletionShortOverview");
     console.log("description:", description);
@@ -48,14 +59,14 @@ Please write 2–3 paragraphs interpreting these placements holistically.`;
 
     console.log("GPT response:", response.choices[0].message.content);
     return response.choices[0].message.content;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching response:', error);
     throw error;
   }
 }
 
 
-export async function getCompletionShortOverviewRelationships(description) {
+export async function getCompletionShortOverviewRelationships(description: string): Promise<string> {
   try {
     console.log("getCompletionShortOverviewRelationships");
     console.log("description:", description);
@@ -92,7 +103,7 @@ Please write 2–3 paragraphs interpreting this in a relational context. Focus o
 
     console.log("GPT response:", response.choices[0].message.content);
     return response.choices[0].message.content;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching response:', error);
     throw error;
   }
@@ -101,7 +112,7 @@ Please write 2–3 paragraphs interpreting this in a relational context. Focus o
 
 
 
-export async function getCompletionPlanets(planetName, description) {
+export async function getCompletionPlanets(planetName: string, description: string): Promise<string> {
   try {
     console.log("getCompletionPlanets");
     console.log("planet:", planetName);
@@ -135,7 +146,7 @@ Please write 2–3 paragraphs interpreting the role of ${planetName} in their li
     });
 
     return response.choices[0].message.content;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching response:', error);
     throw error;
   }
@@ -143,7 +154,7 @@ Please write 2–3 paragraphs interpreting the role of ${planetName} in their li
 
 
 
-  function processStrings(strings, subHeading) {
+  function processStrings(strings: any[], subHeading: string): string {
     let resultStrings = strings.map(string => {
         // Remove 'ref:' and any spaces
         let cleanedString = string.replace('ref:', '').trim();
@@ -180,7 +191,7 @@ Please write 2–3 paragraphs interpreting the role of ${planetName} in their li
     return resultStrings.join('\n');
 }
 
-export async function getCompletionGptResponseForSynastryAspects(heading, promptDescription) {
+export async function getCompletionGptResponseForSynastryAspects(heading: string, promptDescription: string): Promise<string | undefined> {
   try {
     console.log("getCompletionGptResponseForSynastryAspects");
     console.log("heading: ", heading);
@@ -217,13 +228,13 @@ Please write 2–3 paragraphs interpreting these dynamics in the context of the 
     });
 
     return response.choices[0].message.content;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching response:', error);
   }
 }
 
 
-export async function getCompletionGptResponseForCompositeChart(heading, promptDescription) {
+export async function getCompletionGptResponseForCompositeChart(heading: string, promptDescription: string): Promise<string | undefined> {
   try {
     console.log("getCompletionGptResponseForCompositeChart");
     console.log("heading: ", heading);
@@ -256,13 +267,13 @@ Please write 2–3 paragraphs interpreting these placements, focusing on how the
     });
 
     return response.choices[0].message.content;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching response:', error);
   }
 }
 
 
-export async function getCompletionGptResponseForCompositeChartPlanet(planet, promptDescription) {
+export async function getCompletionGptResponseForCompositeChartPlanet(planet: string, promptDescription: string): Promise<string | undefined> {
   try {
     console.log("getCompletionGptResponseForCompositeChartPlanet");
     console.log("planet: ", planet);
@@ -295,13 +306,13 @@ Please write 2–3 paragraphs interpreting this planet in the relationship conte
     });
 
     return response.choices[0].message.content;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Error fetching response:', error);
   }
 }
 
 
-export async function getCompletionGptResponseForRelationshipAnalysis(relationshipAnalysisPrompts) {
+export async function getCompletionGptResponseForRelationshipAnalysis(relationshipAnalysisPrompts: string): Promise<string> {
   const response = await client.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
@@ -868,6 +879,49 @@ Write a synthesis, not a list. Use astrological data and psychological insight t
   }
 }
 
+export async function getRelationshipCategoryPanels(
+  userAName,
+  userBName,
+  categoryDisplayName,
+  relationshipScores,
+  formattedAstrology,
+  contextA,
+  contextB
+) {
+  const baseInfo = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}\n\nScores:\n- Overall: ${relationshipScores.overall ?? 'N/A'}\n- Synastry: ${relationshipScores.synastry ?? 'N/A'}\n- Composite: ${relationshipScores.composite ?? 'N/A'}\n- Synastry Houses: ${relationshipScores.synastryHousePlacements ?? 'N/A'}\n- Composite Houses: ${relationshipScores.compositeHousePlacements ?? 'N/A'}\n\nAstrological Factors:\n${formattedAstrology}\n\nContext for ${userAName}:\n${contextA}\n\nContext for ${userBName}:\n${contextB}`;
+
+  async function callPanel(task) {
+    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.`;
+    const userPrompt = `${baseInfo}\n\nTASK:\n${task}`;
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
+    return response.choices[0].message.content.trim();
+  }
+
+  const shortSynopsis = await callPanel(
+    `In about 100 words, give a headline summary focusing on the top 2-3 synastry drivers.`
+  );
+  const viewA = await callPanel(
+    `Around 110 words from ${userAName}'s perspective. Focus on how their chart influences the relationship (A→B synastry only).`
+  );
+  const viewB = await callPanel(
+    `Around 110 words from ${userBName}'s perspective. Focus on how their chart influences the relationship (B→A synastry only).`
+  );
+  const composite = await callPanel(
+    `About 160 words analyzing this relationship from the composite chart viewpoint.`
+  );
+  const fullAnalysis = await callPanel(
+    `Using the short synopsis and both partner perspectives above, write a cohesive 300-450 word consultation.`
+  );
+
+  return { shortSynopsis, viewA, viewB, composite, fullAnalysis };
+}
+
 
 
 
@@ -1243,3 +1297,4 @@ Generate a focused horoscope interpretation for these specific transits.`;
     horoscopeText: completion.choices[0].message.content.trim()
   };
 }
+

@@ -1,9 +1,8 @@
-// @ts-nocheck
-let sweph = null;
-let swephLoadError = null;
+let sweph: any = null;
+let swephLoadError: any = null;
 
 // Async function to load sweph
-async function loadSweph() {
+async function loadSweph(): Promise<boolean> {
   console.log('Attempting to load sweph module...');
   console.log('NODE_PATH:', process.env.NODE_PATH);
   console.log('Process cwd:', process.cwd());
@@ -29,8 +28,9 @@ async function loadSweph() {
         console.log('Binary size:', fs.statSync(binaryPath).size);
       }
     }
-  } catch (err) {
-    console.warn('Filesystem check failed:', err.message);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Unknown error';
+    console.warn('Filesystem check failed:', message);
   }
   
   // Try multiple paths for layer loading
@@ -52,9 +52,11 @@ async function loadSweph() {
         console.log('Available constants:', Object.keys(sweph.constants));
       }
       return true;
-    } catch (error) {
-      console.warn(`Failed to load sweph from ${path}:`, error.message);
-      console.warn('Error stack:', error.stack);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      const stack = error instanceof Error ? error.stack : undefined;
+      console.warn(`Failed to load sweph from ${path}:`, message);
+      console.warn('Error stack:', stack);
     }
   }
   
@@ -73,7 +75,7 @@ import {
 // Add initialization tracking
 let ephemerisInitialized = false;
 
-export async function initializeEphemeris() {
+export async function initializeEphemeris(): Promise<void> {
   if (!ephemerisInitialized) {
     // Try to load sweph if not already loaded
     if (!sweph && !swephLoadError) {
@@ -91,7 +93,7 @@ export async function initializeEphemeris() {
   }
 }
 
-export async function getPlanetsData(data) {
+export async function getPlanetsData(data: any): Promise<any> {
     await initializeEphemeris();
     
     if (!sweph) {
@@ -143,7 +145,7 @@ export async function getPlanetsData(data) {
         speed: speedLong,
         is_retro: speedLong < 0,
         sign: getSign(lon),
-        house: getHouse(lon, houses)
+        house: getHouse(lon, result?.data?.houses || [])
       };
     });
   
@@ -151,7 +153,7 @@ export async function getPlanetsData(data) {
   }
   
 
-export async function getRawChartDataEphemeris(data) {
+export async function getRawChartDataEphemeris(data: any): Promise<any> {
   await initializeEphemeris();
   
   const { year, month, day, hour, min, lat, lon, tzone } = data;
@@ -254,7 +256,7 @@ export async function getRawChartDataEphemeris(data) {
   return rawResponse;
 }
 
-export function getRawChartDataEphemerisNoTime(base) {
+export function getRawChartDataEphemerisNoTime(base: any): any {
   if (!base || !Array.isArray(base.planets)) {
     return base;
   }
@@ -278,7 +280,7 @@ export function getRawChartDataEphemerisNoTime(base) {
 }
 
 
-function generatePlanetObjectSweph(name, full_degree, house_number) {
+function generatePlanetObjectSweph(name: string, full_degree: number, house_number: number): any {
   return {
     name,
     full_degree: full_degree,
@@ -290,7 +292,7 @@ function generatePlanetObjectSweph(name, full_degree, house_number) {
   }
 }
 
-export const getSign = (degree) => {
+export const getSign = (degree: number): string => {
   const signs = ['Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo', 'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'];
   const signIndex = Math.floor(degree / 30);
   return signs[signIndex];
@@ -303,7 +305,7 @@ export const getSign = (degree) => {
  * @param {Array|Object} houses - Array of house objects or object with house data
  * @returns {number} - The house number (1-12)
  */
-export const getHouse = (degree, houses) => {
+export const getHouse = (degree: number, houses: any): number => {
   // Check if houses is valid
   if (!houses) {
     console.error("Houses data is undefined or null");
@@ -377,7 +379,7 @@ export const getHouse = (degree, houses) => {
 // findAspectsForBirthChart
 
 
-export const findAspectsForBirthChart = (planets) => {
+export const findAspectsForBirthChart = (planets: any[]): any[] => {
   console.log("findAspectsForBirthChart")
   planets.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
   const aspects = [];
@@ -418,7 +420,7 @@ function getProperty(object, camelCase, snake_case) {
   }
 
 
-export const fetchTimeZone = async (lat, lon, epochTimeSeconds) => {
+export const fetchTimeZone = async (lat: number, lon: number, epochTimeSeconds: number): Promise<any> => {
     const apiKey = process.env.REACT_APP_GOOGLE_API_KEY; 
     const url = `https://maps.googleapis.com/maps/api/timezone/json?location=${lat},${lon}&timestamp=${epochTimeSeconds}&key=${apiKey}`;
 
@@ -479,7 +481,7 @@ export const fetchTimeZone = async (lat, lon, epochTimeSeconds) => {
 //   }
   
 
-export const generateCompositeChart = (birthChart1, birthChart2) => {
+export const generateCompositeChart = (birthChart1: any, birthChart2: any): any => {
     console.log("generateCompositeChart");
     const compositeChart = {
         planets: [],
@@ -547,8 +549,8 @@ export const generateCompositeChart = (birthChart1, birthChart2) => {
     }
 
     // Store metadata about house system used
-    compositeChart.houseSystem = useEqualHouses ? 'equal' : 'placidus';
-    compositeChart.hasAccurateBirthTimes = !useEqualHouses;
+    (compositeChart as any).houseSystem = useEqualHouses ? 'equal' : 'placidus';
+    (compositeChart as any).hasAccurateBirthTimes = !useEqualHouses;
 
     // Calculate house cusps - always using equal houses (30° each)
     for (let i = 1; i <= 12; i++) {
@@ -604,7 +606,7 @@ export const generateCompositeChart = (birthChart1, birthChart2) => {
     return compositeChart;
 };
   
-  export const findSynastryAspects = (birthChart1, birthChart2) => {
+  export const findSynastryAspects = (birthChart1: any, birthChart2: any): any[] => {
     console.log("findSynastryAspects");
     birthChart1.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
     birthChart2.sort((a, b) => sortOrder[a.name] - sortOrder[b.name]);
@@ -715,7 +717,7 @@ const calculateMidpoint = (degree1, degree2) => {
 // ------------------------------------------------------------
 // Transit utilities
 // ------------------------------------------------------------
-export function getTransitBodies() {
+export function getTransitBodies(): any[] {
   if (!sweph) {
     throw new Error('Swiss Ephemeris module not available');
   }
@@ -746,13 +748,14 @@ const ASPECTS = [
  * Generate a daily ephemeris series between two dates.
  * Dates should be JavaScript Date objects in UTC.
  */
-export function generateTransitSeries(fromDate, toDate) {
+export function generateTransitSeries(fromDate: Date, toDate: Date): any[] {
   initializeEphemeris();
   const flags = sweph.FLG_SWIEPH | sweph.FLG_SPEED;
   const series = [];
   for (let d = new Date(fromDate); d <= toDate; d.setUTCDate(d.getUTCDate() + 1)) {
     const jd = sweph.julday(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate(), 0, 1);
-    const planets = TRANSIT_BODIES.map(({ id, name }) => {
+    const bodies = getTransitBodies();
+    const planets = bodies.map(({ id, name }) => {
       const { data } = sweph.calc_ut(jd, id, flags);
       const [lon,, , speed] = data;
       return { name, lon, speed, sign: getSignFromLon(lon)};
@@ -772,7 +775,7 @@ function angularDifference(a, b) {
 /**
  * Generator yielding every transit aspect hit for a series.
  */
-export function* scanTransitSeries(transitSeries, natalPoints) {
+export function* scanTransitSeries(transitSeries: any[], natalPoints: any[]): Generator<any> {
   for (const { date, planets } of transitSeries) {
     for (const t of planets) {
       if (t.speed === undefined || t.lon === undefined) continue; // Skip if essential data is missing
@@ -819,7 +822,7 @@ export function* scanTransitSeries(transitSeries, natalPoints) {
  * Collapse raw scan results into start/exact/end windows.
  * Assumes events are generated from a transit series that has varying time steps.
  */
-export function mergeTransitWindows(events) {
+export function mergeTransitWindows(events: any[]): any[] {
   const byKey = {};
   for (const e of events) {
     // Ensure date is a Date object for proper sorting and comparison
@@ -885,7 +888,7 @@ function buildWindowFromEventGroup(eventGroup) {
   };
 }
 
-export function getMoonPhaseInfo(sunLon, moonLon) {
+export function getMoonPhaseInfo(sunLon: number, moonLon: number): any {
     const SIGNS = [
       'Aries', 'Taurus', 'Gemini', 'Cancer', 'Leo', 'Virgo',
       'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
@@ -943,7 +946,7 @@ export function getMoonPhaseInfo(sunLon, moonLon) {
   }
   
   
-  export function extractSignWindows(transitSeries) {
+  export function extractSignWindows(transitSeries: any[]): any[] {
     const windows = [];
     const active = new Map(); // planet → { sign, start }
   
@@ -966,7 +969,7 @@ export function getMoonPhaseInfo(sunLon, moonLon) {
     }
   
     // flush active windows
-    for (const [planet, { sign, start }] of active.entries()) {
+    for (const [planet, { sign, start }] of Array.from(active.entries())) {
       windows.push({ transiting: planet, sign, start, end: null }); // still active
     }
   
@@ -979,7 +982,7 @@ export function getMoonPhaseInfo(sunLon, moonLon) {
     'Libra', 'Scorpio', 'Sagittarius', 'Capricorn', 'Aquarius', 'Pisces'
   ];
   
-  export function getSignFromLon(lon) {
+  export function getSignFromLon(lon: number): string {
     return SIGNS[Math.floor(lon / 30)];
   }
 
@@ -987,7 +990,7 @@ export function getMoonPhaseInfo(sunLon, moonLon) {
  * Generator yielding transit-to-transit aspects from a transit series.
  * Filters out aspects between two fast-moving planets.
  */
-export function* scanTransitToTransitAspects(transitSeries) {
+export function* scanTransitToTransitAspects(transitSeries: any[]): Generator<any> {
   const PLANET_SPEEDS = {
     Moon: 13.2,
     Sun: 1.0,
@@ -1046,7 +1049,7 @@ export function* scanTransitToTransitAspects(transitSeries) {
  * Merge transit-to-transit aspect events into windows.
  * Similar to mergeTransitWindows but for transit-to-transit aspects.
  */
-export function mergeTransitToTransitWindows(events) {
+export function mergeTransitToTransitWindows(events: any[]): any[] {
   const byKey = {};
   
   for (const e of events) {
