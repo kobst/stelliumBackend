@@ -868,6 +868,49 @@ Write a synthesis, not a list. Use astrological data and psychological insight t
   }
 }
 
+export async function getRelationshipCategoryPanels(
+  userAName,
+  userBName,
+  categoryDisplayName,
+  relationshipScores,
+  formattedAstrology,
+  contextA,
+  contextB
+) {
+  const baseInfo = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}\n\nScores:\n- Overall: ${relationshipScores.overall ?? 'N/A'}\n- Synastry: ${relationshipScores.synastry ?? 'N/A'}\n- Composite: ${relationshipScores.composite ?? 'N/A'}\n- Synastry Houses: ${relationshipScores.synastryHousePlacements ?? 'N/A'}\n- Composite Houses: ${relationshipScores.compositeHousePlacements ?? 'N/A'}\n\nAstrological Factors:\n${formattedAstrology}\n\nContext for ${userAName}:\n${contextA}\n\nContext for ${userBName}:\n${contextB}`;
+
+  async function callPanel(task) {
+    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.`;
+    const userPrompt = `${baseInfo}\n\nTASK:\n${task}`;
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
+    return response.choices[0].message.content.trim();
+  }
+
+  const shortSynopsis = await callPanel(
+    `In about 100 words, give a headline summary focusing on the top 2-3 synastry drivers.`
+  );
+  const viewA = await callPanel(
+    `Around 110 words from ${userAName}'s perspective. Focus on how their chart influences the relationship (A→B synastry only).`
+  );
+  const viewB = await callPanel(
+    `Around 110 words from ${userBName}'s perspective. Focus on how their chart influences the relationship (B→A synastry only).`
+  );
+  const composite = await callPanel(
+    `About 160 words analyzing this relationship from the composite chart viewpoint.`
+  );
+  const fullAnalysis = await callPanel(
+    `Using the short synopsis and both partner perspectives above, write a cohesive 300-450 word consultation.`
+  );
+
+  return { shortSynopsis, viewA, viewB, composite, fullAnalysis };
+}
+
 
 
 
@@ -1243,3 +1286,4 @@ Generate a focused horoscope interpretation for these specific transits.`;
     horoscopeText: completion.choices[0].message.content.trim()
   };
 }
+
