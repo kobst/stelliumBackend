@@ -368,51 +368,73 @@ async function fetchAllContextsForUser(userId, userName, relationshipCategories)
 
 function formatAstrologicalDetailsForLLM(categoryDetails, userAName, userBName) {
   if (!categoryDetails || Object.keys(categoryDetails).length === 0) {
-    return "No specific astrological details available for this category in the relationship data.";
+    return {
+      synastryAspects: "No synastry aspects available for this category.",
+      synastryHousePlacements: "No synastry house placements available for this category.",
+      compositeAspects: "No composite aspects available for this category.",
+      compositeHousePlacements: "No composite house placements available for this category."
+    };
   }
-  let detailsString = "";
+
+  let synastryAspects = "";
+  let synastryHousePlacements = "";
+  let compositeAspects = "";
+  let compositeHousePlacements = "";
 
   if (categoryDetails.synastry && categoryDetails.synastry.matchedAspects && categoryDetails.synastry.matchedAspects.length > 0) {
-    detailsString += `Synastry Aspects (interactions between ${userAName}'s and ${userBName}'s charts):\n`;
+    synastryAspects = `Synastry Aspects (interactions between ${userAName}'s and ${userBName}'s charts):\n`;
     categoryDetails.synastry.matchedAspects.forEach(aspect => {
-      detailsString += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score})\n`;
+      synastryAspects += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score})\n`;
     });
-    detailsString += "\n";
+  } else {
+    synastryAspects = "No synastry aspects found for this category.";
   }
 
   if (categoryDetails.composite && categoryDetails.composite.matchedAspects && categoryDetails.composite.matchedAspects.length > 0) {
-    detailsString += `Composite Chart Aspects (the relationship's own chart):\n`;
+    compositeAspects = `Composite Chart Aspects (the relationship's own chart):\n`;
     categoryDetails.composite.matchedAspects.forEach(aspect => {
-      detailsString += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score}, Type: ${aspect.scoreType})\n     Description: ${aspect.description}\n`;
+      compositeAspects += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score}, Type: ${aspect.scoreType})\n     Description: ${aspect.description}\n`;
     });
-    detailsString += "\n";
+  } else {
+    compositeAspects = "No composite aspects found for this category.";
   }
   
   if (categoryDetails.synastryHousePlacements) {
-    detailsString += `Synastry House Placements:\n`;
+    synastryHousePlacements = `Synastry House Placements:\n`;
     if (categoryDetails.synastryHousePlacements.AinB && categoryDetails.synastryHousePlacements.AinB.length > 0) {
-      detailsString += `  ${userAName}'s planets in ${userBName}'s houses:\n`;
+      synastryHousePlacements += `  ${userAName}'s planets in ${userBName}'s houses:\n`;
       categoryDetails.synastryHousePlacements.AinB.forEach(p => {
-        detailsString += `    - ${p.description} (Points: ${p.points}, Reason: ${p.reason})\n`;
+        synastryHousePlacements += `    - ${p.description} (Points: ${p.points}, Reason: ${p.reason})\n`;
       });
     }
     if (categoryDetails.synastryHousePlacements.BinA && categoryDetails.synastryHousePlacements.BinA.length > 0) {
-      detailsString += `  ${userBName}'s planets in ${userAName}'s houses:\n`;
+      synastryHousePlacements += `  ${userBName}'s planets in ${userAName}'s houses:\n`;
       categoryDetails.synastryHousePlacements.BinA.forEach(p => {
-        detailsString += `    - ${p.description} (Points: ${p.points}, Reason: ${p.reason})\n`;
+        synastryHousePlacements += `    - ${p.description} (Points: ${p.points}, Reason: ${p.reason})\n`;
       });
     }
-    detailsString += "\n";
+    if (!synastryHousePlacements.includes(' - ')) {
+      synastryHousePlacements += "No specific house placements found for this category.\n";
+    }
+  } else {
+    synastryHousePlacements = "No synastry house placements found for this category.";
   }
 
   if (categoryDetails.compositeHousePlacements && categoryDetails.compositeHousePlacements.length > 0) {
-    detailsString += `Composite Chart House Placements:\n`;
+    compositeHousePlacements = `Composite Chart House Placements:\n`;
     categoryDetails.compositeHousePlacements.forEach(p => {
-      detailsString += `  - ${p.description} (Points: ${p.points}, Reason: ${p.reason}, Type: ${p.type})\n`;
+      compositeHousePlacements += `  - ${p.description} (Points: ${p.points}, Reason: ${p.reason}, Type: ${p.type})\n`;
     });
-    detailsString += "\n";
+  } else {
+    compositeHousePlacements = "No composite house placements found for this category.";
   }
-  return detailsString || "No specific astrological details parsed for this category.";
+
+  return {
+    synastryAspects: synastryAspects.trim(),
+    synastryHousePlacements: synastryHousePlacements.trim(),
+    compositeAspects: compositeAspects.trim(),
+    compositeHousePlacements: compositeHousePlacements.trim()
+  };
 }
 
 async function executeProcessRelationshipAnalysis(compositeChartId: string, userA: any, userB: any) {
@@ -529,7 +551,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
               const relationshipAstrologyDetails = relationshipAnalysis.debug.categories[categoryValue] || {};
               const contextA = contextsUserA[categoryValue] || "No specific context found for User A in this category.";
               const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
-              const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
+              const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
               // Generate panel analyses
               const panels = await getRelationshipCategoryPanels(
@@ -537,13 +559,21 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
                   userBName,
                   categoryDisplayName,
                   relationshipScoresForCategory,
-                  formattedAstrology,
+                  astrologicalDetails,
                   contextA,
                   contextB
               );
 
+              // Create combined string for storage compatibility
+              const combinedAstrology = [
+                astrologicalDetails.synastryAspects,
+                astrologicalDetails.synastryHousePlacements,
+                astrologicalDetails.compositeAspects,
+                astrologicalDetails.compositeHousePlacements
+              ].filter(section => section && !section.startsWith('No ')).join('\n\n');
+
               categoryAnalysis[categoryValue] = {
-                relevantPosition: formattedAstrology,
+                relevantPosition: combinedAstrology || "No specific astrological details parsed for this category.",
                 panels,
                 generatedAt: new Date()
               };
@@ -565,33 +595,77 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             try {
               const analysisToVectorize = categoryAnalysis[categoryValue] || existingAnalysis;
               const relationshipAstrologyDetails = relationshipAnalysis.debug.categories[categoryValue] || {};
-              const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
+              const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
               
               console.log(`🔸 Starting vectorization for ${categoryDisplayName}`);
-              const richDescription = formattedAstrology ?
-                `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
+              // Create combined description from structured data
+              const combinedAstrology = [
+                astrologicalDetails.synastryAspects,
+                astrologicalDetails.synastryHousePlacements,
+                astrologicalDetails.compositeAspects,
+                astrologicalDetails.compositeHousePlacements
+              ].filter(section => section && !section.startsWith('No ')).join('\n\n');
+              
+              const richDescription = combinedAstrology ?
+                `${categoryDisplayName} Analysis\n\n${combinedAstrology}` :
                 `Relationship analysis for ${categoryValue}`;
 
-              console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName}`);
-              const records = await processTextSectionRelationship(
-                analysisToVectorize.panels?.fullAnalysis || analysisToVectorize.interpretation,
-                compositeChartId,
-                richDescription,
-                categoryValue,
-                formattedAstrology
-              );
+              console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName} (all panels)`);
+              
+              // Vectorize all three panels
+              const panels = analysisToVectorize.panels || {};
+              const allRecords = [];
+              
+              // 1. Short Synopsis
+              if (panels.shortSynopsis) {
+                console.log(`🔸 Vectorizing shortSynopsis for ${categoryDisplayName}`);
+                const synopsisRecords = await processTextSectionRelationship(
+                  panels.shortSynopsis,
+                  compositeChartId,
+                  `${categoryDisplayName} - Short Synopsis\n\n${combinedAstrology}`,
+                  `${categoryValue}_synopsis`,
+                  combinedAstrology
+                );
+                if (synopsisRecords) allRecords.push(...synopsisRecords);
+              }
+              
+              // 2. Composite Chart Analysis
+              if (panels.composite) {
+                console.log(`🔸 Vectorizing composite for ${categoryDisplayName}`);
+                const compositeRecords = await processTextSectionRelationship(
+                  panels.composite,
+                  compositeChartId,
+                  `${categoryDisplayName} - Composite Chart Analysis\n\n${astrologicalDetails.compositeAspects}\n\n${astrologicalDetails.compositeHousePlacements}`,
+                  `${categoryValue}_composite`,
+                  `${astrologicalDetails.compositeAspects}\n\n${astrologicalDetails.compositeHousePlacements}`
+                );
+                if (compositeRecords) allRecords.push(...compositeRecords);
+              }
+              
+              // 3. Full Analysis
+              if (panels.fullAnalysis) {
+                console.log(`🔸 Vectorizing fullAnalysis for ${categoryDisplayName}`);
+                const fullRecords = await processTextSectionRelationship(
+                  panels.fullAnalysis,
+                  compositeChartId,
+                  richDescription,
+                  `${categoryValue}_full`,
+                  combinedAstrology
+                );
+                if (fullRecords) allRecords.push(...fullRecords);
+              }
 
-              console.log(`🔸 processTextSectionRelationship returned ${records ? records.length : 0} records for ${categoryDisplayName}`);
+              console.log(`🔸 processTextSectionRelationship returned ${allRecords.length} total records for ${categoryDisplayName}`);
 
-              if (records && records.length > 0) {
-                console.log(`🔸 Calling upsertRecords for ${categoryDisplayName} with ${records.length} records`);
-                await upsertRecords(records, compositeChartId);
+              if (allRecords.length > 0) {
+                console.log(`🔸 Calling upsertRecords for ${categoryDisplayName} with ${allRecords.length} records`);
+                await upsertRecords(allRecords, compositeChartId);
                 console.log(`🔸 upsertRecords completed for ${categoryDisplayName}`);
                 
                 await updateRelationshipAnalysisVectorization(compositeChartId, {
                   [`vectorizationStatus.categories.${categoryValue}`]: true
                 });
-                console.log(`✅ Category ${categoryDisplayName} vectorized successfully`);
+                console.log(`✅ Category ${categoryDisplayName} vectorized successfully (all panels)`);
               } else {
                 console.warn(`⚠️ No records generated for category ${categoryDisplayName}`);
                 await updateRelationshipAnalysisVectorization(compositeChartId, {
@@ -684,7 +758,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             const relationshipAstrologyDetails = latestAnalysisData?.debug?.categories?.[categoryValue] || {};
             const contextA = contextsUserA[categoryValue] || "No specific context found for User A in this category.";
             const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
-            const formattedAstrology = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
+            const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
             // Generate panel analyses
             const panels = await getRelationshipCategoryPanels(
@@ -692,13 +766,21 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
                 userBName,
                 categoryDisplayName,
                 relationshipScoresForCategory,
-                formattedAstrology,
+                astrologicalDetails,
                 contextA,
                 contextB
             );
 
+            // Create combined string for storage compatibility
+            const combinedAstrology = [
+              astrologicalDetails.synastryAspects,
+              astrologicalDetails.synastryHousePlacements,
+              astrologicalDetails.compositeAspects,
+              astrologicalDetails.compositeHousePlacements
+            ].filter(section => section && !section.startsWith('No ')).join('\n\n');
+
             categoryAnalysis[categoryValue] = {
-              relevantPosition: formattedAstrology,
+              relevantPosition: combinedAstrology || "No specific astrological details parsed for this category.",
               panels,
               generatedAt: new Date()
             };
@@ -713,24 +795,59 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             // Vectorize - but don't fail the whole task if this fails
             try {
               console.log(`🔸 Starting vectorization for ${categoryDisplayName} (retry)`);
-              const richDescription = formattedAstrology ?
-                `${categoryDisplayName} Analysis\n\n${formattedAstrology}` :
+              const richDescription = combinedAstrology ?
+                `${categoryDisplayName} Analysis\n\n${combinedAstrology}` :
                 `Relationship analysis for ${categoryValue}`;
 
-              console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName} (retry)`);
-              const records = await processTextSectionRelationship(
-                panels.fullAnalysis,
-                compositeChartId,
-                richDescription,
-                categoryValue,
-                formattedAstrology
-              );
+              console.log(`🔸 Calling processTextSectionRelationship for ${categoryDisplayName} (retry - all panels)`);
+              
+              // Vectorize all three panels
+              const allRecords = [];
+              
+              // 1. Short Synopsis
+              if (panels.shortSynopsis) {
+                console.log(`🔸 Vectorizing shortSynopsis for ${categoryDisplayName} (retry)`);
+                const synopsisRecords = await processTextSectionRelationship(
+                  panels.shortSynopsis,
+                  compositeChartId,
+                  `${categoryDisplayName} - Short Synopsis\n\n${combinedAstrology}`,
+                  `${categoryValue}_synopsis`,
+                  combinedAstrology
+                );
+                if (synopsisRecords) allRecords.push(...synopsisRecords);
+              }
+              
+              // 2. Composite Chart Analysis
+              if (panels.composite) {
+                console.log(`🔸 Vectorizing composite for ${categoryDisplayName} (retry)`);
+                const compositeRecords = await processTextSectionRelationship(
+                  panels.composite,
+                  compositeChartId,
+                  `${categoryDisplayName} - Composite Chart Analysis\n\n${astrologicalDetails.compositeAspects}\n\n${astrologicalDetails.compositeHousePlacements}`,
+                  `${categoryValue}_composite`,
+                  `${astrologicalDetails.compositeAspects}\n\n${astrologicalDetails.compositeHousePlacements}`
+                );
+                if (compositeRecords) allRecords.push(...compositeRecords);
+              }
+              
+              // 3. Full Analysis
+              if (panels.fullAnalysis) {
+                console.log(`🔸 Vectorizing fullAnalysis for ${categoryDisplayName} (retry)`);
+                const fullRecords = await processTextSectionRelationship(
+                  panels.fullAnalysis,
+                  compositeChartId,
+                  richDescription,
+                  `${categoryValue}_full`,
+                  combinedAstrology
+                );
+                if (fullRecords) allRecords.push(...fullRecords);
+              }
 
-              console.log(`🔸 processTextSectionRelationship returned ${records ? records.length : 0} records for ${categoryDisplayName} (retry)`);
+              console.log(`🔸 processTextSectionRelationship returned ${allRecords.length} total records for ${categoryDisplayName} (retry)`);
 
-              if (records && records.length > 0) {
-                console.log(`🔸 Calling upsertRecords for ${categoryDisplayName} with ${records.length} records (retry)`);
-                await upsertRecords(records, compositeChartId);
+              if (allRecords.length > 0) {
+                console.log(`🔸 Calling upsertRecords for ${categoryDisplayName} with ${allRecords.length} records (retry)`);
+                await upsertRecords(allRecords, compositeChartId);
                 console.log(`🔸 upsertRecords completed for ${categoryDisplayName} (retry)`);
                 
                 await updateRelationshipAnalysisVectorization(compositeChartId, {
@@ -763,8 +880,6 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
               relevantPosition: "Failed to generate",
               panels: {
                 shortSynopsis: `Error: ${error.message}`,
-                viewA: "",
-                viewB: "",
                 composite: "",
                 fullAnalysis: ""
               },

@@ -913,16 +913,30 @@ export async function getRelationshipCategoryPanels(
   userBName: string,
   categoryDisplayName: string,
   relationshipScores: any,
-  formattedAstrology: string,
+  astrologicalDetails: any,
   contextA: string,
   contextB: string
 ) {
-  const baseInfo = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}\n\nScores:\n- Overall: ${relationshipScores.overall ?? 'N/A'}\n- Synastry: ${relationshipScores.synastry ?? 'N/A'}\n- Composite: ${relationshipScores.composite ?? 'N/A'}\n- Synastry Houses: ${relationshipScores.synastryHousePlacements ?? 'N/A'}\n- Composite Houses: ${relationshipScores.compositeHousePlacements ?? 'N/A'}\n\nAstrological Factors:\n${formattedAstrology}\n\nContext for ${userAName}:\n${contextA}\n\nContext for ${userBName}:\n${contextB}`;
+  const client = await getOpenAIClient();
+  
+  // Short Synopsis - focus on synastry only
+  const shortSynopsis = await (async () => {
+    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation. Your tone is warm, direct, and insightful. Write concisely and avoid filler.`;
+    
+    const userPrompt = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
-  async function callPanel(task: string) {
-    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.`;
-    const userPrompt = `${baseInfo}\n\nTASK:\n${task}`;
-    const client = await getOpenAIClient();
+SYNASTRY SCORES:
+- Synastry: ${relationshipScores.synastry ?? 'N/A'}
+- Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? 'N/A'}
+
+SYNASTRY ASPECTS:
+${astrologicalDetails.synastryAspects}
+
+SYNASTRY HOUSE PLACEMENTS:
+${astrologicalDetails.synastryHousePlacements}
+
+TASK: In exactly 100 words, write a headline summary focusing on the top 2-3 most significant synastry dynamics that define this relationship area. Be specific about which aspects create the strongest chemistry or challenges.`;
+
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -931,25 +945,106 @@ export async function getRelationshipCategoryPanels(
       ]
     });
     return response.choices[0].message.content.trim();
-  }
+  })();
 
-  const shortSynopsis = await callPanel(
-    `In about 100 words, give a headline summary focusing on the top 2-3 synastry drivers.`
-  );
-  const viewA = await callPanel(
-    `Around 110 words from ${userAName}'s perspective. Focus on how their chart influences the relationship (A→B synastry only).`
-  );
-  const viewB = await callPanel(
-    `Around 110 words from ${userBName}'s perspective. Focus on how their chart influences the relationship (B→A synastry only).`
-  );
-  const composite = await callPanel(
-    `About 160 words analyzing this relationship from the composite chart viewpoint.`
-  );
-  const fullAnalysis = await callPanel(
-    `Using the short synopsis and both partner perspectives above, write a cohesive 300-450 word consultation.`
-  );
+  // Composite Chart Interpretation
+  const composite = await (async () => {
+    const systemPrompt = `You are StelliumAI, an expert in composite chart interpretation. Focus on the relationship as its own entity - the "third being" created when two people come together.`;
+    
+    const userPrompt = `Composite Chart Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
-  return { shortSynopsis, viewA, viewB, composite, fullAnalysis };
+COMPOSITE SCORES:
+- Composite: ${relationshipScores.composite ?? 'N/A'}
+- Composite House Placements: ${relationshipScores.compositeHousePlacements ?? 'N/A'}
+
+COMPOSITE ASPECTS:
+${astrologicalDetails.compositeAspects}
+
+COMPOSITE HOUSE PLACEMENTS:
+${astrologicalDetails.compositeHousePlacements}
+
+TASK: In 160 words, analyze how the composite chart reveals the relationship's inherent nature and potential in this area. What is the relationship's "personality" regarding ${categoryDisplayName}? Focus exclusively on composite chart dynamics.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userPrompt }
+      ]
+    });
+    return response.choices[0].message.content.trim();
+  })();
+
+  // Full Analysis - comprehensive integration
+  const fullAnalysis = await (async () => {
+    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
+
+You interpret synastry and composite chart data to help couples understand their relational dynamics.
+
+Your tone is warm, direct, emotionally intelligent, and empowering.
+
+You do not list placements or aspects a la carte — instead, weave a holistic story that integrates:
+- The inter-chart synastry dynamics between each person's birth chart (synastry and house overlays) most importantly
+- The individual birth chart traits of both people
+- The composite chart dynamics (composite and compositehouse overlays) only if they are relevant if necesary
+- Strengths, tension points, and advice for navigating them
+
+- Do not preface your response with any unnecessary filler or preamble. 
+- Do not restate the specific category name in your response.
+- Be direct and avoid overly elaborate phrasing. 
+- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
+
+Every interpretation should reflect how the unique energies between the two people blend or contrast in this relationship area. Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.`;
+
+    const userPrompt = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
+
+I. SCORES:
+- Overall Score: ${relationshipScores.overall ?? "N/A"}
+- Synastry Score: ${relationshipScores.synastry ?? "N/A"}
+- Composite Score: ${relationshipScores.composite ?? "N/A"}
+- Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? "N/A"}
+- Composite House Placements: ${relationshipScores.compositeHousePlacements ?? "N/A"}
+
+II. ASTROLOGICAL FACTORS FOR "${categoryDisplayName}":
+SYNASTRY ASPECTS:
+${astrologicalDetails.synastryAspects}
+
+SYNASTRY HOUSE PLACEMENTS:
+${astrologicalDetails.synastryHousePlacements}
+
+COMPOSITE ASPECTS:
+${astrologicalDetails.compositeAspects}
+
+COMPOSITE HOUSE PLACEMENTS:
+${astrologicalDetails.compositeHousePlacements}
+
+III. CONTEXT FOR ${userAName.toUpperCase()}:
+${contextA}
+
+IV. CONTEXT FOR ${userBName.toUpperCase()}:
+${contextB}
+
+TASK:
+Please write 3–5 paragraphs addressing the following:
+1. How does ${userAName}'s nature interact with the dynamics of "${categoryDisplayName}" in this relationship?
+2. How does ${userBName}'s nature interact with these same dynamics?
+3. What are the core strengths in this area?
+4. What are the potential growth edges or friction points?
+5. What advice would help them support or evolve this aspect of their connection?
+
+Write a synthesis, not a list. Use astrological data and psychological insight to offer grounded, helpful guidance.`;
+
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt.trim() },
+        { role: "user", content: userPrompt.trim() }
+      ]
+    });
+    return response.choices[0].message.content;
+  })();
+
+  return { shortSynopsis, composite, fullAnalysis };
 }
 
 
