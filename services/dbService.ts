@@ -43,6 +43,23 @@ let db: Db;
 let transitsCollection: Collection<any>;
 let aspectsCollection: Collection<any>;
 let retrogradesCollection: Collection<any>;
+/**
+ * Users Collection - TESTING PHASE ONLY
+ * 
+ * Current Implementation:
+ * - Used for testing and development purposes
+ * - Email field serves as unique identifier (with upsert fallback)
+ * - Not true user accounts - represents birth chart data
+ * - Some entries share emails for testing different charts
+ * 
+ * Future Architecture:
+ * - Will integrate with Firebase Auth or AWS Cognito
+ * - User accounts will have auth provider IDs
+ * - Birth charts will be separated into their own collection
+ * - Support for anonymous charts and multiple charts per user
+ * 
+ * See DATABASE.md for complete collection documentation
+ */
 let userCollection: Collection<any>;
 let birthChartInterpretations: Collection<any>;
 let userTransitAspectsCollection: Collection<any>;
@@ -375,6 +392,22 @@ export async function getCompositeCharts(): Promise<any[]> {
     }
 }
 
+/**
+ * Save a user to the database
+ * 
+ * IMPORTANT: This is a TESTING implementation
+ * - Currently uses email as unique identifier
+ * - Automatically updates if email already exists (upsert behavior)
+ * - Allows multiple test charts with same email
+ * 
+ * Future implementation will:
+ * - Use auth provider IDs (Firebase/Cognito)
+ * - Separate user accounts from birth chart data
+ * - Support proper user authentication
+ * 
+ * @param user - User object with email, name, birth data, and chart
+ * @returns Insert result or update result if email exists
+ */
 export async function saveUser(user: any): Promise<any> {
     try {
         // Try to insert the user

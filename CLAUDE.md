@@ -93,3 +93,12 @@ The codebase now includes significant performance improvements for workflow proc
 - **Unified Operations**: Generation and vectorization steps are combined to reduce redundant operations
 - **RAG Integration**: Topic analysis incorporates previously vectorized content for enhanced coherence
 - **Memory Management**: Strategic garbage collection prevents memory leaks during long operations
+
+### Database Architecture
+- **MongoDB Database**: Named `stellium` with 17 collections
+- **Complete Documentation**: See `DATABASE.md` for detailed collection schemas and relationships
+- **User Collection Note**: Currently in testing phase - uses email as identifier with upsert behavior
+  - Not true user accounts, represents birth chart data
+  - Future will integrate Firebase/Cognito authentication
+  - Will separate user accounts from birth chart storage
+- **Index Management**: Graceful handling of duplicate key errors with fallback strategies
