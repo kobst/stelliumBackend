@@ -7,6 +7,15 @@ provider:
   runtime: nodejs20.x 
   stage: dev
   region: us-east-1
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - ssm:GetParameter
+            - ssm:GetParameters
+          Resource:
+            - arn:aws:ssm:us-east-1:*:parameter/stellium/*
 
 functions:
   app:
@@ -16,6 +25,7 @@ functions:
     architecture: arm64
     environment:
       NODE_OPTIONS: "--expose-gc --max-old-space-size=1536"
+      AWS_REGION: us-east-1
     layers:
       - arn:aws:lambda:us-east-1:547054413317:layer:stellium-sweph-layer:4
     events:

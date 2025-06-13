@@ -1,69 +1,131 @@
-// @ts-nocheck
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient, ObjectId, Db, Collection } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
+import { getMongoConnectionString } from './secretsService.js';
 
-const connection_string = process.env.MONGO_CONNECTION_STRING
-const client = new MongoClient(connection_string);
+let connection_string: string;
 
-client.connect();
-const db = client.db('stellium');
-const transitsCollection = db.collection('daily_transits');
-const aspectsCollection = db.collection('daily_aspects');
-const retrogradesCollection = db.collection('retrogrades');
-const userCollection = db.collection('users');
-const birthChartInterpretations = db.collection('user_birth_chart_interpretation');
-const userTransitAspectsCollection = db.collection('user_transit_aspects');
-const dailyTransitInterpretations = db.collection('daily_transit_interpretations');
-const weeklyTransitInterpretations = db.collection('weekly_transit_interpretations');
-const compositeChartCollection = db.collection('composite_charts');
-const compositeChartInterpretations = db.collection('composite_chart_interpretations');
-const relationshipLogCollection = db.collection('relationship_logs');
-const birthChartAnalysisCollection = db.collection('birth_chart_analysis');
-const relationshipAnalysisCollection = db.collection('relationship_analysis');
-const chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth_chart_analysis');
-const chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
-const transitEphemerisCollection = db.collection('transit_ephemeris');
-const horoscopesCollection = db.collection('horoscopes');
+// Connection promise to ensure single connection attempt
+let connectionPromise: Promise<MongoClient> | null = null;
+
+async function getClient(): Promise<MongoClient> {
+  if (!connectionPromise) {
+    if (!connection_string) {
+      connection_string = await getMongoConnectionString();
+    }
+    const clientWithConnectionString = new MongoClient(connection_string, {
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+      maxIdleTimeMS: 30000,
+      minPoolSize: 2,
+      retryWrites: true,
+      retryReads: true
+    });
+    connectionPromise = clientWithConnectionString.connect();
+  }
+  return connectionPromise;
+}
+// Database and collection getters with proper connection handling
+let db: Db;
+let transitsCollection: Collection;
+let aspectsCollection: Collection;
+let retrogradesCollection: Collection;
+let userCollection: Collection;
+let birthChartInterpretations: Collection;
+let userTransitAspectsCollection: Collection;
+let dailyTransitInterpretations: Collection;
+let weeklyTransitInterpretations: Collection;
+let compositeChartCollection: Collection;
+let compositeChartInterpretations: Collection;
+let relationshipLogCollection: Collection;
+let birthChartAnalysisCollection: Collection;
+let relationshipAnalysisCollection: Collection;
+let chatThreadCollectionBirthChartAnalysis: Collection;
+let chatThreadRelationshipAnalysisCollection: Collection;
+let transitEphemerisCollection: Collection;
+let horoscopesCollection: Collection;
+
+async function getDb(): Promise<Db> {
+  if (!db) {
+    const client = await getClient();
+    db = client.db('stellium');
+    
+    // Initialize collections
+    transitsCollection = db.collection('daily_transits');
+    aspectsCollection = db.collection('daily_aspects');
+    retrogradesCollection = db.collection('retrogrades');
+    userCollection = db.collection('users');
+    birthChartInterpretations = db.collection('user_birth_chart_interpretation');
+    userTransitAspectsCollection = db.collection('user_transit_aspects');
+    dailyTransitInterpretations = db.collection('daily_transit_interpretations');
+    weeklyTransitInterpretations = db.collection('weekly_transit_interpretations');
+    compositeChartCollection = db.collection('composite_charts');
+    compositeChartInterpretations = db.collection('composite_chart_interpretations');
+    relationshipLogCollection = db.collection('relationship_logs');
+    birthChartAnalysisCollection = db.collection('birth_chart_analysis');
+    relationshipAnalysisCollection = db.collection('relationship_analysis');
+    chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth_chart_analysis');
+    chatThreadRelationshipAnalysisCollection = db.collection('chat_threads_relationship_analysis');
+    transitEphemerisCollection = db.collection('transit_ephemeris');
+    horoscopesCollection = db.collection('horoscopes');
+  }
+  return db;
+}
 // const synastryChartInterpretations = db.collection('synastry_chart_interpretations');
 
-export async function initializeDatabase() {
+export async function initializeDatabase(): Promise<void> {
     try {
-        console.log("Initializing database");
-        // Create indexes
-    //     await userCollection.createIndex({ email: 1 }, { unique: true });
+        console.log("Initializing database with connection pooling");
         
-    //     // You could also add schema validation if desired
-    //     await db.command({
-    //         collMod: 'users',
-    //         validator: {
-    //             $jsonSchema: {
-    //                 bsonType: 'object',
-    //                 required: ['email', 'firstName', 'lastName'],
-    //                 properties: {
-    //                     email: {
-    //                         bsonType: 'string',
-    //                         pattern: '^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$'
-    //                     },
-    //                     firstName: { bsonType: 'string' },
-    //                     lastName: { bsonType: 'string' },
-    //                     dateOfBirth: { bsonType: 'date' },
-    //                     placeOfBirth: { bsonType: 'string' },
-    //                     birthChart: { bsonType: 'object' }
-    //                 }
-    //             }
-    //         }
-    //     });
-
-    //     console.log('Database initialized successfully');
+        // Ensure database connection is established
+        await getDb();
+        
+        // Create essential indexes for performance
+        console.log("Creating database indexes...");
+        
+        // User collection indexes
+        await userCollection.createIndex({ email: 1 }, { unique: true });
+        await userCollection.createIndex({ _id: 1, email: 1 });
+        
+        // Transit collection indexes
+        await transitsCollection.createIndex({ date: 1 });
+        await aspectsCollection.createIndex({ "date_range.0": 1, "date_range.1": 1 });
+        await retrogradesCollection.createIndex({ "date_range.0": 1, "date_range.1": 1 });
+        
+        // Birth chart analysis indexes
+        await birthChartAnalysisCollection.createIndex({ userId: 1 });
+        await birthChartAnalysisCollection.createIndex({ "debug.inputSummary.userId": 1 });
+        
+        // Relationship analysis indexes
+        await relationshipAnalysisCollection.createIndex({ "debug.inputSummary.compositeChartId": 1 });
+        await relationshipAnalysisCollection.createIndex({ "debug.inputSummary.userAId": 1, "debug.inputSummary.userBId": 1 });
+        
+        // Composite chart indexes
+        await compositeChartCollection.createIndex({ userAId: 1, userBId: 1 });
+        await compositeChartCollection.createIndex({ _id: 1 });
+        
+        // Chat thread indexes
+        await chatThreadCollectionBirthChartAnalysis.createIndex({ userId: 1 });
+        await chatThreadRelationshipAnalysisCollection.createIndex({ compositeChartId: 1 });
+        
+        // Horoscope collection indexes
+        await horoscopesCollection.createIndex({ userId: 1, date: 1 });
+        
+        // Transit ephemeris indexes
+        await transitEphemerisCollection.createIndex({ date: 1 });
+        
+        console.log('Database initialized successfully with indexes');
     } catch (error) {
         console.error('Error initializing database:', error);
+        throw error;
     }
 }
 
 
 
 
-export async function getDailyTransits (date) {
+export async function getDailyTransits(date: string | Date): Promise<any[]> {
+    await getDb();
     const inputDate = new Date(date);
     const closestTransit = await transitsCollection.findOne({ date: { $gte: inputDate } }, { sort: { date: 1 } });
     return closestTransit ? closestTransit.transits : [];

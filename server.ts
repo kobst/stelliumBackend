@@ -1,7 +1,6 @@
-// @ts-nocheck
 import dotenv from 'dotenv';
-import express from 'express';
-import serverless from 'serverless-http'
+import express, { Request, Response, NextFunction } from 'express';
+import serverless from 'serverless-http';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import indexRoutes from './routes/indexRoutes.js'; 
@@ -14,7 +13,7 @@ const app = express();
 // Initialize database connection
 let dbInitialized = false;
 
-const initDbMiddleware = async (req, res, next) => {
+const initDbMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   if (!dbInitialized) {
     try {
       await initializeDatabase();
@@ -50,7 +49,7 @@ const corsOptions = {
 app.use(cors(corsOptions));
 
 // Add explicit CORS headers for Lambda compatibility
-app.use((req, res, next) => {
+app.use((req: Request, res: Response, next: NextFunction) => {
   const origin = req.headers.origin;
   const allowedOrigins = [
     'https://main.d36g3neun79jnt.amplifyapp.com',
@@ -73,7 +72,8 @@ app.use((req, res, next) => {
   // Handle preflight OPTIONS requests
   if (req.method === 'OPTIONS') {
     console.log('Handling OPTIONS preflight request for:', req.url);
-    return res.status(200).end();
+    res.status(200).end();
+    return;
   }
   
   next();
@@ -87,7 +87,7 @@ app.use(initDbMiddleware);
 app.use('/', indexRoutes);
 
 // Error handler
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
   res.status(500).json({ error: err.message || 'Internal Server Error' });
 });
@@ -95,11 +95,11 @@ app.use((err, req, res, next) => {
 // Create serverless handler with explicit CORS support
 export const handler = serverless(app, {
   binary: false,
-  request: (request, event, context) => {
+  request: (request: any, event: any, context: any) => {
     // Log for debugging
     console.log('Lambda event:', JSON.stringify(event, null, 2));
   },
-  response: (response, event, context) => {
+  response: (response: any, event: any, context: any) => {
     // Ensure CORS headers are always present in Lambda response
     if (!response.headers) {
       response.headers = {};

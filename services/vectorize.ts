@@ -1,28 +1,37 @@
-// @ts-nocheck
 // Import necessary libraries
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { encoding_for_model } from '@dqbd/tiktoken';
 import OpenAI from "openai";
 import { Pinecone } from '@pinecone-database/pinecone';  
-import pkg from '@pinecone-database/pinecone';
 import { BroadTopicsEnum,  subTopicSearchPrompts } from '../utilities/constants.js';
 import { RELATIONSHIP_CATEGORY_PROMPTS } from '../utilities/relationshipScoringConstants.js';
-// const { PineconeClient } = pkg;
-// import { PineconeClient } from '@pinecone-database/pinecone';
+import { getOpenAIApiKey, getPineconeApiKey } from './secretsService.js';
 
-  // Initialize OpenAI
-const apiKey = process.env.OPENAI_API_KEY
-const openAiClient = new OpenAI({ 
-    apiKey: apiKey,
-    timeout: 30000, // 30 second timeout
-    maxRetries: 2   // Limit retries to prevent connection buildup
-});
+// Lazy initialization of API clients
+let openAiClient: OpenAI;
+let pinecone: Pinecone;
+let index: any;
 
-// Initialize Pinecone with connection limits
-const pinecone = new Pinecone({
-    apiKey: process.env.PINECONE_API_KEY
-});
-const index = pinecone.index('stellium-test-index');
+async function getOpenAIClient(): Promise<OpenAI> {
+  if (!openAiClient) {
+    const apiKey = await getOpenAIApiKey();
+    openAiClient = new OpenAI({ 
+      apiKey: apiKey,
+      timeout: 30000, // 30 second timeout
+      maxRetries: 2   // Limit retries to prevent connection buildup
+    });
+  }
+  return openAiClient;
+}
+
+async function getPineconeIndex() {
+  if (!index) {
+    const apiKey = await getPineconeApiKey();
+    pinecone = new Pinecone({ apiKey });
+    index = pinecone.index('stellium-test-index');
+  }
+  return index;
+}
 
 
 // Define the splitText function using RecursiveCharacterTextSplitter
