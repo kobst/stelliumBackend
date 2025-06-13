@@ -921,7 +921,11 @@ export async function getRelationshipCategoryPanels(
   
   // Short Synopsis - focus on synastry only
   const shortSynopsis = await (async () => {
-    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation. Your tone is warm, direct, and insightful. Write concisely and avoid filler.`;
+    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation. Your tone is warm, direct, and insightful. Write concisely and avoid filler. Do not preface your response with any unnecessary filler or preamble. 
+    - Do not restate the specific category name in your response.
+    - Be direct and avoid overly elaborate phrasing. 
+    - Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
+    - Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.`;
     
     const userPrompt = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
@@ -935,7 +939,8 @@ ${astrologicalDetails.synastryAspects}
 SYNASTRY HOUSE PLACEMENTS:
 ${astrologicalDetails.synastryHousePlacements}
 
-TASK: In exactly 100 words, write a headline summary focusing on the top 2-3 most significant synastry dynamics that define this relationship area. Be specific about which aspects create the strongest chemistry or challenges.`;
+TASK: Write a headline summary no longer than a paragraphfocusing on the top 2-3 most significant synastry dynamics that define this relationship area. Be specific about which aspects create the strongest chemistry or challenges.
+Aim for a response of at least 100 words for this category.`;
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
@@ -979,7 +984,7 @@ TASK: In 160 words, analyze how the composite chart reveals the relationship's i
   const fullAnalysis = await (async () => {
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
 
-You interpret synastry and composite chart data to help couples understand their relational dynamics.
+You interpret synastry data to help couples understand their relational dynamics. If necessary, you can also use composite chart data to help fill out the analysis.
 
 Your tone is warm, direct, emotionally intelligent, and empowering.
 

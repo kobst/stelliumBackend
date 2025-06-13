@@ -150,7 +150,8 @@ export async function processInterpretationSection(userId: string, heading: stri
       }
   
       // Upsert all records at once
-      await index.upsert(records, { namespace: userId });
+      const pineconeIndex = await getPineconeIndex();
+      await pineconeIndex.upsert(records, { namespace: userId });
   
       console.log(`Successfully processed and upserted ${chunks.length} chunks for user ${userId}, heading ${heading}`);
     } catch (error: unknown) {
@@ -247,7 +248,8 @@ export async function processUserQueryAndAnswer(userId: string, query: string, a
       });
     }
 
-    await index.upsert(records, { namespace: userId });
+    const pineconeIndex = await getPineconeIndex();
+    await pineconeIndex.upsert(records, { namespace: userId });
 
   } catch (error: unknown) {
     console.error("Error in processUserQueryAndAnswer:", error);
@@ -284,7 +286,8 @@ export async function processCompositeChartInterpretationSection(compositeChartI
     }
 
     // Upsert all records at once
-    await index.upsert(records, { namespace: compositeChartId });
+    const pineconeIndex = await getPineconeIndex();
+    await pineconeIndex.upsert(records, { namespace: compositeChartId });
 
     console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
   } catch (error: unknown) {
@@ -337,7 +340,8 @@ export async function processUserQueryRelationship(compositeChartId: string, que
   console.log("User ID:", compositeChartId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);
-    const results = await index.query({
+    const pineconeIndex = await getPineconeIndex();
+    const results = await pineconeIndex.query({
       vector: questionQueryEmbedding,
       topK: 5,
       includeMetadata: true,
@@ -493,12 +497,15 @@ export async function upsertRecords(records: any[], nameSpaceId: string, retries
     try {
       console.log(`Pinecone upsert attempt ${attempt}/${retries} for ${records.length} records`);
       
+      // Ensure Pinecone index is initialized
+      const pineconeIndex = await getPineconeIndex();
+      
       // Add timeout to the upsert operation
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Pinecone upsert timeout after 60 seconds')), 60000)
       );
       
-      const upsertPromise = index.upsert(records, { namespace: nameSpaceId });
+      const upsertPromise = pineconeIndex.upsert(records, { namespace: nameSpaceId });
       
       await Promise.race([upsertPromise, timeoutPromise]);
       
@@ -578,7 +585,8 @@ export async function retrieveTopicContext(userId: string, topic: string): Promi
       const promptEmbedding = await getEmbedding(prompt);
         
         // Query by vector similarity only (topics removed)
-        const vectorResults = await index.query({
+        const pineconeIndex = await getPineconeIndex();
+        const vectorResults = await pineconeIndex.query({
             vector: promptEmbedding,
             topK: 5, // Increased since we're not using topic filtering
             includeMetadata: true,
@@ -614,7 +622,8 @@ export async function getRelationshipCategoryContextForUser(userId: string, rela
     try {
         // Use your existing getEmbedding function
         const embedding = await getEmbedding(prompt);
-        const results = await index.query({
+        const pineconeIndex = await getPineconeIndex();
+        const results = await pineconeIndex.query({
             vector: embedding,
             topK: 5,
             includeMetadata: true,
@@ -647,7 +656,8 @@ export async function processUserQueryForBirthChartAnalysis(userId: string, quer
   console.log("User ID:", userId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);
-    const results = await index.query({
+    const pineconeIndex = await getPineconeIndex();
+    const results = await pineconeIndex.query({
       vector: questionQueryEmbedding,
       topK: numResults, // Consider making this configurable or tuning it
       includeMetadata: true,
@@ -697,7 +707,8 @@ export async function processUserQueryForHoroscopeAnalysis(userId: string, query
   console.log("User ID:", userId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);
-    const results = await index.query({
+    const pineconeIndex = await getPineconeIndex();
+    const results = await pineconeIndex.query({
       vector: questionQueryEmbedding,
       topK: numResults, // Consider making this configurable or tuning it
       includeMetadata: true,
@@ -726,7 +737,8 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId: 
   console.log("Composite Chart ID:", compositeChartId);
   try{
     const questionQueryEmbedding = await getEmbedding(query);
-    const results = await index.query({
+    const pineconeIndex = await getPineconeIndex();
+    const results = await pineconeIndex.query({
       vector: questionQueryEmbedding,
       topK: numResults, // Consider making this configurable or tuning it
       includeMetadata: true,
