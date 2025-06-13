@@ -1,7 +1,19 @@
-// @ts-nocheck
 import { MongoClient, ObjectId, Db, Collection } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 import { getMongoConnectionString } from './secretsService.js';
+import { 
+  UserDocument, 
+  BirthChartAnalysisDocument, 
+  RelationshipAnalysisDocument,
+  CompositeChartDocument,
+  CompositeChartInterpretationDocument,
+  HoroscopeDocument,
+  TransitEphemerisDocument,
+  RelationshipLogDocument,
+  ChatThreadDocument,
+  BirthChartInterpretationDocument
+} from '../types/database.js';
+import { BirthChart, Planet } from '../types/astrology.js';
 
 let connection_string: string;
 
@@ -28,23 +40,23 @@ async function getClient(): Promise<MongoClient> {
 }
 // Database and collection getters with proper connection handling
 let db: Db;
-let transitsCollection: Collection;
-let aspectsCollection: Collection;
-let retrogradesCollection: Collection;
-let userCollection: Collection;
-let birthChartInterpretations: Collection;
-let userTransitAspectsCollection: Collection;
-let dailyTransitInterpretations: Collection;
-let weeklyTransitInterpretations: Collection;
-let compositeChartCollection: Collection;
-let compositeChartInterpretations: Collection;
-let relationshipLogCollection: Collection;
-let birthChartAnalysisCollection: Collection;
-let relationshipAnalysisCollection: Collection;
-let chatThreadCollectionBirthChartAnalysis: Collection;
-let chatThreadRelationshipAnalysisCollection: Collection;
-let transitEphemerisCollection: Collection;
-let horoscopesCollection: Collection;
+let transitsCollection: Collection<any>;
+let aspectsCollection: Collection<any>;
+let retrogradesCollection: Collection<any>;
+let userCollection: Collection<any>;
+let birthChartInterpretations: Collection<any>;
+let userTransitAspectsCollection: Collection<any>;
+let dailyTransitInterpretations: Collection<any>;
+let weeklyTransitInterpretations: Collection<any>;
+let compositeChartCollection: Collection<any>;
+let compositeChartInterpretations: Collection<any>;
+let relationshipLogCollection: Collection<any>;
+let birthChartAnalysisCollection: Collection<any>;
+let relationshipAnalysisCollection: Collection<any>;
+let chatThreadCollectionBirthChartAnalysis: Collection<any>;
+let chatThreadRelationshipAnalysisCollection: Collection<any>;
+let transitEphemerisCollection: Collection<any>;
+let horoscopesCollection: Collection<any>;
 
 async function getDb(): Promise<Db> {
   if (!db) {
@@ -116,7 +128,7 @@ export async function initializeDatabase(): Promise<void> {
         await transitEphemerisCollection.createIndex({ date: 1 });
         
         console.log('Database initialized successfully with indexes');
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error initializing database:', error);
         throw error;
     }
@@ -132,7 +144,7 @@ export async function getDailyTransits(date: string | Date): Promise<any[]> {
     return closestTransit ? closestTransit.transits : [];
 };
 
-export async function getPeriodTransitsObject (startDate, endDate) {
+export async function getPeriodTransitsObject(startDate: string | Date, endDate: string | Date): Promise<Record<string, any[]>> {
     const query = {
         date: {
             $gte: new Date(startDate),
@@ -140,9 +152,9 @@ export async function getPeriodTransitsObject (startDate, endDate) {
         }
     };
     const matchingTransits = await transitsCollection.find(query).toArray();
-    const transitsData = matchingTransits.reduce((acc, transit) => {
+    const transitsData = matchingTransits.reduce((acc: Record<string, any>, transit: any) => {
         const dateKey = transit.date.toISOString();
-        acc[dateKey] = transit.transits.map(planet => ({
+        acc[dateKey] = transit.transits.map((planet: Planet) => ({
             name: planet.name,
             fullDegree: planet.fullDegree,
             normDegree: planet.normDegree,
@@ -158,7 +170,7 @@ export async function getPeriodTransitsObject (startDate, endDate) {
 
 
 // get all transits from the general transit collection for a given date range
-export async function getPeriodTransits (startDate, endDate) {
+export async function getPeriodTransits(startDate: string | Date, endDate: string | Date): Promise<any[]> {
     const start = new Date(startDate);
     start.setDate(start.getDate() - 7); //
     start.setUTCHours(0, 0, 0, 0);
@@ -177,7 +189,7 @@ export async function getPeriodTransits (startDate, endDate) {
 
 
 // get all aspects from the general transit collection db for a given date
-export async function getDailyAspects(date) {
+export async function getDailyAspects(date: string | Date): Promise<any[]> {
     const inputDate = new Date(date);
     const matchingAspects = await aspectsCollection.find({
         $and: [
@@ -189,7 +201,7 @@ export async function getDailyAspects(date) {
 }
 
 // get aspects from the general transit collection given a start and end date
-export async function getPeriodAspects(startDate, endDate) {
+export async function getPeriodAspects(startDate: string | Date, endDate: string | Date): Promise<any[]> {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const matchingAspects = await aspectsCollection.find({
@@ -202,7 +214,7 @@ export async function getPeriodAspects(startDate, endDate) {
 }
 
 // get all retrogrades from the retrogrades collection for a given date
-export async function getRetrogrades(date) {
+export async function getRetrogrades(date: string | Date): Promise<any[]> {
     try {
         const inputDate = new Date(date);
         console.log("Input Date:", inputDate);
@@ -215,7 +227,7 @@ export async function getRetrogrades(date) {
         }).toArray();
         
         return retrogrades;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error fetching retrogrades:", error);
         throw new Error("Unable to fetch retrogrades");
     }
@@ -223,7 +235,7 @@ export async function getRetrogrades(date) {
 
 
 // get all retrogrades from the retrogrades collection for a given date range
-export async function getRetrogradesForDateRange(startDate, endDate) {
+export async function getRetrogradesForDateRange(startDate: string | Date, endDate: string | Date): Promise<any[]> {
     try {
         const inputStartDate = new Date(startDate);
         const inputEndDate = new Date(endDate);
@@ -248,14 +260,14 @@ export async function getRetrogradesForDateRange(startDate, endDate) {
         }).toArray();
         
         return retrogrades;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error fetching retrogrades for date range:", error);
         throw new Error("Unable to fetch retrogrades for date range");
     }
 };
 
 // get aspects from the general transit collection given a start and end date for the requested birthchart
-export async function getAspectsForChart(startDate, endDate, birthChartId) {
+export async function getAspectsForChart(startDate: string | Date, endDate: string | Date, birthChartId: string): Promise<any[]> {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const matchingAspects = await aspectsCollection.find({
@@ -275,7 +287,7 @@ export async function getAspectsForChart(startDate, endDate, birthChartId) {
 
 // TODO: add error handling for when the user does not have a birthchart
 // TODO: add collection and metho
-export async function getBirthChart(userId) {
+export async function getBirthChart(userId: string): Promise<any> {
     try {
         if (!ObjectId.isValid(userId)) {
             throw new Error(`Invalid userId: ${userId}`);
@@ -292,75 +304,75 @@ export async function getBirthChart(userId) {
         }
 
         return user.birthChart;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in getBirthChart:", error);
         throw error;
     }
 }
 
 
-export async function getUsers() {
+export async function getUsers(): Promise<any[]> {
     try {
         const users = await userCollection.find({})
             .limit(50)
             .toArray();
         return users;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error('Error fetching users:', error);
         throw error;
     }
 }
 
 
-export async function getUserSingle(userId) {
+export async function getUserSingle(userId: string): Promise<any> {
     console.log("getUserSingle", { userId });
     try {
         const user = await userCollection.findOne({ _id: new ObjectId(userId) });
         return user;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in getUserSingle:", error);
         throw error;
     }
 }
 
-export async function getCompositeCharts() {
+export async function getCompositeCharts(): Promise<any[]> {
     console.log("getCompositeCharts")
     try {
         const compositeCharts = await compositeChartCollection.find({}).toArray();
         return compositeCharts;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in getCompositeCharts:", error);
         throw error;
     }
 }
 
-export async function saveUser(user) {
+export async function saveUser(user: any): Promise<any> {
     const result = await userCollection.insertOne(user);
     return result;
 }
 
-export async function saveCompositeChart(compositeChart) {
+export async function saveCompositeChart(compositeChart: any): Promise<any> {
     // console.log("saveCompositeChart", compositeChart)
     const result = await compositeChartCollection.insertOne(compositeChart);
     return result;
 }
 
-export async function saveRelationshipLog(relationshipLog) {
+export async function saveRelationshipLog(relationshipLog: any): Promise<any> {
     const result = await relationshipLogCollection.insertOne(relationshipLog);
     return result;
 }
 
-export async function saveRelationshipScoring(relationshipScoringLog) {
+export async function saveRelationshipScoring(relationshipScoringLog: any): Promise<any> {
     try {
         const result = await relationshipAnalysisCollection.insertOne(relationshipScoringLog);
         return result;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in saveRelationshipScoring:", error);
         throw error;
     }
 }
 
-export async function saveRelationshipAnalysis(compositeChartId, analysis) {
+export async function saveRelationshipAnalysis(compositeChartId: string, analysis: any): Promise<any> {
     try {
         // Find the existing document using the compositeChartId
         const document = await relationshipAnalysisCollection.findOne({
@@ -387,13 +399,13 @@ export async function saveRelationshipAnalysis(compositeChartId, analysis) {
             console.warn(`Document found but not updated for compositeChartId: ${compositeChartId}`);
             return { success: false, message: "Document found but not updated" };
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error saving relationship analysis for compositeChartId: ${compositeChartId}:`, error.message, error.stack);
         throw error; // Re-throw to allow the caller to handle it
     }
 }
 
-export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
+export async function fetchRelationshipAnalysisByCompositeId(compositeChartId: string) {
     try {
         const analysis = await relationshipAnalysisCollection.findOne({
             'debug.inputSummary.compositeChartId': compositeChartId
@@ -414,7 +426,7 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
                 KARMIC_LESSONS_GROWTH: false,
                 PRACTICAL_GROWTH_SHARED_GOALS: false
             },
-            lastUpdated: null,
+            lastUpdated: null as Date | null,
             relationshipAnalysis: false
         };
 
@@ -432,7 +444,7 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
             },
             _id: analysis._id
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error fetching relationship analysis for compositeChartId ${compositeChartId}:`, error);
         throw error;
     }
@@ -441,15 +453,15 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId) {
 
 
 
-export async function saveUserTransitAspects(groupedAspects, userId) {
-    const savePromises = groupedAspects.map(aspect => 
+export async function saveUserTransitAspects(groupedAspects: any[], userId: string): Promise<void> {
+    const savePromises = groupedAspects.map((aspect: any) => 
         userTransitAspectsCollection.insertOne({ ...aspect, userId })
     );
     await Promise.all(savePromises);
 }
 
 // get aspects from the general transit collection given a start and end date
-export async function getPeriodAspectsForUser(startDate, endDate, userId) {
+export async function getPeriodAspectsForUser(startDate: string | Date, endDate: string | Date, userId: string): Promise<any[]> {
     const start = new Date(startDate);
     const end = new Date(endDate);
     const matchingAspects = await userTransitAspectsCollection.find({
@@ -462,7 +474,7 @@ export async function getPeriodAspectsForUser(startDate, endDate, userId) {
     return matchingAspects;
 }
 
-export async function saveBirthChartInterpretation(userId, heading, promptDescription, interpretation) {
+export async function saveBirthChartInterpretation(userId: string, heading: string, promptDescription: string, interpretation: string): Promise<any> {
     console.log("saveBirthChartInterpretation", { userId, heading, promptDescription, interpretation });
     try {
         if (!ObjectId.isValid(userId)) {
@@ -494,7 +506,7 @@ export async function saveBirthChartInterpretation(userId, heading, promptDescri
 
         console.log("Update result:", JSON.stringify(result, null, 2));
         return result;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in saveBirthChartInterpretation:", error);
         console.error("Error stack:", error.stack);
         throw error;
@@ -502,16 +514,16 @@ export async function saveBirthChartInterpretation(userId, heading, promptDescri
 }
 
 
-export async function upsertVectorizedInterpretation(userId, heading, promptDescription, interpretation) {
+export async function upsertVectorizedInterpretation(userId: string, heading: string, promptDescription: string, interpretation: string): Promise<void> {
     try {
         await processInterpretationSection(userId, heading, promptDescription, interpretation);
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in upsertVectorizedInterpretation:", error);
         throw error;
     }
 }
 
-export async function getBirthChartInterpretation(userId) {
+export async function getBirthChartInterpretation(userId: string): Promise<any> {
     console.log("getBirthChartInterpretation", { userId });
     try {
         if (!ObjectId.isValid(userId)) {
@@ -523,7 +535,7 @@ export async function getBirthChartInterpretation(userId) {
         );
 
         return document?.birthChartInterpretation|| {};
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in getBirthChartInterpretation:", error);
         throw error;
     }
@@ -531,7 +543,7 @@ export async function getBirthChartInterpretation(userId) {
 
 
 
-export async function saveCompositeChartInterpretation(compositeChartId, heading, promptDescription, interpretation) {
+export async function saveCompositeChartInterpretation(compositeChartId: string, heading: string, promptDescription: string, interpretation: string): Promise<any> {
     console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation});
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -568,7 +580,7 @@ export async function saveCompositeChartInterpretation(compositeChartId, heading
 
         console.log("Update result:", JSON.stringify(result, null, 2));
         return result;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in saveCompositeChartInterpretation:", error);
         console.error("Error stack:", error.stack);
         throw error;
@@ -576,7 +588,7 @@ export async function saveCompositeChartInterpretation(compositeChartId, heading
 }
 
 // save synastry chart interpretation
-export async function saveSynastryChartInterpretation(compositeChartId, heading, promptDescription, interpretation) {
+export async function saveSynastryChartInterpretation(compositeChartId: string, heading: string, promptDescription: string, interpretation: string): Promise<any> {
     console.log("saveCompositeChartInterpretation", { compositeChartId, heading, promptDescription, interpretation});
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -613,7 +625,7 @@ export async function saveSynastryChartInterpretation(compositeChartId, heading,
 
         console.log("Update result:", JSON.stringify(result, null, 2));
         return result;
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in saveCompositeChartInterpretation:", error);
         console.error("Error stack:", error.stack);
         throw error;
@@ -622,7 +634,7 @@ export async function saveSynastryChartInterpretation(compositeChartId, heading,
 
 
 
-export async function getCompositeChartInterpretation(compositeChartId) {
+export async function getCompositeChartInterpretation(compositeChartId: string): Promise<any> {
     console.log("getCompositeChartInterpretation", { compositeChartId });
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -634,13 +646,13 @@ export async function getCompositeChartInterpretation(compositeChartId) {
         );
 
         return document?.compositeChartInterpretation|| {};
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in getCompositeChartInterpretation:", error);
         throw error;
     }
 }
 
-export async function getSynastryInterpretation(compositeChartId) {
+export async function getSynastryInterpretation(compositeChartId: string): Promise<any> {
     console.log("getSynastryInterpretation", { compositeChartId });
     try {
         if (!ObjectId.isValid(compositeChartId)) {
@@ -652,7 +664,7 @@ export async function getSynastryInterpretation(compositeChartId) {
         );
         
         return document?.synastryInterpretation|| {};
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in getSynastryInterpretation:", error);
         throw error;
     }
@@ -660,23 +672,23 @@ export async function getSynastryInterpretation(compositeChartId) {
 
 
 
-export async function getSynastryChartInterpretation(synastryChartId) {
+export async function getSynastryChartInterpretation(synastryChartId: string): Promise<any> {
     console.log("getSynastryChartInterpretation", { synastryChartId });
     try {
         if (!ObjectId.isValid(synastryChartId)) {
             throw new Error(`Invalid synastryChartId: ${synastryChartId}`);
         }
 
-        const document = await synastryChartInterpretations.findOne({ _id: new ObjectId(synastryChartId) });
+        const document = await compositeChartInterpretations.findOne({ _id: new ObjectId(synastryChartId) });
         return document?.synastryChartInterpretation|| {};
-    } catch (error) {
+    } catch (error: any) {
         console.error("Error in getSynastryChartInterpretation:", error);
         throw error;
     }
 }
 
 
-export async function saveDailyTransitInterpretationData(date, combinedAspectsDescription, dailyTransitInterpretation) {
+export async function saveDailyTransitInterpretationData(date: string | Date, combinedAspectsDescription: any[], dailyTransitInterpretation: string): Promise<any> {
 
     // Convert the date string to a Date object
     const isoDate = new Date(date);
@@ -707,7 +719,7 @@ export async function saveDailyTransitInterpretationData(date, combinedAspectsDe
 }
 
 
-export async function getDailyTransitInterpretationData(date) {
+export async function getDailyTransitInterpretationData(date: string | Date): Promise<any[]> {
     const startDate = new Date(date);
     startDate.setUTCHours(0, 0, 0, 0);
 
@@ -725,7 +737,7 @@ export async function getDailyTransitInterpretationData(date) {
 }
 
 
-export async function saveWeeklyTransitInterpretationData(date, combinedAspectsDescription, weeklyTransitInterpretation, sign) {
+export async function saveWeeklyTransitInterpretationData(date: string | Date, combinedAspectsDescription: any[], weeklyTransitInterpretation: string, sign: string): Promise<any> {
     const isoDate = new Date(date);
     isoDate.setUTCHours(0, 0, 0, 0);
 
@@ -741,7 +753,7 @@ export async function saveWeeklyTransitInterpretationData(date, combinedAspectsD
         { 
             $setOnInsert: { date: isoDate },
             $push: { weeklyInterpretations: interpretation }
-        },
+        } as any,
         { upsert: true }
     );
 
@@ -753,7 +765,7 @@ export async function saveWeeklyTransitInterpretationData(date, combinedAspectsD
 
 }
 
-export async function getWeeklyTransitInterpretationData(date) {
+export async function getWeeklyTransitInterpretationData(date: string | Date): Promise<any[]> {
     const startDate = new Date(date);
     startDate.setUTCHours(0, 0, 0, 0);
 
@@ -771,14 +783,14 @@ export async function getWeeklyTransitInterpretationData(date) {
 }       
 
 
-export async function saveBasicAnalysis(userId, analysis) {
+export async function saveBasicAnalysis(userId: string, analysis: any) {
     const existingDocument = await birthChartAnalysisCollection.findOne({
         userId: new ObjectId(userId)
     });
 
     if (existingDocument) {
         // Use atomic field updates to prevent overwriting existing data
-        const updateFields = {
+        const updateFields: Record<string, any> = {
             'interpretation.timestamp': analysis.timestamp,
             'interpretation.metadata': analysis.metadata
         };
@@ -789,13 +801,13 @@ export async function saveBasicAnalysis(userId, analysis) {
         }
         
         if (analysis.basicAnalysis.dominance) {
-            Object.entries(analysis.basicAnalysis.dominance).forEach(([type, data]) => {
+            Object.entries(analysis.basicAnalysis.dominance).forEach(([type, data]: [string, any]) => {
                 updateFields[`interpretation.basicAnalysis.dominance.${type}`] = data;
             });
         }
         
         if (analysis.basicAnalysis.planets) {
-            Object.entries(analysis.basicAnalysis.planets).forEach(([planet, data]) => {
+            Object.entries(analysis.basicAnalysis.planets).forEach(([planet, data]: [string, any]) => {
                 updateFields[`interpretation.basicAnalysis.planets.${planet}`] = data;
             });
         }
@@ -827,7 +839,7 @@ export async function saveBasicAnalysis(userId, analysis) {
     }
 }
 
-export async function getBasicAnalysisByUserId(userId) {
+export async function getBasicAnalysisByUserId(userId: string) {
     try {
         const document = await birthChartAnalysisCollection.findOne({ 
             userId: new ObjectId(userId)  });
@@ -838,13 +850,13 @@ export async function getBasicAnalysisByUserId(userId) {
         }
         
         return document.interpretation.basicAnalysis;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error retrieving basic analysis for userId ${userId}:`, error);
         throw error;
     }
 }
 
-export async function getTopicAnalysisByUserId(userId) {
+export async function getTopicAnalysisByUserId(userId: string) {
     try {
         const document = await birthChartAnalysisCollection.findOne({ 
             userId: new ObjectId(userId) });
@@ -855,13 +867,13 @@ export async function getTopicAnalysisByUserId(userId) {
             return {};
         }
         return document?.interpretation.SubtopicAnalysis || {};
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error retrieving topic analysis for userId ${userId}:`, error);
         throw error;
     }
 }
 
-export async function getAllAnalysisByUserId(userId) {
+export async function getAllAnalysisByUserId(userId: string) {
     try {   
         const document = await birthChartAnalysisCollection.findOne({ 
             userId: new ObjectId(userId) 
@@ -896,7 +908,7 @@ export async function getAllAnalysisByUserId(userId) {
                 lastUpdated: null
             }
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error retrieving all analysis for userId ${userId}:`, error);
         throw error;
     }
@@ -930,24 +942,24 @@ export async function getAllAnalysisByUserId(userId) {
 //     }
 // }
 
-export async function saveTopicAnalysis(userId, topicAnalysis) {
+export async function saveTopicAnalysis(userId: string, topicAnalysis: any) {
     const existingDocument = await birthChartAnalysisCollection.findOne({ 
         userId: new ObjectId(userId) 
     });
     
     if (existingDocument) {
         // Use atomic field updates to prevent race conditions
-        const updateFields = {};
+        const updateFields: Record<string, any> = {};
         
         // Iterate through each broad topic in the new analysis
-        Object.entries(topicAnalysis).forEach(([broadTopic, topicData]) => {
+        Object.entries(topicAnalysis).forEach(([broadTopic, topicData]: [string, any]) => {
             // Set the topic metadata
             updateFields[`interpretation.SubtopicAnalysis.${broadTopic}.label`] = topicData.label;
             updateFields[`interpretation.SubtopicAnalysis.${broadTopic}.relevantPositions`] = topicData.relevantPositions;
             
             // Set each individual subtopic atomically
             if (topicData.subtopics) {
-                Object.entries(topicData.subtopics).forEach(([subtopicKey, subtopicContent]) => {
+                Object.entries(topicData.subtopics).forEach(([subtopicKey, subtopicContent]: [string, any]) => {
                     updateFields[`interpretation.SubtopicAnalysis.${broadTopic}.subtopics.${subtopicKey}`] = subtopicContent;
                 });
             }
@@ -975,7 +987,7 @@ export async function saveTopicAnalysis(userId, topicAnalysis) {
 
 
 
-export async function updateVectorizationStatus(userId, statusUpdates) {
+export async function updateVectorizationStatus(userId: string, statusUpdates: any) {
     try {
         // Handle both old format (section, status, details) and new format (object of updates)
         if (typeof statusUpdates === 'string') {
@@ -1010,7 +1022,7 @@ export async function updateVectorizationStatus(userId, statusUpdates) {
             );
         } else {
             // New format: updateVectorizationStatus(userId, { key: value, key2: value2 })
-            const setData = {};
+            const setData: Record<string, any> = {};
             
             // Convert the object keys to vectorizationStatus paths
             for (const [key, value] of Object.entries(statusUpdates)) {
@@ -1024,15 +1036,15 @@ export async function updateVectorizationStatus(userId, statusUpdates) {
                 { $set: setData }
             );
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error updating vectorization status:`, error);
         throw error;
     }
 }
 
-export async function updateWorkflowRunningStatus(userId, isRunning, additionalData = {}) {
+export async function updateWorkflowRunningStatus(userId: string, isRunning: boolean, additionalData: Record<string, any> = {}) {
     try {
-        const updateData = {
+        const updateData: Record<string, any> = {
             'workflowStatus.isRunning': isRunning,
             'workflowStatus.lastUpdated': new Date(),
             ...additionalData
@@ -1051,13 +1063,13 @@ export async function updateWorkflowRunningStatus(userId, isRunning, additionalD
         );
         
         console.log(`✅ Updated workflow running status for user ${userId}: isRunning=${isRunning}`);
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error updating workflow running status:`, error);
         throw error;
     }
 }
 
-export async function updateRelationshipVectorizationStatus(compositeChartId, analysisType, isVectorized, details = {}) {
+export async function updateRelationshipVectorizationStatus(compositeChartId: string, analysisType: string, isVectorized: boolean, details: Record<string, any> = {}) {
     try {
         const updateData = {
             $set: {
@@ -1080,15 +1092,15 @@ export async function updateRelationshipVectorizationStatus(compositeChartId, an
             success: result.modifiedCount > 0,
             modifiedCount: result.modifiedCount
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error updating vectorization status for compositeChartId ${compositeChartId}:`, error);
         throw error;
     }
 }
 
-export async function updateRelationshipWorkflowRunningStatus(compositeChartId, isRunning, additionalData = {}) {
+export async function updateRelationshipWorkflowRunningStatus(compositeChartId: string, isRunning: boolean, additionalData: Record<string, any> = {}) {
     try {
-        const updateData = {
+        const updateData: Record<string, any> = {
             'workflowStatus.isRunning': isRunning,
             'workflowStatus.lastUpdated': new Date(),
             ...additionalData
@@ -1113,13 +1125,13 @@ export async function updateRelationshipWorkflowRunningStatus(compositeChartId, 
             modifiedCount: result.modifiedCount,
             upsertedCount: result.upsertedCount
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error updating relationship workflow running status:`, error);
         throw error;
     }
 }
 
-export async function updateRelationshipAnalysisVectorization(compositeChartId, updateFields) {
+export async function updateRelationshipAnalysisVectorization(compositeChartId: string, updateFields: Record<string, any>) {
     try {
         const updateData = { $set: updateFields };
         
@@ -1134,14 +1146,14 @@ export async function updateRelationshipAnalysisVectorization(compositeChartId, 
             modifiedCount: result.modifiedCount,
             upsertedCount: result.upsertedCount || 0
         };
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error updating relationship analysis for compositeChartId ${compositeChartId}:`, error);
         throw error;
     }
 }
 
 // Safe function for saving initial relationship scores without overwriting existing analysis
-export async function saveRelationshipScoresAndDebug(compositeChartId, relationshipScores) {
+export async function saveRelationshipScoresAndDebug(compositeChartId: string, relationshipScores: any) {
     try {
         const existingDocument = await relationshipAnalysisCollection.findOne({
             'debug.inputSummary.compositeChartId': compositeChartId
@@ -1160,8 +1172,8 @@ export async function saveRelationshipScoresAndDebug(compositeChartId, relations
             };
 
             // Only set createdAt if it doesn't exist
-            if (!existingDocument.createdAt) {
-                updateFields.createdAt = relationshipScores.createdAt;
+            if (!(existingDocument as any).createdAt) {
+                (updateFields as any).createdAt = relationshipScores.createdAt;
             }
 
             const result = await relationshipAnalysisCollection.updateOne(
@@ -1174,7 +1186,7 @@ export async function saveRelationshipScoresAndDebug(compositeChartId, relations
             const result = await relationshipAnalysisCollection.insertOne(relationshipScores);
             return result;
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error saving relationship scores for compositeChartId ${compositeChartId}:`, error);
         throw error;
     }
@@ -1183,12 +1195,12 @@ export async function saveRelationshipScoresAndDebug(compositeChartId, relations
 
 // chat
 
-export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId, userQuery, response) {
+export async function saveChatHistoryForBirthChartAnalysis(userId: string, birthChartAnalysisId: string, userQuery: string, response: string) {
     const timestamp = new Date();
 
     // Ensure consistent data types
-    const normalizedUserId = typeof userId === 'string' ? userId : userId.toString();
-    const normalizedBirthChartAnalysisId = typeof birthChartAnalysisId === 'string' ? birthChartAnalysisId : birthChartAnalysisId.toString();
+    const normalizedUserId = typeof userId === 'string' ? userId : (userId as any).toString();
+    const normalizedBirthChartAnalysisId = typeof birthChartAnalysisId === 'string' ? birthChartAnalysisId : (birthChartAnalysisId as any).toString();
 
     const userMessage = {
         role: "user",
@@ -1219,23 +1231,23 @@ export async function saveChatHistoryForBirthChartAnalysis(userId, birthChartAna
             birthChartAnalysisId: normalizedBirthChartAnalysisId,
             createdAt: timestamp
         }
-    };
+    } as any;
 
     const options = {
         upsert: true,
         returnDocument: 'after'
-    };
+    } as any;
 
     try {
         const result = await chatThreadCollectionBirthChartAnalysis.findOneAndUpdate(filter, updateDoc, options);
         return result;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error saving chat history for userId ${userId} and birthChartAnalysisId ${birthChartAnalysisId}:`, error);
         throw error;
     }
 }
 
-export async function saveChatHistoryForRelationshipAnalysis(userId, compositeChartId, userQuery, response) {
+export async function saveChatHistoryForRelationshipAnalysis(userId: string, compositeChartId: string, userQuery: string, response: string) {
     const timestamp = new Date();
 
     const userMessage = {
@@ -1268,23 +1280,23 @@ export async function saveChatHistoryForRelationshipAnalysis(userId, compositeCh
             // MongoDB will automatically generate an _id.
             createdAt: timestamp // Set only when the document is first created
         }
-    };
+    } as any;
 
     const options = {
         upsert: true, // Create the document if it doesn't exist
         returnDocument: 'after' // Return the modified document
-    };
+    } as any;
 
     try {
         const result = await chatThreadRelationshipAnalysisCollection.findOneAndUpdate(filter, updateDoc, options);
         return result.value ? result.value : result;
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error saving chat history for relationship analysis (userId: ${userId}, compositeChartId: ${compositeChartId}):`, error);
         throw error;
     }
 }
 
-export async function getChatHistoryForBirthChartAnalysis(userId, birthChartAnalysisId, numPairs = 5) {
+export async function getChatHistoryForBirthChartAnalysis(userId: string, birthChartAnalysisId: string, numPairs: number = 5) {
     console.log("getChatHistoryForBirthChartAnalysis")
     console.log("userId: ", userId)
     console.log("birthChartAnalysisId: ", birthChartAnalysisId)
@@ -1313,13 +1325,13 @@ export async function getChatHistoryForBirthChartAnalysis(userId, birthChartAnal
         } else {
             return []; // Return an empty array if no thread or messages are found
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error fetching chat history for birth chart (userId: ${userId}, birthChartAnalysisId: ${birthChartAnalysisId}):`, error);
         throw error;
     }
 }
 
-export async function getChatHistoryForRelationshipAnalysis(userId, compositeChartId, numPairs = 5) {
+export async function getChatHistoryForRelationshipAnalysis(userId: string, compositeChartId: string, numPairs: number = 5) {
     const filter = {
         userId: userId,
         compositeChartId: compositeChartId
@@ -1346,7 +1358,7 @@ export async function getChatHistoryForRelationshipAnalysis(userId, compositeCha
         } else {
             return []; // Return an empty array if no thread or messages are found
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error(`Error fetching chat history for relationship analysis (userId: ${userId}, compositeChartId: ${compositeChartId}):`, error);
         throw error;
     }
@@ -1359,7 +1371,7 @@ export async function getChatHistoryForRelationshipAnalysis(userId, compositeCha
  * @returns {Promise<Array<Object>>} A promise that resolves to an array of transit series objects.
  * Each object will have its 'date' property as a Date object.
  */
-export async function getPreGeneratedTransitSeries(startDateStr, endDateStr) {
+export async function getPreGeneratedTransitSeries(startDateStr: string, endDateStr: string) {
     try {
         const query = {
             date: {
@@ -1371,11 +1383,11 @@ export async function getPreGeneratedTransitSeries(startDateStr, endDateStr) {
         // console.log("seriesDocuments: ", seriesDocuments)
         // Transform documents to ensure the 'date' field is a Date object,
         // consistent with what scanTransitSeries might expect.
-        return seriesDocuments.map(doc => ({
+        return seriesDocuments.map((doc: any) => ({
             ...doc,
             date: new Date(doc.date) // Convert ISO string from DB to Date object
         }));
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching pre-generated transit series:', error);
         throw error; // Re-throw to be handled by the caller
     }
@@ -1384,7 +1396,7 @@ export async function getPreGeneratedTransitSeries(startDateStr, endDateStr) {
 // Horoscope storage functions
 
 // Create or update a horoscope
-export async function createHoroscope(horoscope) {
+export async function createHoroscope(horoscope: any) {
     try {
         const horoscopeDoc = {
             ...horoscope,
@@ -1399,14 +1411,14 @@ export async function createHoroscope(horoscope) {
             return { ...horoscopeDoc, _id: result.insertedId };
         }
         throw new Error('Failed to create horoscope');
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error creating horoscope:', error);
         throw error;
     }
 }
 
 // Update an existing horoscope
-export async function updateHoroscope(horoscopeId, updates) {
+export async function updateHoroscope(horoscopeId: string, updates: Record<string, any>) {
     try {
         const result = await horoscopesCollection.updateOne(
             { _id: new ObjectId(horoscopeId) },
@@ -1419,16 +1431,16 @@ export async function updateHoroscope(horoscopeId, updates) {
         );
         
         return result.modifiedCount > 0;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error updating horoscope:', error);
         throw error;
     }
 }
 
 // Get horoscopes by user ID
-export async function getHoroscopesByUserId(userId, type = null, limit = 10) {
+export async function getHoroscopesByUserId(userId: string, type: string | null = null, limit: number = 10) {
     try {
-        const query = { userId };
+        const query: Record<string, any> = { userId };
         if (type) {
             query.period = type;
         }
@@ -1440,30 +1452,30 @@ export async function getHoroscopesByUserId(userId, type = null, limit = 10) {
             .toArray();
             
         return horoscopes;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching horoscopes:', error);
         throw error;
     }
 }
 
 // Get a specific horoscope
-export async function getHoroscopeById(horoscopeId) {
+export async function getHoroscopeById(horoscopeId: string) {
     try {
         const horoscope = await horoscopesCollection.findOne({
             _id: new ObjectId(horoscopeId)
         });
         
         return horoscope;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching horoscope:', error);
         throw error;
     }
 }
 
 // Get latest horoscope for a user
-export async function getLatestHoroscope(userId, type = null) {
+export async function getLatestHoroscope(userId: string, type: string | null = null) {
     try {
-        const query = { userId };
+        const query: Record<string, any> = { userId };
         if (type) {
             query.period = type;
         }
@@ -1472,16 +1484,16 @@ export async function getLatestHoroscope(userId, type = null) {
             .findOne(query, { sort: { generatedAt: -1 } });
             
         return horoscope;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error fetching latest horoscope:', error);
         throw error;
     }
 }
 
 // Delete a horoscope
-export async function deleteHoroscope(horoscopeId, userId = null) {
+export async function deleteHoroscope(horoscopeId: string, userId: string | null = null) {
     try {
-        const query = { _id: new ObjectId(horoscopeId) };
+        const query: Record<string, any> = { _id: new ObjectId(horoscopeId) };
         if (userId) {
             query.userId = userId; // Ensure user owns the horoscope
         }
@@ -1489,7 +1501,7 @@ export async function deleteHoroscope(horoscopeId, userId = null) {
         const result = await horoscopesCollection.deleteOne(query);
         
         return result.deletedCount > 0;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error deleting horoscope:', error);
         throw error;
     }
@@ -1506,7 +1518,7 @@ export async function getExistingHoroscope(userId: string, startDate: Date, endD
         });
         
         return horoscope;
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error checking for existing horoscope:', error);
         throw error;
     }

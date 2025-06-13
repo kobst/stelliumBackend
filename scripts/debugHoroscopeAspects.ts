@@ -55,12 +55,12 @@ async function debugHoroscopeAspects(userId: string) {
         if (transitData && transitData.length > 0) {
             console.log('\n=== CURRENT TRANSITS ===');
             const currentTransits = (transitData[0] as any).planets;
-            currentTransits.forEach(planet => {
+            currentTransits.forEach((planet: any) => {
                 console.log(`${planet.name}: ${planet.lon}° (${planet.sign})`);
             });
             
             // Check specifically for Saturn
-            const saturn = currentTransits.find(p => p.name === 'Saturn');
+            const saturn = currentTransits.find((p: any) => p.name === 'Saturn');
             if (saturn) {
                 console.log(`\n=== SATURN POSITION ===`);
                 console.log(`Saturn is at ${saturn.lon}° (${saturn.sign})`);

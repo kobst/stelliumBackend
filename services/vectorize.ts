@@ -1,4 +1,3 @@
-// @ts-nocheck
 // Import necessary libraries
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { encoding_for_model } from '@dqbd/tiktoken';
@@ -25,7 +24,7 @@ async function getOpenAIClient(): Promise<OpenAI> {
   return openAiClient;
 }
 
-async function getPineconeIndex() {
+async function getPineconeIndex(): Promise<any> {
   if (!index) {
     const apiKey = await getPineconeApiKey();
     pinecone = new Pinecone({ apiKey });
@@ -36,7 +35,7 @@ async function getPineconeIndex() {
 
 
 // Define the splitText function using RecursiveCharacterTextSplitter
-export async function splitText(text, maxChunkSize = 900) {  // Increased from 300 to 600
+export async function splitText(text: string, maxChunkSize: number = 900): Promise<string[]> {  // Increased from 300 to 600
   try {
       console.log(`splitText called with text length: ${text?.length}, text preview: "${text?.substring(0, 100)}..."`);
       
@@ -79,14 +78,14 @@ export async function splitText(text, maxChunkSize = 900) {  // Increased from 3
       console.log(`splitText returning ${chunks.length} chunks`);
       return chunks;
 
-  } catch (error) {
+  } catch (error: unknown) {
       console.error("Error splitting text:", error);
       throw error;
   }
 }
 
 // Function to get embeddings with retry logic and timeout
-async function getEmbedding(text, model = 'text-embedding-ada-002', retries = 3) {
+async function getEmbedding(text: string, model: string = 'text-embedding-ada-002', retries: number = 3): Promise<number[]> {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             console.log(`Getting embedding for text (${text.length} chars), attempt ${attempt}/${retries}`);
@@ -101,14 +100,16 @@ async function getEmbedding(text, model = 'text-embedding-ada-002', retries = 3)
                 input: text
             });
             
-            const response = await Promise.race([embeddingPromise, timeoutPromise]);
+            const response: any = await Promise.race([embeddingPromise, timeoutPromise]);
             const embedding = response.data[0].embedding;
             console.log(`Successfully generated embedding with ${embedding.length} dimensions`);
             return embedding;
-        } catch (error) {
-            console.error(`Embedding attempt ${attempt}/${retries} failed:`, error.message);
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error instanceof Error ? error.message : 'Unknown error' : 'Unknown error';
+            console.error(`Embedding attempt ${attempt}/${retries} failed:`, errorMessage);
             if (attempt === retries) {
-                throw new Error(`Failed to generate embedding after ${retries} attempts: ${error.message}`);
+                const message = error instanceof Error ? error instanceof Error ? error.message : 'Unknown error' : 'Unknown error';
+                throw new Error(`Failed to generate embedding after ${retries} attempts: ${message}`);
             }
             // Exponential backoff with longer delays for rate limiting
             const delay = Math.pow(2, attempt) * 2000; // 4s, 8s, 16s
@@ -116,6 +117,7 @@ async function getEmbedding(text, model = 'text-embedding-ada-002', retries = 3)
             await new Promise(resolve => setTimeout(resolve, delay));
         }
     }
+    throw new Error(`Failed to generate embedding after ${retries} attempts`);
 }
 
 
@@ -123,7 +125,7 @@ async function getEmbedding(text, model = 'text-embedding-ada-002', retries = 3)
   // Process each section and interpretation
 
 
-export async function processInterpretationSection(userId, heading, promptDescription, interpretation) {
+export async function processInterpretationSection(userId: string, heading: string, promptDescription: string, interpretation: string): Promise<void> {
     try {
       const chunks = await splitText(interpretation);
       const records = [];
@@ -150,7 +152,7 @@ export async function processInterpretationSection(userId, heading, promptDescri
       await index.upsert(records, { namespace: userId });
   
       console.log(`Successfully processed and upserted ${chunks.length} chunks for user ${userId}, heading ${heading}`);
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Error in processInterpretationSection:", error);
       throw error;
     }
@@ -184,7 +186,7 @@ export async function processInterpretationSection(userId, heading, promptDescri
   //     await index.upsert(records, { namespace: userId });
   
   //     console.log(`Successfully processed and upserted ${chunks.length} chunks for user ${userId}, heading ${heading}`);
-  //   } catch (error) {
+  //   } catch (error: unknown) {
   //     console.error("Error in processInterpretationSection:", error);
   //     throw error;
   //   }
@@ -193,13 +195,13 @@ export async function processInterpretationSection(userId, heading, promptDescri
 
 
 
-function generateConversationId(userId) {
+function generateConversationId(userId: string) {
   const timestamp = Date.now();
   return `${userId}-${timestamp}`;
 }
 
 
-export async function processUserQueryAndAnswer(userId, query, answer, date, conversationId, exchangeIndex) {
+export async function processUserQueryAndAnswer(userId: string, query: string, answer: string, date: Date, conversationId: string, exchangeIndex: number): Promise<void> {
   try {
     const records = [];
     console.log("Processing user query and answer:", query, answer, );
@@ -246,7 +248,7 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
 
     await index.upsert(records, { namespace: userId });
 
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in processUserQueryAndAnswer:", error);
     throw error;
   }
@@ -256,7 +258,7 @@ export async function processUserQueryAndAnswer(userId, query, answer, date, con
 
 
 
-export async function processCompositeChartInterpretationSection(compositeChartId, heading, promptDescription, interpretation) {
+export async function processCompositeChartInterpretationSection(compositeChartId: string, heading: string, promptDescription: string, interpretation: string): Promise<void> {
   try {
     const chunks = await splitText(interpretation);
     const records = [];
@@ -284,7 +286,7 @@ export async function processCompositeChartInterpretationSection(compositeChartI
     await index.upsert(records, { namespace: compositeChartId });
 
     console.log(`Successfully processed and upserted ${chunks.length} chunks for composite chart ${compositeChartId}, heading ${heading}`);
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in processInterpretationSection:", error);
     throw error;
   }
@@ -323,13 +325,13 @@ export async function processCompositeChartInterpretationSection(compositeChartI
 //     ).join('\n\n');
 //     console.log("Combined text:", combinedText);
 //     return combinedText;
-//   } catch (error) {
+//   } catch (error: unknown) {
 //     console.error("Error in processUserQuery:", error);
 //     throw error;
 //   }
 // }
 
-export async function processUserQueryRelationship(compositeChartId, query) {
+export async function processUserQueryRelationship(compositeChartId: string, query: string): Promise<any> {
   console.log("Processing user query for relationship:", query);
   console.log("User ID:", compositeChartId);
   try{
@@ -344,7 +346,7 @@ export async function processUserQueryRelationship(compositeChartId, query) {
       }
     });
     // Extract relevantAspects and text from each match
-    const extractedData = results.matches.map((match, index) => {
+    const extractedData = results.matches.map((match: any, index: number) => {
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       return {
         relevantAspects: match.metadata.relevantAspects,
@@ -355,12 +357,12 @@ export async function processUserQueryRelationship(compositeChartId, query) {
     console.log("Extracted data:", extractedData);
 
     // If you want to return a single string with all the information
-    const combinedText = extractedData.map(data => 
+    const combinedText = extractedData.map((data: any) => 
       `Relevant Aspects: ${data.relevantAspects}\nText: ${data.text}`
     ).join('\n\n');
     console.log("Combined text:", combinedText);
     return combinedText;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in processUserQuery:", error);
     throw error;
   }
@@ -369,7 +371,7 @@ export async function processUserQueryRelationship(compositeChartId, query) {
 // import { splitText } from './textProcessing.js';
 
 // Helper to process a section of text with its description (if any)
-export async function processTextSection(text, userId, description = null) {
+export async function processTextSection(text: string, userId: string, description: string | null = null): Promise<any> {
     try {
         console.log(`processTextSection called for userId: ${userId}, text length: ${text?.length}`);
         
@@ -423,9 +425,9 @@ export async function processTextSection(text, userId, description = null) {
         chunks.length = 0;
         
         return records;
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error in processTextSection:", {
-            error: error.message,
+            error: error instanceof Error ? error.message : 'Unknown error',
             userId: userId,
             textLength: text?.length,
             description: description
@@ -435,7 +437,7 @@ export async function processTextSection(text, userId, description = null) {
 }
 
 
-export async function processTextSectionRelationship(text, compositeChartId, description = null, category = null, relevantPositionData = null) {
+export async function processTextSectionRelationship(text: string, compositeChartId: string, description: string | null = null, category: string | null = null, relevantPositionData: any = null): Promise<any> {
   try {
       if (!text || typeof text !== 'string' || text.trim().length === 0) {
           console.log("Empty or invalid text provided to processTextSectionRelationship, returning empty array");
@@ -471,14 +473,14 @@ export async function processTextSectionRelationship(text, compositeChartId, des
       }
 
       return records;
-  } catch (error) {
+  } catch (error: unknown) {
       console.error("Error in processTextSection:", error);
       throw error;
   }
 }
 
 
-export async function upsertRecords(records, nameSpaceId, retries = 3) {
+export async function upsertRecords(records: any[], nameSpaceId: string, retries: number = 3): Promise<any> {
   if (!records || records.length === 0) {
     console.log("No records to upsert, skipping");
     return { success: true, count: 0 };
@@ -509,16 +511,16 @@ export async function upsertRecords(records, nameSpaceId, retries = 3) {
       
       return { success: true, count: records.length };
       
-    } catch (error) {
+    } catch (error: unknown) {
       console.error(`Pinecone upsert attempt ${attempt}/${retries} failed:`, {
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         namespace: nameSpaceId,
         recordCount: records.length,
         recordIds: records.slice(0, 3).map(r => r.id) // Log first 3 IDs for debugging
       });
       
       if (attempt === retries) {
-        throw new Error(`Pinecone upsert failed after ${retries} attempts: ${error.message}`);
+        throw new Error(`Pinecone upsert failed after ${retries} attempts: ${error instanceof Error ? error.message : 'Unknown error'}`);
       }
       
       // Exponential backoff
@@ -530,7 +532,7 @@ export async function upsertRecords(records, nameSpaceId, retries = 3) {
 }
 
 
-export async function upsertRelationshipRecords(records, compositeChartId) {
+export async function upsertRelationshipRecords(records: any[], compositeChartId: string): Promise<any> {
   try {
       if (!records || records.length === 0) {
           console.log("No records to upsert");
@@ -556,20 +558,20 @@ export async function upsertRelationshipRecords(records, compositeChartId) {
           success: true,
           count: operations.length
       };
-  } catch (error) {
+  } catch (error: unknown) {
       console.error("Error upserting relationship vector records:", error);
       throw error;
   }
 }
 
 
-export async function retrieveTopicContext(userId, topic) {
+export async function retrieveTopicContext(userId: string, topic: string): Promise<any> {
     console.log("retrieving topic context: ", topic);
     console.log("user ID: ", userId);
     
     try {
 
-      const prompt = subTopicSearchPrompts[topic]
+      const prompt = subTopicSearchPrompts[topic as keyof typeof subTopicSearchPrompts]
       console.log("prompt: ", prompt)
         // Get embedding for the prompt
       const promptEmbedding = await getEmbedding(prompt);
@@ -585,7 +587,7 @@ export async function retrieveTopicContext(userId, topic) {
         });
 
         // Process results (topics removed)
-        const results = vectorResults.matches.map(match => ({
+        const results = vectorResults.matches.map((match: any) => ({
             text: match.metadata.text,
             description: match.metadata.description,
             score: match.score
@@ -595,13 +597,13 @@ export async function retrieveTopicContext(userId, topic) {
             matches: results
         };
 
-    } catch (error) {
+    } catch (error: unknown) {
         console.error("Error retrieving topic context:", error);
         throw error;
     }
 } 
 
-export async function getRelationshipCategoryContextForUser(userId, relationshipCategory) {
+export async function getRelationshipCategoryContextForUser(userId: string, relationshipCategory: string): Promise<any> {
     console.log("getRelationshipCategoryContextForUser: ", userId, relationshipCategory)
     const prompt = RELATIONSHIP_CATEGORY_PROMPTS[relationshipCategory];
     if (!prompt) {
@@ -619,7 +621,7 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
         });
 
         if (results && results.matches) {
-            return results.matches.map(match => ({
+            return results.matches.map((match: any) => ({
                 text: match.metadata.text,
                 description: match.metadata.description,
                 score: match.score,
@@ -627,7 +629,7 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
             }));
         }
         return [];
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`Error in getRelationshipCategoryContextForUser for category ${relationshipCategory}, user ${userId}:`, error);
         throw error;
     }
@@ -639,7 +641,7 @@ export async function getRelationshipCategoryContextForUser(userId, relationship
 // CHAT QUERY
 
 
-export async function processUserQueryForBirthChartAnalysis(userId, query, numResults = 3) {
+export async function processUserQueryForBirthChartAnalysis(userId: string, query: string, numResults: number = 3): Promise<any> {
   console.log("Processing user query for birth chart analysis:", query);
   console.log("User ID:", userId);
   try{
@@ -654,7 +656,7 @@ export async function processUserQueryForBirthChartAnalysis(userId, query, numRe
     });
 
     // Extract relevant data from each match
-    const extractedData = results.matches.map((match, index) => {
+    const extractedData = results.matches.map((match: any, index: number) => {
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Ensure metadata and its properties exist before accessing
       const text = match.metadata?.text || "";     // Default to empty string if text undefined
@@ -669,7 +671,7 @@ export async function processUserQueryForBirthChartAnalysis(userId, query, numRe
     console.log("Extracted data:", extractedData);
 
     // Combine the extracted data into a single string for context
-    const combinedText = extractedData.map(data => {
+    const combinedText = extractedData.map((data: any) => {
       // Format topics nicely if it's an array
       let contextEntry = "";
       if (data.description) { // Optionally add the general description
@@ -682,14 +684,14 @@ export async function processUserQueryForBirthChartAnalysis(userId, query, numRe
 
     console.log("Combined text for RAG:", combinedText);
     return combinedText;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in processUserQuery:", error);
     throw error; // Re-throw the error to be handled by the caller
   }
 }
 
 
-export async function processUserQueryForHoroscopeAnalysis(userId, query, numResults = 2) {
+export async function processUserQueryForHoroscopeAnalysis(userId: string, query: string, numResults: number = 2): Promise<any> {
   console.log("Processing user query for horoscope analysis:", query);
   console.log("User ID:", userId);
   try{
@@ -704,7 +706,7 @@ export async function processUserQueryForHoroscopeAnalysis(userId, query, numRes
     });
 
     // Extract only the text from each match
-    const extractedText = results.matches.map((match, index) => {
+    const extractedText = results.matches.map((match: any, index: number) => {
       // console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Return only the text content
       return match.metadata?.text || "";
@@ -712,13 +714,13 @@ export async function processUserQueryForHoroscopeAnalysis(userId, query, numRes
 
     console.log("Extracted text:", extractedText);
     return extractedText;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in processUserQuery:", error);
     throw error; // Re-throw the error to be handled by the caller
   }
 }
 
-export async function processUserQueryForRelationshipAnalysis(compositeChartId, query, numResults = 5) {
+export async function processUserQueryForRelationshipAnalysis(compositeChartId: string, query: string, numResults: number = 5): Promise<any> {
   console.log("Processing user query for relationship analysis:", query);
   console.log("Composite Chart ID:", compositeChartId);
   try{
@@ -733,7 +735,7 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId, 
     });
 
     // Extract relevant data from each match
-    const extractedData = results.matches.map((match, index) => {
+    const extractedData = results.matches.map((match: any, index: number) => {
       console.log(`Match ${index + 1} metadata:`, match.metadata);
       // Ensure metadata and its properties exist before accessing
       const text = match.metadata?.text || "";     // Default to empty string if text undefined
@@ -748,7 +750,7 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId, 
     console.log("Extracted data:", extractedData);
 
     // Combine the extracted data into a single string for context
-    const combinedText = extractedData.map(data => {
+    const combinedText = extractedData.map((data: any) => {
       // Format topics nicely if it's an array
       let contextEntry = "";
       if (data.description) { // Optionally add the general description
@@ -761,7 +763,7 @@ export async function processUserQueryForRelationshipAnalysis(compositeChartId, 
 
     console.log("Combined text for RAG:", combinedText);
     return combinedText;
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error in processUserQuery:", error);
     throw error; // Re-throw the error to be handled by the caller
   }

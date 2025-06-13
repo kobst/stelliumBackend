@@ -45,7 +45,7 @@ async function testFetchHoroscopes(userId: string, action: 'list' | 'latest' | '
                 console.log(`Date Range: ${new Date(latest.startDate).toDateString()} - ${new Date(latest.endDate).toDateString()}`);
                 console.log(`Generated: ${new Date(latest.generatedAt).toLocaleString()}`);
                 console.log('\nKey Themes:');
-                latest.analysis.keyThemes.forEach((theme, i) => {
+                latest.analysis.keyThemes.forEach((theme: string, i: number) => {
                     console.log(`${i + 1}. ${theme}`);
                 });
                 console.log('\nInterpretation:');
@@ -75,11 +75,11 @@ async function testFetchHoroscopes(userId: string, action: 'list' | 'latest' | '
                 console.log(`- Total Transits: ${horoscope.transitData.transits.length}`);
                 console.log(`- Active Retrogrades: ${horoscope.transitData.retrogrades.length}`);
                 console.log('\nKey Themes:');
-                horoscope.analysis.keyThemes.forEach((theme, i) => {
+                horoscope.analysis.keyThemes.forEach((theme: string, i: number) => {
                     console.log(`${i + 1}. ${theme}`);
                 });
                 console.log('\nDetailed Analysis:');
-                horoscope.analysis.detailedAnalysis.forEach(section => {
+                horoscope.analysis.detailedAnalysis.forEach((section: any) => {
                     console.log(`\n${section.title}:`);
                     console.log(section.content);
                 });

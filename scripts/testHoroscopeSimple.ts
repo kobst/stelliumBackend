@@ -38,8 +38,8 @@ async function testHoroscopeSimple(userId: string, horoscopeType: 'weekly' | 'mo
             startDate,
             endDate,
             transitData: {
-                transits: [],
-                retrogrades: []
+                transits: [] as any[],
+                retrogrades: [] as any[]
             },
             analysis: {
                 keyThemes: [
