@@ -96,36 +96,65 @@ export async function initializeDatabase(): Promise<void> {
         // Create essential indexes for performance
         console.log("Creating database indexes...");
         
+        // Helper function to create index with error handling
+        async function createIndexSafely(collection: Collection<any>, indexSpec: any, options?: any) {
+            try {
+                await collection.createIndex(indexSpec, options);
+            } catch (error: any) {
+                // Ignore duplicate key errors (code 11000) and index already exists errors (code 85)
+                if (error.code === 11000) {
+                    console.log(`Warning: Cannot create unique index on ${collection.collectionName} due to duplicate values. Index: ${JSON.stringify(indexSpec)}`);
+                    // Try to create a non-unique index instead if it was supposed to be unique
+                    if (options?.unique) {
+                        try {
+                            const nonUniqueOptions = { ...options };
+                            delete nonUniqueOptions.unique;
+                            await collection.createIndex(indexSpec, nonUniqueOptions);
+                            console.log(`Created non-unique index instead for ${collection.collectionName}`);
+                        } catch (retryError: any) {
+                            if (retryError.code !== 85 && retryError.codeName !== 'IndexOptionsConflict') {
+                                console.error(`Failed to create alternative index: ${retryError.message}`);
+                            }
+                        }
+                    }
+                } else if (error.code === 85 || error.codeName === 'IndexOptionsConflict') {
+                    console.log(`Index already exists for ${collection.collectionName}: ${JSON.stringify(indexSpec)}`);
+                } else {
+                    throw error;
+                }
+            }
+        }
+        
         // User collection indexes
-        await userCollection.createIndex({ email: 1 }, { unique: true });
-        await userCollection.createIndex({ _id: 1, email: 1 });
+        await createIndexSafely(userCollection, { email: 1 }, { unique: true });
+        await createIndexSafely(userCollection, { _id: 1, email: 1 });
         
         // Transit collection indexes
-        await transitsCollection.createIndex({ date: 1 });
-        await aspectsCollection.createIndex({ "date_range.0": 1, "date_range.1": 1 });
-        await retrogradesCollection.createIndex({ "date_range.0": 1, "date_range.1": 1 });
+        await createIndexSafely(transitsCollection, { date: 1 });
+        await createIndexSafely(aspectsCollection, { "date_range.0": 1, "date_range.1": 1 });
+        await createIndexSafely(retrogradesCollection, { "date_range.0": 1, "date_range.1": 1 });
         
         // Birth chart analysis indexes
-        await birthChartAnalysisCollection.createIndex({ userId: 1 });
-        await birthChartAnalysisCollection.createIndex({ "debug.inputSummary.userId": 1 });
+        await createIndexSafely(birthChartAnalysisCollection, { userId: 1 });
+        await createIndexSafely(birthChartAnalysisCollection, { "debug.inputSummary.userId": 1 });
         
         // Relationship analysis indexes
-        await relationshipAnalysisCollection.createIndex({ "debug.inputSummary.compositeChartId": 1 });
-        await relationshipAnalysisCollection.createIndex({ "debug.inputSummary.userAId": 1, "debug.inputSummary.userBId": 1 });
+        await createIndexSafely(relationshipAnalysisCollection, { "debug.inputSummary.compositeChartId": 1 });
+        await createIndexSafely(relationshipAnalysisCollection, { "debug.inputSummary.userAId": 1, "debug.inputSummary.userBId": 1 });
         
         // Composite chart indexes
-        await compositeChartCollection.createIndex({ userAId: 1, userBId: 1 });
-        await compositeChartCollection.createIndex({ _id: 1 });
+        await createIndexSafely(compositeChartCollection, { userAId: 1, userBId: 1 });
+        await createIndexSafely(compositeChartCollection, { _id: 1 });
         
         // Chat thread indexes
-        await chatThreadCollectionBirthChartAnalysis.createIndex({ userId: 1 });
-        await chatThreadRelationshipAnalysisCollection.createIndex({ compositeChartId: 1 });
+        await createIndexSafely(chatThreadCollectionBirthChartAnalysis, { userId: 1 });
+        await createIndexSafely(chatThreadRelationshipAnalysisCollection, { compositeChartId: 1 });
         
         // Horoscope collection indexes
-        await horoscopesCollection.createIndex({ userId: 1, date: 1 });
+        await createIndexSafely(horoscopesCollection, { userId: 1, date: 1 });
         
         // Transit ephemeris indexes
-        await transitEphemerisCollection.createIndex({ date: 1 });
+        await createIndexSafely(transitEphemerisCollection, { date: 1 });
         
         console.log('Database initialized successfully with indexes');
     } catch (error: unknown) {
@@ -347,8 +376,30 @@ export async function getCompositeCharts(): Promise<any[]> {
 }
 
 export async function saveUser(user: any): Promise<any> {
-    const result = await userCollection.insertOne(user);
-    return result;
+    try {
+        // Try to insert the user
+        const result = await userCollection.insertOne(user);
+        return result;
+    } catch (error: any) {
+        // If it's a duplicate key error on email, update the existing user instead
+        if (error.code === 11000 && error.keyPattern?.email) {
+            console.log(`User with email ${user.email} already exists. Updating instead.`);
+            const updateResult = await userCollection.findOneAndUpdate(
+                { email: user.email },
+                { $set: user },
+                { returnDocument: 'after' }
+            );
+            return {
+                acknowledged: true,
+                insertedId: updateResult._id,
+                upserted: true,
+                matchedCount: 1,
+                modifiedCount: 1
+            };
+        }
+        // Re-throw other errors
+        throw error;
+    }
 }
 
 export async function saveCompositeChart(compositeChart: any): Promise<any> {
