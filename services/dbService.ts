@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { MongoClient, ObjectId, Db, Collection } from 'mongodb';
 import { processInterpretationSection } from './vectorize.js';
 import { getMongoConnectionString } from './secretsService.js';

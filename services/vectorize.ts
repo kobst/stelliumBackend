@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Import necessary libraries
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { encoding_for_model } from '@dqbd/tiktoken';

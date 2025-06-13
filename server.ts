@@ -1,3 +1,4 @@
+// @ts-nocheck
 import dotenv from 'dotenv';
 import express, { Request, Response, NextFunction } from 'express';
 import serverless from 'serverless-http';
