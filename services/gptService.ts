@@ -922,6 +922,7 @@ export async function getRelationshipCategoryPanels(
   async function callPanel(task: string) {
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.`;
     const userPrompt = `${baseInfo}\n\nTASK:\n${task}`;
+    const client = await getOpenAIClient();
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
