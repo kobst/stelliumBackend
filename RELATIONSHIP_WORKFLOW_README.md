@@ -12,8 +12,9 @@ The relationship workflow is a unified automated process that provides:
 4. **Comprehensive analysis** - Scores, AI interpretations, and vectorization
 5. **Atomic operations** - Single document per relationship with proper status tracking
 
-### Recent Improvements (2025-06-10)
+### Recent Improvements
 
+#### 2025-06-10: Workflow Architecture Overhaul
 The workflow has been completely overhauled to address status tracking and data consistency issues:
 
 - **Unified Document Structure**: Single document per relationship prevents data fragmentation
@@ -21,6 +22,15 @@ The workflow has been completely overhauled to address status tracking and data 
 - **Comprehensive Retry Logic**: Failed operations automatically retry with exponential backoff
 - **Enhanced Status Tracking**: Detailed progress breakdown with vectorization status per category
 - **Backwards Compatibility**: Maintains existing document structure while adding new functionality
+
+#### 2025-06-13: Score Analysis Implementation
+Added automatic detection and analysis of highest and lowest scoring relationship factors:
+
+- **Comprehensive Score Analysis**: Extracts ALL aspects and sorts by absolute score value
+- **High/Low Score Detection**: Identifies particularly high (score > 12) and low (score < -10) scoring factors
+- **GPT-Powered Insights**: Analyzes top 1-2 highest scoring aspects regardless of threshold status
+- **Synastry-Only Focus**: Analysis derived exclusively from synastry aspects and house placements (composite factors excluded)
+- **Zero Database Migration**: Backward compatible - score analysis is added to existing document structure
 
 ## Workflow Architecture
 
@@ -43,7 +53,113 @@ Each relationship analysis is stored as a single document in the `relationship_a
       userAName: String,
       userBName: String
     },
-    categories: { /* Detailed astrological data by category */ }
+    categories: { 
+      /* Detailed astrological data by category + green/red flags */
+      OVERALL_ATTRACTION_CHEMISTRY: {
+        // EXISTING: Original astrological data (unchanged)
+        synastry: {
+          matchedAspects: [
+            {
+              aspect: "Edward's Venus conjunction Ashley's Mars",
+              orb: 2.4,
+              score: 22,  // This becomes a GREEN FLAG (>12)
+              pairKey: 'mars_venus',
+              planet1Sign: 'Sagittarius',
+              planet2Sign: 'Sagittarius',
+              planet1House: 1,
+              planet2House: 1
+            },
+            {
+              aspect: "Edward's Moon square Ashley's Moon", 
+              orb: 4.3,
+              score: -7,  // Negative but not a red flag (<-10)
+              pairKey: 'moon_moon'
+              // ... other fields
+            }
+          ]
+        },
+        composite: { matchedAspects: [...] },
+        synastryHousePlacements: {
+          AinB: [
+            {
+              planet: 'Jupiter',
+              house: 10,
+              points: 15,  // This becomes a GREEN FLAG (>12)
+              reason: 'Supports shared ambitions',
+              direction: 'A->B',
+              description: "Edward's Jupiter in Ashley's house 10"
+            }
+          ],
+          BinA: [...]
+        },
+        compositeHousePlacements: [...],
+        
+        // NEW: Green/Red Flags + Analysis of Top Aspects
+        flags: {
+          greenFlags: [
+            {
+              score: 22,
+              source: 'synastry',
+              aspect: "Edward's Venus conjunction Ashley's Mars",
+              reason: "Strong synastry aspect (22 points)",
+              orb: 2.4,
+              pairKey: 'mars_venus',
+              planet1Sign: 'Sagittarius',
+              planet2Sign: 'Sagittarius',
+              planet1House: 1,
+              planet2House: 1
+            },
+            {
+              score: 15,
+              source: 'synastryHousePlacement',
+              planet: 'Jupiter',
+              house: 10,
+              points: 15,
+              reason: "Positive synastry house placement (15 points): Supports shared ambitions",
+              description: "Edward's Jupiter in Ashley's house 10",
+              direction: 'A->B'
+            }
+          ],
+          redFlags: [], // No aspects < -10 in this category
+          flagAnalysis: "The Venus-Mars conjunction stands out as the most powerful factor, creating magnetic attraction and natural chemistry [GREEN FLAG]. Jupiter's supportive placement in the career sector enhances shared ambitions and mutual respect for each other's goals.",
+          flagsGeneratedAt: Date
+        }
+      },
+      
+      EMOTIONAL_SECURITY_CONNECTION: {
+        // Same structure but different aspects/flags
+        synastry: { matchedAspects: [...] },
+        // ... other astrological data
+        flags: {
+          greenFlags: [], // No aspects > 12 in this category
+          redFlags: [],   // No aspects < -10 in this category
+          flagAnalysis: "The Moon-Mercury trine provides the strongest foundation for emotional understanding, creating natural communication flow. While no extreme aspects dominate, the gentle supportive connections suggest emotional security develops through consistent, caring interaction.",
+          flagsGeneratedAt: Date
+        }
+      }
+      // ... 5 more categories with same structure
+    },
+    
+    // NEW: Flag generation metadata
+    flagGeneration: {
+      flagsGenerated: true,
+      flagsGeneratedAt: Date,
+      thresholds: { greenFlagMinScore: 12, redFlagMaxScore: -10 },
+      totalCategories: 7,
+      flagSummary: {
+        OVERALL_ATTRACTION_CHEMISTRY: {
+          greenFlags: 2,
+          redFlags: 0,
+          hasAnalysis: true
+        },
+        EMOTIONAL_SECURITY_CONNECTION: {
+          greenFlags: 0,
+          redFlags: 0,
+          hasAnalysis: true
+        }
+        // ... other categories
+      }
+    }
   },
   
   // Status tracking
@@ -75,12 +191,14 @@ Each relationship analysis is stored as a single document in the `relationship_a
 
 ## Workflow Steps
 
-### Step 1: Generate Scores
+### Step 1: Generate Scores with Green/Red Flags
 - Calculates synastry aspects between two birth charts
 - Generates composite chart
 - Computes compatibility scores for 7 relationship categories
+- **NEW**: Automatically extracts green flags (scores > 12) and red flags (scores < -10)
+- **NEW**: Generates GPT analysis of flags for each category
 - Creates unified document with proper structure
-- **New**: Uses upsert operations to ensure single document
+- Uses upsert operations to ensure single document
 
 ### Step 2: Generate Analysis (Parallel Processing)
 - Processes all 7 categories in parallel:
@@ -151,7 +269,27 @@ Response:
   "analysisData": {
     "scores": { /* Relationship scores */ },
     "analysis": { /* Generated interpretations */ },
-    "vectorizationStatus": { /* Per-category vectorization status */ }
+    "vectorizationStatus": { /* Per-category vectorization status */ },
+    "debug": {
+      "categories": {
+        "OVERALL_ATTRACTION_CHEMISTRY": {
+          // ... existing data
+          "flags": {
+            "greenFlags": [
+              {
+                "score": 22,
+                "source": "synastry",
+                "aspect": "Person A's Venus conjunction Person B's Mars",
+                "reason": "Strong synastry aspect (22 points)"
+              }
+            ],
+            "redFlags": [],
+            "flagAnalysis": "The Venus-Mars conjunction dominates this area as the strongest factor [GREEN FLAG], creating powerful magnetic attraction and natural romantic chemistry. Jupiter's supportive house placement further enhances mutual admiration and shared goals, making this a particularly strong area for the relationship.",
+            "flagsGeneratedAt": "2025-06-13T10:30:00Z"
+          }
+        }
+      }
+    }
   },
   "jobs": {
     "scores": { "needsGeneration": false },
@@ -309,6 +447,148 @@ If a workflow fails, it can be restarted and will automatically:
 - Skip already completed analysis generation
 - Retry only failed vectorization tasks
 
+## Green/Red Flags Feature
+
+### Overview
+The workflow automatically identifies and analyzes the most significant positive and negative astrological factors in each relationship category.
+
+### Enhanced Aspect Analysis Approach
+- **All Aspects Analyzed**: System extracts and sorts ALL positive and negative aspects by absolute score value
+- **Flag Marking**: Aspects scoring > 12 are marked as green flags, < -10 as red flags
+- **Top Aspect Focus**: GPT analysis focuses on the top 1-2 aspects regardless of flag status
+- **Sources**: Only synastry aspects and house placements (composite factors excluded)
+- **Always Meaningful**: Every category gets analysis even without extreme scores
+
+### Flag Structure
+Each category contains:
+```javascript
+flags: {
+  greenFlags: [
+    {
+      score: 17,
+      source: 'synastry' | 'synastryHousePlacement',
+      aspect: "Full aspect description", // For synastry
+      description: "Placement description", // For house placements
+      reason: "Why this is significant",
+      orb: 2.4, // For aspects
+      planet: "Venus", // For placements
+      house: 7, // For placements
+      // Additional type-specific fields
+    }
+  ],
+  redFlags: [...], // Same structure as greenFlags
+  flagAnalysis: "GPT-generated 2-3 sentence insight about what these flags mean",
+  flagsGeneratedAt: Date
+}
+```
+
+### Implementation Details
+- **Comprehensive Extraction**: All aspects/placements are collected and sorted by absolute score value
+- **Smart Analysis**: GPT focuses on top 1-2 aspects regardless of whether they meet flag thresholds
+- **Flag Marking**: Strong aspects (>12 or <-10) are highlighted as particularly significant
+- **Always Insightful**: Every category gets meaningful analysis even with moderate scores
+- **Category-Specific**: Each of the 7 relationship categories has independent analysis
+- **No Migration Required**: Analysis is added to existing document structure
+
+### Frontend Display Example
+```javascript
+const renderCategoryFlags = (category) => {
+  const flags = category.flags;
+  if (!flags) return null;
+  
+  return (
+    <div className="category-analysis">
+      {/* Always show the analysis - it now covers top aspects regardless of flag status */}
+      <div className="aspect-analysis">
+        <h4>Key Astrological Factors</h4>
+        <p className="analysis-text">{flags.flagAnalysis}</p>
+      </div>
+      
+      {/* Show green flags if any exist */}
+      {flags.greenFlags.length > 0 && (
+        <div className="green-flags">
+          <h5>🟢 Green Flags ({flags.greenFlags.length})</h5>
+          {flags.greenFlags.map((flag, index) => (
+            <div key={index} className="flag-item green">
+              <div className="flag-description">
+                {flag.source === 'synastry' ? flag.aspect : flag.description}
+              </div>
+              <div className="flag-score">+{flag.score}</div>
+              {flag.orb && <div className="flag-orb">Orb: {flag.orb}°</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Show red flags if any exist */}
+      {flags.redFlags.length > 0 && (
+        <div className="red-flags">
+          <h5>🔴 Red Flags ({flags.redFlags.length})</h5>
+          {flags.redFlags.map((flag, index) => (
+            <div key={index} className="flag-item red">
+              <div className="flag-description">
+                {flag.source === 'synastry' ? flag.aspect : flag.description}
+              </div>
+              <div className="flag-score">{flag.score}</div>
+              {flag.orb && <div className="flag-orb">Orb: {flag.orb}°</div>}
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Show when no extreme flags exist */}
+      {flags.greenFlags.length === 0 && flags.redFlags.length === 0 && (
+        <div className="no-flags">
+          <p className="moderate-note">
+            ℹ️ No extreme aspects (green/red flags) in this area. 
+            The analysis above covers the most significant factors.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Enhanced category overview that shows flag counts
+const renderCategoryOverview = (categories) => {
+  return (
+    <div className="relationship-overview">
+      {Object.entries(categories).map(([categoryName, categoryData]) => {
+        const flags = categoryData.flags;
+        const displayName = categoryName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        
+        return (
+          <div key={categoryName} className="category-card">
+            <h3>{displayName}</h3>
+            <div className="flag-indicators">
+              {flags?.greenFlags.length > 0 && (
+                <span className="green-indicator">🟢 {flags.greenFlags.length}</span>
+              )}
+              {flags?.redFlags.length > 0 && (
+                <span className="red-indicator">🔴 {flags.redFlags.length}</span>
+              )}
+              {(!flags?.greenFlags.length && !flags?.redFlags.length) && (
+                <span className="neutral-indicator">⚪ Moderate</span>
+              )}
+            </div>
+            <p className="category-summary">{flags?.flagAnalysis}</p>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+```
+
+### Flag Thresholds Configuration
+Default thresholds can be adjusted:
+```typescript
+export const DEFAULT_FLAG_THRESHOLDS = {
+  greenFlagMinScore: 12,  // Adjust for sensitivity
+  redFlagMaxScore: -10    // Adjust for sensitivity
+};
+```
+
 ## Performance Considerations
 
 - **Parallel Processing**: All 7 categories processed concurrently
@@ -316,6 +596,7 @@ If a workflow fails, it can be restarted and will automatically:
 - **Memory Management**: Garbage collection triggers for large operations
 - **Rate Limiting**: Built-in delays between operations to respect API limits
 - **Efficient Polling**: Frontend polls every 3 seconds for real-time updates
+- **Flag Generation Impact**: Adds ~10-20 seconds for GPT flag analysis (runs in parallel)
 
 ## Database Operations
 

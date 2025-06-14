@@ -308,7 +308,7 @@ function formatAstrologicalDetailsForLLM(categoryDetails, userAName, userBName) 
     if (categoryDetails.synastry && categoryDetails.synastry.matchedAspects && categoryDetails.synastry.matchedAspects.length > 0) {
         detailsString += `Synastry Aspects (interactions between ${userAName}'s and ${userBName}'s charts):\n`;
         categoryDetails.synastry.matchedAspects.forEach(aspect => {
-            detailsString += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score})\n`;
+            detailsString += `  - ${aspect.description}\n`;
         });
         detailsString += "\n";
     }
@@ -316,7 +316,7 @@ function formatAstrologicalDetailsForLLM(categoryDetails, userAName, userBName) 
     if (categoryDetails.composite && categoryDetails.composite.matchedAspects && categoryDetails.composite.matchedAspects.length > 0) {
         detailsString += `Composite Chart Aspects (the relationship's own chart):\n`;
         categoryDetails.composite.matchedAspects.forEach(aspect => {
-            detailsString += `  - Aspect: "${aspect.aspect}" (Score impact: ${aspect.score}, Type: ${aspect.scoreType})\n     Description: ${aspect.description}\n`;
+            detailsString += `  - ${aspect.description}\n`;
         });
         detailsString += "\n";
     }

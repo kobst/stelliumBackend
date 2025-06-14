@@ -122,7 +122,7 @@ export interface HoroscopeResponse {
 }
 
 export interface RelationshipPanelsResponse {
-  shortSynopsis: string;
+  synastry: string;
   composite: string;
   fullAnalysis: string;
 }

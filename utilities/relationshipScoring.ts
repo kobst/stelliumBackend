@@ -13,6 +13,8 @@ import {
     planetHouseScores
 } from './relationshipScoringConstants.js';
 
+import { orbDescription } from './birthChartScoring.js';
+
 function formatHouseNumber(house) {
     return house && house > 0 ? `${house}` : 'unknown';
 }
@@ -342,8 +344,12 @@ function scoreSynastryCategoryAspects(category, synastryAspects, userA, userB, d
                         const planet1House = getHouse(birthChartPlanets1, aspect.planet1);
                         const planet2House = getHouse(birthChartPlanets2, aspect.planet2);
 
+                        const orbDesc = orbDescription(aspect.orb);
+                        const orbText = orbDesc ? ` ${orbDesc}` : '';
+                        
                         result.debugInfo.matchedAspects.push({
-                            aspect: `${userAFirstName}'s ${aspect.planet1} in ${planet1Sign} their ${formatHouseNumber(planet1House)} house is ${aspect.aspectType} ${userBFirstName}'s ${aspect.planet2} in ${planet2Sign} and their ${formatHouseNumber(planet2House)} house`,
+                            aspect: aspect.aspectType,
+                            description: `${userAFirstName}'s ${aspect.planet1} in ${planet1Sign} their ${formatHouseNumber(planet1House)} house is${orbText} ${aspect.aspectType} ${userBFirstName}'s ${aspect.planet2} in ${planet2Sign} and their ${formatHouseNumber(planet2House)} house`,
                             orb: aspect.orb,
                             score: score,
                             pairKey: aspectPair,
@@ -361,6 +367,15 @@ function scoreSynastryCategoryAspects(category, synastryAspects, userA, userB, d
     } catch (error) {
         console.error(`ERROR processing synastry aspects for category ${category}:`, error);
         console.error("Error stack:", error.stack);
+    }
+    
+    // Sort matchedAspects by absolute score value (highest to lowest)
+    if (result.debugInfo && result.debugInfo.matchedAspects) {
+        result.debugInfo.matchedAspects.sort((a, b) => {
+            const scoreA = typeof a.score === 'number' ? Math.abs(a.score) : 0;
+            const scoreB = typeof b.score === 'number' ? Math.abs(b.score) : 0;
+            return scoreB - scoreA;
+        });
     }
     
     return result;
@@ -440,13 +455,17 @@ function scoreCompositeCategoryAspects(category, compositeAspects, debug = true)
                         // Log this match for debugging
                         if (debug && result.debugInfo) {
                             const scoreType = score >= 0 ? "positive" : "negative";
+                            const orbDesc = orbDescription(aspect.orb);
+                            const orbText = orbDesc ? ` ${orbDesc}` : '';
+                            
                             result.debugInfo.matchedAspects.push({
-                                aspect: `${planet1} ${aspect.aspectType} ${planet2}`,
+                                aspect: aspect.aspectType,
+                                description: `${planet1}${orbText} ${aspect.aspectType} ${planet2}`,
                                 orb: aspect.orb,
                                 score: score,
                                 scoreType: scoreType,
                                 rule: pairKey,
-                                description: `${planet1} in ${planet1Sign} ${aspect.aspectType} ${planet2} in ${planet2Sign}`,
+                                fullDescription: `${planet1} in ${planet1Sign} is${orbText} ${aspect.aspectType} ${planet2} in ${planet2Sign}`,
                             });
                             
                             // Add special logging for negative scores
@@ -465,6 +484,15 @@ function scoreCompositeCategoryAspects(category, compositeAspects, debug = true)
     } catch (error) {
         console.error(`ERROR processing composite aspects for category ${category}:`, error);
         console.error("Error stack:", error.stack);
+    }
+    
+    // Sort matchedAspects by absolute score value (highest to lowest)
+    if (result.debugInfo && result.debugInfo.matchedAspects) {
+        result.debugInfo.matchedAspects.sort((a, b) => {
+            const scoreA = typeof a.score === 'number' ? Math.abs(a.score) : 0;
+            const scoreB = typeof b.score === 'number' ? Math.abs(b.score) : 0;
+            return scoreB - scoreA;
+        });
     }
     
     return result;
@@ -907,6 +935,22 @@ function scoreSynastryHousePlacements(userA, userB, category) {
     
     console.log(`scoreSynastryHousePlacements: Total score = ${totalScore}`);
     
+    // Sort AinB and BinA arrays by absolute value of points (highest to lowest)
+    if (details.AinB && details.AinB.length > 0) {
+        details.AinB.sort((a, b) => {
+            const pointsA = typeof a.points === 'number' ? Math.abs(a.points) : 0;
+            const pointsB = typeof b.points === 'number' ? Math.abs(b.points) : 0;
+            return pointsB - pointsA;
+        });
+    }
+    if (details.BinA && details.BinA.length > 0) {
+        details.BinA.sort((a, b) => {
+            const pointsA = typeof a.points === 'number' ? Math.abs(a.points) : 0;
+            const pointsB = typeof b.points === 'number' ? Math.abs(b.points) : 0;
+            return pointsB - pointsA;
+        });
+    }
+    
     // Return combined score but keep detailed logs separate
     return {
         score: totalScore,
@@ -1038,6 +1082,16 @@ function scoreCompositeHousePlacements(compositeChart, category, debug = true) {
     
     console.log(`scoreCompositeHousePlacements: Total score for ${category} = ${result.score}`);
     console.log(`scoreCompositeHousePlacements: result.details = ${result.details}`);
+    
+    // Sort details array by absolute value of points (highest to lowest)
+    if (result.details && result.details.length > 0) {
+        result.details.sort((a, b) => {
+            const pointsA = typeof a.points === 'number' ? Math.abs(a.points) : 0;
+            const pointsB = typeof b.points === 'number' ? Math.abs(b.points) : 0;
+            return pointsB - pointsA;
+        });
+    }
+    
     return result;
 }
 

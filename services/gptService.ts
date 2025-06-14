@@ -11,6 +11,8 @@ import type {
   HoroscopeResponse,
   RelationshipPanelsResponse
 } from '../types/gpt.js';
+import type { RelationshipFlag } from '../types/relationshipFlags.js';
+import { formatAspectsForGPT } from '../utilities/relationshipFlags.js';
 import { decodePlanetHouseCode, decodeAspectCode, decodeAspectCodeMap, decodeRulerCode } from "../utilities/archive/decoder.js"
 import { BroadTopicsEnum } from "../utilities/constants.js"
 import { processUserQueryForHoroscopeAnalysis } from "./vectorize.js"
@@ -919,19 +921,31 @@ export async function getRelationshipCategoryPanels(
 ) {
   const client = await getOpenAIClient();
   
-  // Short Synopsis - focus on synastry only
-  const shortSynopsis = await (async () => {
-    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation. Your tone is warm, direct, and insightful. Write concisely and avoid filler. Do not preface your response with any unnecessary filler or preamble. 
-    - Do not restate the specific category name in your response.
-    - Be direct and avoid overly elaborate phrasing. 
-    - Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
-    - Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.`;
+  // Synastry Panel - focused synastry analysis
+  const synastry = await (async () => {
+    const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
+
+You interpret synastry data to help couples understand their inter-chart dynamics. Focus specifically on how the two birth charts interact with each other through aspects and house overlays.
+
+Your tone is warm, direct, emotionally intelligent, and empowering.
+
+You do not list placements or aspects a la carte — instead, weave a holistic story that integrates:
+- The inter-chart synastry dynamics between each person's birth chart (synastry aspects and house overlays)
+- How these interactions create chemistry, challenges, or growth opportunities
+- Specific guidance for navigating the synastry dynamics
+
+- Do not preface your response with any unnecessary filler or preamble. 
+- Do not restate the specific category name in your response.
+- Be direct and avoid overly elaborate phrasing. 
+- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
+
+Every interpretation should reflect how the unique energies between the two people interact in this relationship area. Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.`;
     
-    const userPrompt = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
+    const userPrompt = `Synastry Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
 SYNASTRY SCORES:
-- Synastry: ${relationshipScores.synastry ?? 'N/A'}
-- Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? 'N/A'}
+- Synastry: ${relationshipScores.synastry ?? 'N/A'} / 100
+- Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? 'N/A'} / 100
 
 SYNASTRY ASPECTS:
 ${astrologicalDetails.synastryAspects}
@@ -939,8 +953,14 @@ ${astrologicalDetails.synastryAspects}
 SYNASTRY HOUSE PLACEMENTS:
 ${astrologicalDetails.synastryHousePlacements}
 
-TASK: Write a headline summary no longer than a paragraphfocusing on the top 2-3 most significant synastry dynamics that define this relationship area. Be specific about which aspects create the strongest chemistry or challenges.
-Aim for a response of at least 100 words for this category.`;
+TASK: Write 2-3 paragraphs focusing exclusively on synastry dynamics. Structure your response as follows:
+1. First, identify and analyze the strongest synastry connections (both harmonious and challenging) that define this relationship area
+2. Then, explain how ${userAName}'s planets interact with ${userBName}'s chart for the specific aspects and positions included above
+3. Finally, explain how ${userBName}'s planets interact with ${userAName}'s chart for the specific aspects and positions included above
+
+Focus only on synastry - how their charts interact with each other, not on composite chart dynamics or individual birth chart traits.`;
+
+    console.log("Synastry Panel Prompt: ", userPrompt);
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
@@ -968,8 +988,9 @@ ${astrologicalDetails.compositeAspects}
 COMPOSITE HOUSE PLACEMENTS:
 ${astrologicalDetails.compositeHousePlacements}
 
-TASK: In 160 words, analyze how the composite chart reveals the relationship's inherent nature and potential in this area. What is the relationship's "personality" regarding ${categoryDisplayName}? Focus exclusively on composite chart dynamics.`;
+TASK: In 1-2 paragraphs, analyze how the composite chart reveals the relationship's inherent nature and potential in this area. What is the relationship's "personality" regarding ${categoryDisplayName}? Focus exclusively on composite chart dynamics.`;
 
+    console.log("Composite Prompt: ", userPrompt);
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -1004,7 +1025,7 @@ Every interpretation should reflect how the unique energies between the two peop
     const userPrompt = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
 I. SCORES:
-- Overall Score: ${relationshipScores.overall ?? "N/A"}
+- Overall Score: ${relationshipScores.overall ?? "N/A"} /
 - Synastry Score: ${relationshipScores.synastry ?? "N/A"}
 - Composite Score: ${relationshipScores.composite ?? "N/A"}
 - Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? "N/A"}
@@ -1039,6 +1060,8 @@ Please write 3–5 paragraphs addressing the following:
 
 Write a synthesis, not a list. Use astrological data and psychological insight to offer grounded, helpful guidance.`;
 
+    console.log("Full Analysis Prompt: ", userPrompt);
+
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -1049,11 +1072,118 @@ Write a synthesis, not a list. Use astrological data and psychological insight t
     return response.choices[0].message.content;
   })();
 
-  return { shortSynopsis, composite, fullAnalysis };
+  return { synastry, composite, fullAnalysis };
 }
 
+/**
+ * Generates a concise analysis of the top positive and negative aspects for a relationship category
+ * @param categoryDisplayName - Name of the relationship category (e.g. "Overall Attraction Chemistry")
+ * @param extractionResult - Full extraction result with all sorted aspects and identified flags
+ * @param userAName - First person's name
+ * @param userBName - Second person's name
+ * @returns GPT-generated analysis of the top aspects
+ */
+export async function generateScoreAnalysis(
+  categoryDisplayName: string,
+  extractionResult: any, // ScoreExtractionResult & { allPositiveAspects: RelationshipScoredItem[], allNegativeAspects: RelationshipScoredItem[] }
+  userAName: string,
+  userBName: string,
+  categoryScore?: number // Optional overall category score for context
+): Promise<string> {
+  try {
+    console.log(`Generating score analysis for ${categoryDisplayName}`);
+    console.log(`Positive aspects: ${extractionResult.allPositiveAspects.length}, Negative aspects: ${extractionResult.allNegativeAspects.length}`);
+    console.log(`High scoring items: ${extractionResult.greenFlagCount}, Low scoring items: ${extractionResult.redFlagCount}`);
+
+    // Handle case where there are no aspects at all
+    if (extractionResult.allPositiveAspects.length === 0 && extractionResult.allNegativeAspects.length === 0) {
+      return `This area shows minimal astrological activity between ${userAName} and ${userBName}, suggesting a neutral dynamic where other factors in their charts may be more influential. The relationship in this area will likely develop based on conscious choices rather than strong astrological drivers.`;
+    }
+
+    const systemPrompt = `You are StelliumAI, a whip-smart astro-match commentator.
+
+      Job: deliver a **punchy micro-forecast (2-3 sentences)** for one
+      relationship category.
+
+      Style rules
+      1. Hook the reader in the first clause; use vivid verbs (“ignites…”, “anchors…”).
+      2. Mention the #1 green-flag aspect *and*, if present, the #1 red-flag aspect.
+      3. End with a quick “so what” tip the couple can try tonight or this week.
+      4. No headings, lists, or colons. Flowing prose only.
+      5. Keep jargon light—translate ‘quincunx’ into everyday language if used.
+
+      If all top aspects are positive, lean optimistic but remind them to keep nurturing the vibe.
+      If mixed, show how tension can be growth fuel. If mostly challenging, reassure and
+      offer one constructive action.`;
 
 
+    // Format the top aspects using the utility function
+    const { positiveSummary, negativeSummary } = formatAspectsForGPT(extractionResult, 3);
+
+    // Add score color context if category score is provided
+    let scoreLine = "";
+    if (categoryScore !== undefined) {
+      const scoreTone = 
+        categoryScore >= 75 ? "high" :
+        categoryScore >= 45 ? "moderate" :
+        "low";
+      scoreLine = `Overall ${categoryDisplayName} score: ${categoryScore}/100 – a ${scoreTone}-vibe zone.\n`;
+    }
+
+    const userPrompt = `${scoreLine}Top astro drivers for ${userAName} × ${userBName}:
+
+${positiveSummary}
+
+${negativeSummary}
+
+TASK: Using the rules above, write the 2-3-sentence micro-forecast.${extractionResult.greenFlagCount > 0 || extractionResult.redFlagCount > 0 ? ' Note which aspects are marked as high or low scores, as these are especially significant.' : ''}`;
+
+    console.log("Score Analysis Prompt v2: ", userPrompt);
+
+    const client = await getOpenAIClient();
+    const response = await client.chat.completions.create({
+      model: "gpt-4o-mini",
+      messages: [
+        { role: "system", content: systemPrompt.trim() },
+        { role: "user", content: userPrompt.trim() }
+      ],
+      temperature: 0.7,
+      max_tokens: 120
+    });
+
+    const analysis = response.choices[0].message.content?.trim() || 
+      "Unable to generate aspect analysis at this time.";
+    
+    console.log(`Aspect analysis generated for ${categoryDisplayName}: ${analysis.length} characters`);
+    return analysis;
+
+  } catch (error) {
+    console.error(`Error generating aspect analysis for ${categoryDisplayName}:`, error);
+    // Return a fallback analysis based on what we have
+    const hasPositive = extractionResult.allPositiveAspects.length > 0;
+    const hasNegative = extractionResult.allNegativeAspects.length > 0;
+    
+    if (hasPositive && hasNegative) {
+      return `This area shows both supportive and challenging astrological factors for ${userAName} and ${userBName}, creating a dynamic that requires conscious navigation and mutual understanding.`;
+    } else if (hasPositive) {
+      return `This area shows supportive astrological factors that naturally enhance ${userAName} and ${userBName}'s connection and compatibility.`;
+    } else if (hasNegative) {
+      return `This area presents some astrological challenges that ${userAName} and ${userBName} can work through with awareness and open communication.`;
+    } else {
+      return `This area of ${userAName} and ${userBName}'s relationship shows moderate astrological influence, allowing them to shape this dynamic through their choices and actions.`;
+    }
+  }
+}
+
+// Legacy function name for backward compatibility
+export async function generateFlagAnalysis(
+  categoryDisplayName: string,
+  extractionResult: any,
+  userAName: string,
+  userBName: string
+): Promise<string> {
+  return generateScoreAnalysis(categoryDisplayName, extractionResult, userAName, userBName);
+}
 
 export async function expandPrompt(prompt: string) {
   console.log("expandPrompt")
