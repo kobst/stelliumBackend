@@ -1038,6 +1038,22 @@ TASK: In 1-2 paragraphs (140 words total), analyze how the composite chart revea
 
   // Full Analysis - Sequential processing using previous panels + revised deep-dive structure
   const fullAnalysis = await (async () => {
+    // Convert score to tone using the same approach as generateScoreAnalysis
+    const overallScore = relationshipScores.overall || 0;
+    const scoreTone = 
+      overallScore >= 75 ? "high-energy" :
+      overallScore >= 60 ? "strong" :
+      overallScore >= 45 ? "moderate" :
+      overallScore >= 30 ? "gentle" :
+      "nuanced";
+    
+    const scoreIntensity = 
+      overallScore >= 75 ? "powerfully resonant" :
+      overallScore >= 60 ? "harmoniously aligned" :
+      overallScore >= 45 ? "thoughtfully balanced" :
+      overallScore >= 30 ? "subtly connected" :
+      "consciously crafted";
+
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
 
 You create deep-dive analyses that synthesize synastry, composite, and individual traits into actionable relationship guidance.
@@ -1047,12 +1063,14 @@ Your tone is warm, direct, emotionally intelligent, and empowering.
 Don't re-explain the facts from the synastry and composite panels above; use them as ingredients to create a comprehensive relationship story.
 
 Structure your response following this 300-350 word outline:
-1. Opening hook (scores + headline)
+1. Opening hook (tone + headline, no numbers)
 2. Chemistry paragraph (use green-flag aspects)
 3. Growth edge paragraph (use red-flag aspects + composite dynamics)
 4. ${userAName} POV (70 words) → how to lean into strength
 5. ${userBName} POV (70 words) → how to buffer challenge
 6. Action paragraph (specific weekly ritual)
+
+IMPORTANT: Do not mention any numerical scores. Use the provided tone qualifiers to convey the relationship's intensity and quality without hard numbers.
 
 - Do not preface your response with any unnecessary filler or preamble.
 - Do not restate the specific category name in your response.
@@ -1063,7 +1081,7 @@ Every interpretation should reflect how the unique energies between the two peop
 
     const userPrompt = `${inlineSynopsis}Deep-Dive Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
-SCORE CONTEXT: ${scoreContext}
+SCORE TONE: This area shows ${scoreTone} compatibility that feels ${scoreIntensity}
 
 SYNASTRY PANEL INSIGHTS:
 ${synastry}
@@ -1076,7 +1094,7 @@ ${userAName}: ${summarizedContextA}
 ${userBName}: ${summarizedContextB}
 
 TASK: Write a comprehensive 300-350 word analysis that follows this structure:
-1. Opening hook combining the scores and main relationship theme
+1. Opening hook using the tone qualifiers (${scoreTone}, ${scoreIntensity}) - NO numerical scores
 2. Chemistry dynamics paragraph highlighting the strongest positive connections
 3. Growth edge paragraph addressing the main challenges and how composite energy affects them
 4. ${userAName}'s perspective: How they can best contribute to this area (70 words)
