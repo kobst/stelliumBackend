@@ -284,7 +284,7 @@ async function fetchAllContextsForUser(userId, userName, relationshipCategories)
             console.log(`    [fetchAllContextsForUser] ${userName} - BEFORE getRelationshipCategoryContext for ${categoryValue}`);
             const contextArray = await getRelationshipCategoryContextForUser(userId, categoryValue);
             console.log(`    [fetchAllContextsForUser] ${userName} - AFTER getRelationshipCategoryContext for ${categoryValue}. Found ${contextArray.length} items.`);
-            userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\n---\n\n");
+            userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\nIn addition, ");
             if (!userContexts[categoryValue]) {
                 userContexts[categoryValue] = "No specific context found from individual analysis for this category.";
             }

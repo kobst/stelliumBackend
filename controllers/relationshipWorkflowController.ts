@@ -356,7 +356,7 @@ async function fetchAllContextsForUser(userId, userName, relationshipCategories)
       console.log(`    [fetchAllContextsForUser] ${userName} - BEFORE getRelationshipCategoryContext for ${categoryValue}`);
       const contextArray = await getRelationshipCategoryContextForUser(userId, categoryValue);
       console.log(`    [fetchAllContextsForUser] ${userName} - AFTER getRelationshipCategoryContext for ${categoryValue}. Found ${contextArray.length} items.`);
-      userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\n---\n\n");
+      userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\nIn addition, ");
       if (!userContexts[categoryValue]) {
         userContexts[categoryValue] = "No specific context found from individual analysis for this category.";
       }
@@ -559,8 +559,19 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
               const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
               const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-              // Get score synopsis data for inline context if available
-              const scoreSynopsisData = relationshipAnalysis.debug?.categories?.[categoryValue]?.scoreAnalysis || null;
+              // Extract score synopsis data directly from category data
+              let synopsisData = null;
+              const categoryData = relationshipAnalysis.debug?.categories?.[categoryValue];
+              if (categoryData) {
+                const { extractCategoryScores } = await import('../utilities/relationshipFlags.js');
+                const extractedScores = extractCategoryScores(categoryData);
+                synopsisData = {
+                  ...extractedScores,
+                  categoryScore: relationshipScoresForCategory.overall || 0,
+                  category: categoryValue
+                };
+                console.log(`Extracted ${extractedScores.allPositiveAspects.length} positive and ${extractedScores.allNegativeAspects.length} negative aspects for synopsis`);
+              }
               
               // Generate panel analyses with enhanced context
               const panels = await getRelationshipCategoryPanels(
@@ -572,7 +583,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
                   contextA,
                   contextB,
                   categoryValue, // Pass category for context summarization
-                  scoreSynopsisData // Pass synopsis data for inline context
+                  synopsisData // Pass synopsis data for inline context
               );
 
               // Create combined string for storage compatibility
@@ -771,8 +782,19 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
             const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-            // Get score synopsis data for inline context if available
-            const scoreSynopsisData = relationshipAnalysis.debug?.categories?.[categoryValue]?.scoreAnalysis || null;
+            // Extract score synopsis data directly from category data
+            let synopsisData = null;
+            const categoryData = latestAnalysisData.debug?.categories?.[categoryValue];
+            if (categoryData) {
+              const { extractCategoryScores } = await import('../utilities/relationshipFlags.js');
+              const extractedScores = extractCategoryScores(categoryData);
+              synopsisData = {
+                ...extractedScores,
+                categoryScore: relationshipScoresForCategory.overall || 0,
+                category: categoryValue
+              };
+              console.log(`Extracted ${extractedScores.allPositiveAspects.length} positive and ${extractedScores.allNegativeAspects.length} negative aspects for synopsis`);
+            }
             
             // Generate panel analyses with enhanced context
             const panels = await getRelationshipCategoryPanels(
@@ -784,7 +806,7 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
                 contextA,
                 contextB,
                 categoryValue, // Pass category for context summarization
-                scoreSynopsisData // Pass synopsis data for inline context
+                synopsisData // Pass synopsis data for inline context
             );
 
             // Create combined string for storage compatibility

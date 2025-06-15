@@ -1,34 +1,35 @@
+import { getOpenAIApiKey } from '../services/secretsService.js';
+import OpenAI from 'openai';
+
+// Lazy initialization of OpenAI client
+let openAiClient: OpenAI;
+
+async function getOpenAIClient(): Promise<OpenAI> {
+  if (!openAiClient) {
+    const apiKey = await getOpenAIApiKey();
+    openAiClient = new OpenAI({ 
+      apiKey: apiKey,
+      timeout: 30000,
+      maxRetries: 2
+    });
+  }
+  return openAiClient;
+}
+
 /**
- * Summarizes long natal chart context to a specified word limit
- * focusing on the most relevant aspects for relationship analysis
+ * Summarizes long natal chart context using GPT to create flowing prose
  * @param context The full natal chart context text
  * @param wordLimit Maximum number of words (default 120)
  * @param category Optional category to focus the summary (e.g., "SEX_AND_INTIMACY")
  * @returns Summarized context string
  */
-export function summarizeNatalContext(
+export async function summarizeNatalContext(
   context: string, 
   wordLimit: number = 120, 
   category?: string
-): string {
+): Promise<string> {
   if (!context || context.trim().length === 0) {
     return "No specific context available.";
-  }
-
-  // First, remove any section separators like "---" or "..."
-  const cleanedContext = context
-    .replace(/---+/g, '. ') // Replace dashes with period
-    .replace(/\.{3,}/g, '. ') // Replace ellipsis with period
-    .trim();
-  
-  // Split into sentences for better preservation of meaning
-  // More precise regex that doesn't split on ellipsis within sentences
-  const sentences = cleanedContext
-    .split(/(?<=[.!?])\s+(?=[A-Z])/)
-    .filter(s => s.trim().length > 0);
-  
-  if (sentences.length === 0) {
-    return context.slice(0, wordLimit * 6); // Rough estimate: 6 chars per word
   }
 
   // If already under word limit, return as-is
@@ -37,104 +38,72 @@ export function summarizeNatalContext(
     return context;
   }
 
-  // Priority keywords for different relationship categories
-  const categoryKeywords: Record<string, string[]> = {
-    'OVERALL_ATTRACTION_CHEMISTRY': ['venus', 'mars', 'sun', 'moon', 'attraction', 'chemistry', 'magnetic', 'charisma'],
-    'EMOTIONAL_SECURITY_CONNECTION': ['moon', 'cancer', 'security', 'emotional', 'nurturing', 'care', 'comfort', 'stability'],
-    'SEX_AND_INTIMACY': ['mars', 'venus', 'scorpio', 'pluto', '8th house', 'sexual', 'intimate', 'passion', 'desire'],
-    'COMMUNICATION_AND_MENTAL_CONNECTION': ['mercury', 'gemini', '3rd house', 'communication', 'mental', 'intellectual', 'conversation'],
-    'COMMITMENT_LONG_TERM_POTENTIAL': ['saturn', 'capricorn', '7th house', '10th house', 'commitment', 'stability', 'long-term', 'partnership'],
-    'KARMIC_LESSONS_GROWTH': ['pluto', 'scorpio', 'karmic', 'transformation', 'growth', 'lesson', 'evolution', 'healing'],
-    'PRACTICAL_GROWTH_SHARED_GOALS': ['saturn', 'capricorn', 'virgo', 'earth', 'practical', 'goals', 'achievement', 'responsibility']
-  };
-
-  // Get relevant keywords for scoring sentence importance
-  const relevantKeywords = category ? categoryKeywords[category] || [] : [];
-  
-  // Score sentences based on relevance and position
-  const scoredSentences = sentences.map((sentence, index) => {
-    let score = 0;
+  try {
+    const client = await getOpenAIClient();
     
-    // Position bonus (earlier sentences often more important)
-    if (index < 2) score += 2;
-    else if (index < 4) score += 1;
+    const categoryFocus = category ? ` focused on ${category.replace(/_/g, ' ').toLowerCase()}` : '';
+    const prompt = `Summarise the composite meaning of these notes in ≤${wordLimit} words, using flowing prose${categoryFocus}.`;
     
-    // Keyword matching bonus
-    const lowerSentence = sentence.toLowerCase();
-    relevantKeywords.forEach(keyword => {
-      if (lowerSentence.includes(keyword)) {
-        score += 3;
-      }
+    const response = await client.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "system",
+          content: "You are an expert astrology interpreter. Create flowing prose summaries that maintain astrological accuracy while being readable and coherent."
+        },
+        {
+          role: "user",
+          content: `${prompt}\n\nContext to summarize:\n${context}`
+        }
+      ],
+      temperature: 0.3,
+      max_tokens: Math.ceil(wordLimit * 1.5) // Allow some buffer for token estimation
     });
     
-    // General astrological importance indicators
-    const importantTerms = ['aspects', 'placement', 'house', 'sign', 'conjunction', 'opposition', 'trine', 'square'];
-    importantTerms.forEach(term => {
-      if (lowerSentence.includes(term)) {
-        score += 1;
-      }
-    });
+    let summary = response.choices[0].message.content?.trim() || context.slice(0, wordLimit * 6);
     
-    // Length bonus for substantial sentences
-    if (sentence.split(/\s+/).length > 8) {
-      score += 1;
-    }
+    // Clean up the summary
+    summary = await cleanupSummary(summary);
     
-    return { sentence: sentence.trim(), score, index };
-  });
-
-  // Sort by score (highest first) and take the best sentences
-  scoredSentences.sort((a, b) => b.score - a.score);
-  
-  let selectedSentences: string[] = [];
-  let currentWordCount = 0;
-  
-  // Add sentences until we approach the word limit
-  for (const item of scoredSentences) {
-    const sentenceWords = item.sentence.split(/\s+/).length;
-    if (currentWordCount + sentenceWords <= wordLimit) {
-      selectedSentences.push(item.sentence);
-      currentWordCount += sentenceWords;
-    } else {
-      // Try to fit a partial sentence if there's room
-      const remainingWords = wordLimit - currentWordCount;
-      if (remainingWords > 5) {
-        const words = item.sentence.split(/\s+/);
-        const partialSentence = words.slice(0, remainingWords).join(' ') + '...';
-        selectedSentences.push(partialSentence);
-      }
-      break;
-    }
-  }
-  
-  // If no sentences selected, take the first part of the original
-  if (selectedSentences.length === 0) {
+    return summary;
+  } catch (error) {
+    console.error('Error in GPT summarization, falling back to truncation:', error);
+    // Fallback to simple truncation
     const words = context.split(/\s+/);
     return words.slice(0, wordLimit).join(' ') + (words.length > wordLimit ? '...' : '');
   }
-  
-  // Sort selected sentences back to their original order for coherence
-  const originalOrder = selectedSentences.sort((a, b) => {
-    const indexA = sentences.findIndex(s => s.trim() === a.replace('...', '').trim());
-    const indexB = sentences.findIndex(s => s.trim() === b.replace('...', '').trim());
-    return indexA - indexB;
-  });
-  
-  // Join sentences and clean up punctuation
-  let result = originalOrder.join(' ');
-  
-  // Ensure proper sentence ending
-  if (!result.match(/[.!?]$/)) {
-    result += '.';
+}
+
+/**
+ * Cleans up summary text using GPT for grammar and repetition fixes
+ * @param text The text to clean up
+ * @returns Cleaned text
+ */
+export async function cleanupSummary(text: string): Promise<string> {
+  if (!text || text.trim().length === 0) {
+    return text;
   }
-  
-  // Clean up any double periods or spaces
-  result = result
-    .replace(/\.\s*\./g, '.')
-    .replace(/\s+/g, ' ')
-    .trim();
-  
-  return result;
+
+  try {
+    const client = await getOpenAIClient();
+    
+    const response = await client.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [
+        {
+          role: "user",
+          content: `Fix grammar & merge repetitive phrases. Return only the corrected text.\n\n${text}`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: Math.ceil(text.split(/\s+/).length * 1.2)
+    });
+    
+    return response.choices[0].message.content?.trim() || text;
+  } catch (error) {
+    console.error('Error in cleanup, returning original text:', error);
+    return text;
+  }
 }
 
 /**
@@ -144,12 +113,12 @@ export function summarizeNatalContext(
  * @param category The relationship category being analyzed
  * @returns Relationship-focused summary
  */
-export function createRelationshipFocusedSummary(
+export async function createRelationshipFocusedSummary(
   context: string,
   partnerName: string,
   category: string
-): string {
-  const summary = summarizeNatalContext(context, 100, category);
+): Promise<string> {
+  const summary = await summarizeNatalContext(context, 100, category);
   
   // Add a brief intro to contextualize this person's traits in the relationship
   const categoryDescriptions: Record<string, string> = {

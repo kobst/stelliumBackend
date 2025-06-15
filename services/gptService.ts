@@ -929,8 +929,8 @@ export async function getRelationshipCategoryPanels(
   const client = await getOpenAIClient();
   
   // Create summarized contexts (max 100 words each instead of full contexts)
-  const summarizedContextA = createRelationshipFocusedSummary(contextA, userBName, category || 'OVERALL_ATTRACTION_CHEMISTRY');
-  const summarizedContextB = createRelationshipFocusedSummary(contextB, userAName, category || 'OVERALL_ATTRACTION_CHEMISTRY');
+  const summarizedContextA = await createRelationshipFocusedSummary(contextA, userBName, category || 'OVERALL_ATTRACTION_CHEMISTRY');
+  const summarizedContextB = await createRelationshipFocusedSummary(contextB, userAName, category || 'OVERALL_ATTRACTION_CHEMISTRY');
   
   // Create score context line for prompts
   const scoreContext = createScoreContextLine(relationshipScores, category || 'OVERALL_ATTRACTION_CHEMISTRY');

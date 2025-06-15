@@ -21,7 +21,7 @@ async function fetchAllContextsForUser(userId, userName) {
             const contextArray = await getRelationshipCategoryContextForUser(userId, categoryValue);
             // We'll join the text excerpts for easier inclusion in the prompt
             // and keep only the text for brevity in the prompt, but you could include scores/descriptions if useful
-            userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\n---\n\n");
+            userContexts[categoryValue] = contextArray.map(item => item.text).join("\n\nIn addition, ");
             if (!userContexts[categoryValue]) {
                 userContexts[categoryValue] = "No specific context found from individual analysis for this category.";
             }

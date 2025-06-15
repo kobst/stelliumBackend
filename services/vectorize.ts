@@ -625,7 +625,7 @@ export async function getRelationshipCategoryContextForUser(userId: string, rela
         const pineconeIndex = await getPineconeIndex();
         const results = await pineconeIndex.query({
             vector: embedding,
-            topK: 5,
+            topK: 3,
             includeMetadata: true,
             filter: { userId: userId }
         });

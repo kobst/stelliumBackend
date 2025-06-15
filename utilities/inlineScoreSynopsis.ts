@@ -25,8 +25,11 @@ export function createInlineScoreSynopsis(
 ): string {
   // Handle case where synopsisData is null or missing required fields
   if (!synopsisData) {
+    console.log('No synopsis data provided');
     return ''; // Return empty string if no synopsis data
   }
+  
+  console.log('Synopsis data received:', JSON.stringify(synopsisData, null, 2));
   
   const { 
     greenFlags = [], 
@@ -37,47 +40,73 @@ export function createInlineScoreSynopsis(
     category = '' 
   } = synopsisData;
   
-  // Ensure arrays are actually arrays before using slice
+  // Ensure arrays are actually arrays
   const safeGreenFlags = Array.isArray(greenFlags) ? greenFlags : [];
   const safeRedFlags = Array.isArray(redFlags) ? redFlags : [];
   const safePositiveAspects = Array.isArray(allPositiveAspects) ? allPositiveAspects : [];
   const safeNegativeAspects = Array.isArray(allNegativeAspects) ? allNegativeAspects : [];
   
-  // Get top 2 green flags and top 2 red flags
-  const topGreenFlags = safeGreenFlags.slice(0, 2);
-  const topRedFlags = safeRedFlags.slice(0, 2);
+  console.log(`Array lengths - Positive: ${safePositiveAspects.length}, Negative: ${safeNegativeAspects.length}, Green flags: ${safeGreenFlags.length}, Red flags: ${safeRedFlags.length}`);
   
-  // If no green flags, use top positive aspects
-  const positiveItems = topGreenFlags.length > 0 ? topGreenFlags : safePositiveAspects.slice(0, 2);
-  
-  // If no red flags, use top negative aspects
-  const negativeItems = topRedFlags.length > 0 ? topRedFlags : safeNegativeAspects.slice(0, 2);
+  // Use ALL positive scoring elements (already sorted by score)
+  const allPositiveElements = safePositiveAspects;
   
   let synopsis = `FAST CONTEXT for ${userAName} & ${userBName}:\n`;
   
-  // Add green flags/positive aspects
-  if (positiveItems.length > 0) {
-    synopsis += "Green flags: ";
-    const greenSummaries = positiveItems.map(item => {
+  // Add all positive elements with emphasis on strongest
+  if (allPositiveElements.length > 0) {
+    synopsis += "Positive elements (by strength):\n";
+    
+    allPositiveElements.forEach((item, index) => {
       const flag = formatAspectFlag(item?.score || 0);
-      const shortDesc = item.description;
-      return `${shortDesc} (${flag})`;
+      const shortDesc = item.description || 'Unknown aspect';
+      
+      // Emphasize top 3 elements as primary anchors
+      if (index < 3) {
+        synopsis += `⭐ ${shortDesc} (${flag}) [PRIMARY]\n`;
+      } else {
+        synopsis += `• ${shortDesc} (${flag})\n`;
+      }
     });
-    synopsis += greenSummaries.join(', ') + '\n';
+  } else {
+    // Fallback: use green flags if no allPositiveAspects
+    if (safeGreenFlags.length > 0) {
+      synopsis += "Positive elements (from green flags):\n";
+      safeGreenFlags.forEach((item, index) => {
+        const flag = formatAspectFlag(item?.score || 0);
+        const shortDesc = item.description || 'Unknown aspect';
+        
+        if (index < 3) {
+          synopsis += `⭐ ${shortDesc} (${flag}) [PRIMARY]\n`;
+        } else {
+          synopsis += `• ${shortDesc} (${flag})\n`;
+        }
+      });
+    } else {
+      console.log('No positive elements found in either allPositiveAspects or greenFlags');
+    }
   }
   
-  // Add red flags/negative aspects
-  if (negativeItems.length > 0) {
-    synopsis += "Red flags: ";
-    const redSummaries = negativeItems.map(item => {
+  // Add all negative elements if any exist
+  if (safeNegativeAspects.length > 0) {
+    synopsis += "\nChallenging elements:\n";
+    
+    safeNegativeAspects.forEach(item => {
       const flag = formatAspectFlag(item?.score || 0);
-      const shortDesc = item.description;
-      return `${shortDesc} (${flag})`;
+      const shortDesc = item.description || 'Unknown aspect';
+      synopsis += `• ${shortDesc} (${flag})\n`;
     });
-    synopsis += redSummaries.join(', ') + '\n';
+  } else if (safeRedFlags.length > 0) {
+    // Fallback: use red flags if no allNegativeAspects
+    synopsis += "\nChallenging elements (from red flags):\n";
+    safeRedFlags.forEach(item => {
+      const flag = formatAspectFlag(item?.score || 0);
+      const shortDesc = item.description || 'Unknown aspect';
+      synopsis += `• ${shortDesc} (${flag})\n`;
+    });
   }
   
-  synopsis += `\nUse these as anchor points while weaving the story below.\n`;
+  synopsis += `\nUse the strongest elements as primary anchors while incorporating all scored elements as needed to create a complete picture.\n`;
   
   return synopsis;
 }

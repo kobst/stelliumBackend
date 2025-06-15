@@ -795,7 +795,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
             
             // Check if this house is in our relevant houses list
             if (relevantHouses.includes(houseInB)) {
-                console.log(`${userAName} ${planet.name} falls in chart ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`);
+                console.log(`${userAName} ${planet.name} falls in chart ${userBName}'s house ${formatHouseNumber(houseInB)}`);
                 
                 // Look for specific planet-house combinations
                 let foundSpecific = false;
@@ -811,7 +811,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "A->B",
-                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`
+                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)}`
                         });
                         
                         console.log(`      Matched positive rule: ${rule.points} points (${rule.reason})`);
@@ -830,7 +830,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "A->B",
-                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`
+                            description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)}`
                         });
                         
                         console.log(`      Matched negative rule: ${rule.points} points (${rule.reason})`);
@@ -848,7 +848,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                         points: 5,
                         reason: "General house placement",
                         direction: "A->B",
-                        description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)} (relevant)`
+                        description: `${userAName}'s ${planet.name} in ${userBName}'s house ${formatHouseNumber(houseInB)}`
                     });
                     
                     console.log(`      No specific rule found, using default: 5 points`);
@@ -869,7 +869,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
             
             // Check if this house is in our relevant houses list
             if (relevantHouses.includes(houseInA)) {
-                console.log(`${userBName} ${planet.name} falls in chart ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`);
+                console.log(`${userBName} ${planet.name} falls in chart ${userAName}'s house ${formatHouseNumber(houseInA)}`);
                 
                 // Look for specific planet-house combinations
                 let foundSpecific = false;
@@ -885,7 +885,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "B->A",
-                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`
+                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)}`
                         });
                         
                         console.log(`      Matched positive rule: ${rule.points} points (${rule.reason})`);
@@ -904,7 +904,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                             points: rule.points,
                             reason: rule.reason,
                             direction: "B->A",
-                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`
+                            description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)}`
                         });
                         
                         console.log(`      Matched negative rule: ${rule.points} points (${rule.reason})`);
@@ -922,7 +922,7 @@ function scoreSynastryHousePlacements(userA, userB, category) {
                         points: 5,
                         reason: "General house placement",
                         direction: "B->A",
-                        description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)} (relevant)`
+                        description: `${userBName}'s ${planet.name} in ${userAName}'s house ${formatHouseNumber(houseInA)}`
                     });
                     
                     console.log(`      No specific rule found, using default: 5 points`);
@@ -1027,7 +1027,7 @@ function scoreCompositeHousePlacements(compositeChart, category, debug = true) {
                             points: rule.points,
                             reason: rule.reason,
                             type: 'positive',
-                            description: `${planetName} in house ${housePosition} (relevant) and ${planetSign}`
+                            description: `${planetName} in house ${housePosition} and ${planetSign}`
                         });
                     }
                     
@@ -1049,7 +1049,7 @@ function scoreCompositeHousePlacements(compositeChart, category, debug = true) {
                             points: rule.points,
                             reason: rule.reason,
                             type: 'negative',
-                            description: `${planetName} in house ${housePosition} (relevant) and${planetSign}`
+                            description: `${planetName} in house ${housePosition} and${planetSign}`
                         });
                     }
                     
@@ -1071,7 +1071,7 @@ function scoreCompositeHousePlacements(compositeChart, category, debug = true) {
                         points: defaultPoints,
                         reason: "General placement in relevant house",
                         type: 'default',
-                        description: `${planetName} in house ${housePosition} (relevant) and ${planetSign}`
+                        description: `${planetName} in house ${housePosition} and ${planetSign}`
                     });
                 }
             }

@@ -94,6 +94,124 @@ The codebase now includes significant performance improvements for workflow proc
 - **RAG Integration**: Topic analysis incorporates previously vectorized content for enhanced coherence
 - **Memory Management**: Strategic garbage collection prevents memory leaks during long operations
 
+### Relationship Analysis Token Optimization (Latest)
+The relationship analysis system has been enhanced to address token allocation issues and improve LLM focus:
+
+#### **Token Rebalancing**
+- **Context Summarization**: Natal chart contexts now limited to ~100 words per user (down from 1000+ tokens)
+- **Smart Prioritization**: Score synopsis and relationship dynamics now receive 60-70% of token allocation
+- **Coherent Summaries**: GPT-based summarization replaces sentence extraction for flowing prose
+
+#### **Enhanced Prompt Engineering**
+- **Synastry Panel**: 160-word limit with structured narrative flow (hook → spark → challenge → tip)
+- **Composite Panel**: 140-word limit contrasting with synastry dynamics
+- **Deep-Dive Analysis**: 300-350 word structured analysis using sequential processing
+- **Complete Synopsis**: All positive-scoring elements included with visual emphasis on strongest
+
+#### **Sequential Processing Pipeline**
+- **Layered Analysis**: Synastry → Composite → Deep-dive (each builds on previous)
+- **Comprehensive Context**: All scored aspects and positions included in synopsis
+- **Weighted Guidance**: Top 3 elements marked as [PRIMARY] anchors for LLM focus
+- **Actionable Integration**: Every panel includes specific tips and "so-what" guidance
+
+#### **RAG Context Improvements**
+- **Reduced Retrieval**: TopK reduced from 5 to 3 most relevant chunks
+- **Better Joining**: Context chunks connected with "In addition, " instead of "---"
+- **GPT Summarization**: Flowing prose generation replaces fragmented sentence extraction
+- **Grammar Cleanup**: Post-processing ensures professional, readable output
+
+### RAG (Retrieval-Augmented Generation) Improvements
+
+The system includes a comprehensive set of improvements for RAG-based content generation, organized by implementation effort and impact:
+
+#### Low-Effort Fixes (Hours)
+
+**1. Chunking Improvements**
+- Implement sliding window chunking that ends at sentence boundaries for better context preservation
+- Store source-section metadata (e.g., "Career", "Shadow Work") in Pinecone vectors
+- Enable section-specific retrieval: `vector.metadata.section == category`
+
+**2. Retrieval Optimization**
+- Reduce topK from 5 to 2-3 results for better relevance (relevance typically decays sharply after first few hits)
+- Focus on high-quality, highly relevant matches rather than quantity
+
+**3. Aggregation Enhancement**
+- Replace simple "---" separators with contextual joining
+- Use transitional phrases: `contextArray.join("\n\nIn addition, ")`
+- Improve flow between retrieved chunks
+
+**4. Summarization Refinement**
+- Replace extractive scoring with single GPT call for better coherence
+- Prompt: "Summarise the composite meaning of these notes in ≤100 words, using flowing prose."
+- Generate natural, readable summaries instead of fragmented extracts
+
+**5. Post-processing Polish**
+- Add grammar and style pass using gpt-3.5-turbo (cost-effective)
+- Simple prompt: "Fix grammar & merge repetitive phrases."
+- Final quality check before output delivery
+
+#### Medium-Effort Improvements (½-2 days)
+
+**1. Section Summaries at Ingestion**
+- Generate section summaries during content ingestion phase
+- Convert every document to 1-2 cohesive paragraphs per category
+- Index processed summaries instead of raw text for better retrieval
+
+**2. Round-Robin Query Strategy**
+- Implement topic-specific queries: separate queries for "practical matters" and "goals"
+- Concatenate results from multiple focused queries
+- Prevents mixing of unrelated content in single retrieval
+
+**3. Micro-Fusion Prompt Processing**
+- Wrap retrieved chunks in fusion prompt before summarization
+- "Rewrite the following pieces into a single cohesive paragraph:"
+- Let GPT handle micro-level fusion before final summarization
+
+**4. Two-Pass Chain Processing**
+- Implement map-reduce pattern: summarize each chunk individually (map)
+- Then summarize the collection of summaries (reduce)
+- Maintains context while producing smooth, coherent text
+
+**5. Coherence Quality Scoring**
+- Add automated coherence evaluation using small model
+- Return 0-1 coherence score for generated content
+- If score < 0.5, regenerate with higher temperature for better variety
+
+#### High-Leverage Ideas (Future Refactoring)
+
+**1. Cross-Encoder Re-Ranker**
+- Maintain raw text index but add sophisticated re-ranking
+- Train cross-encoder re-ranker or use off-the-shelf solutions (Cohere/TEI)
+- Score for both topical relevance and content cohesion
+
+**2. Dynamic K Selection**
+- Implement adaptive retrieval: continue grabbing results until similarity drops below threshold
+- Example: keep retrieving while similarity > 0.78
+- Prevents inclusion of low-quality, irrelevant content
+
+**3. Array-Based Storage**
+- Store chunks as arrays rather than concatenated strings
+- Pass individual chunks to summarizer in separate messages
+- Preserve source boundaries for better processing
+
+**4. Exemplar-Based Learning**
+- Provide few-shot examples of desired summary style and tone
+- Train LLM to automatically supply appropriate connective tissue
+- Improve consistency across generated content
+
+**5. TextRank with Co-Reference Resolution**
+- Implement TextRank algorithm with co-reference resolution
+- Ensure pronouns and references resolve correctly before extraction
+- Maintain semantic coherence across chunk boundaries
+
+#### Implementation Priority
+
+1. **Immediate (Low-Effort)**: Focus on chunking, topK reduction, and better aggregation
+2. **Short-term (Medium-Effort)**: Section summaries and two-pass processing
+3. **Long-term (High-Leverage)**: Cross-encoder re-ranking and dynamic retrieval
+
+These improvements target the core challenges in RAG systems: maintaining context, ensuring relevance, and producing coherent, flowing text that reads naturally while preserving the semantic richness of the source material.
+
 ### Database Architecture
 - **MongoDB Database**: Named `stellium` with 17 collections
 - **Complete Documentation**: See `DATABASE.md` for detailed collection schemas and relationships
