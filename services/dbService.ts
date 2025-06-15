@@ -61,6 +61,7 @@ let retrogradesCollection: Collection<any>;
  * See DATABASE.md for complete collection documentation
  */
 let userCollection: Collection<any>;
+let celebCollection: Collection<any>;
 let birthChartInterpretations: Collection<any>;
 let userTransitAspectsCollection: Collection<any>;
 let dailyTransitInterpretations: Collection<any>;
@@ -85,6 +86,7 @@ async function getDb(): Promise<Db> {
     aspectsCollection = db.collection('daily_aspects');
     retrogradesCollection = db.collection('retrogrades');
     userCollection = db.collection('users');
+    celebCollection = db.collection('celebs');
     birthChartInterpretations = db.collection('user_birth_chart_interpretation');
     userTransitAspectsCollection = db.collection('user_transit_aspects');
     dailyTransitInterpretations = db.collection('daily_transit_interpretations');
@@ -158,6 +160,10 @@ export async function initializeDatabase(): Promise<void> {
         // User collection indexes
         await createIndexSafely(userCollection, { email: 1 }, { unique: true });
         await createIndexSafely(userCollection, { _id: 1, email: 1 });
+        
+        // Celeb collection indexes
+        await createIndexSafely(celebCollection, { _id: 1 });
+        await createIndexSafely(celebCollection, { firstName: 1, lastName: 1 });
         
         // Transit collection indexes
         await createIndexSafely(transitsCollection, { date: 1 });
@@ -382,14 +388,48 @@ export async function getUsers(): Promise<any[]> {
     }
 }
 
+export async function getCelebs(): Promise<any[]> {
+    try {
+        const celebs = await celebCollection.find({})
+            .limit(50)
+            .toArray();
+        return celebs;
+    } catch (error: unknown) {
+        console.error('Error fetching celebs:', error);
+        throw error;
+    }
+}
+
 
 export async function getUserSingle(userId: string): Promise<any> {
     console.log("getUserSingle", { userId });
     try {
-        const user = await userCollection.findOne({ _id: new ObjectId(userId) });
+        // First try to find in users collection
+        let user = await userCollection.findOne({ _id: new ObjectId(userId) });
+        
+        // If not found in users, try celebs collection
+        if (!user) {
+            user = await celebCollection.findOne({ _id: new ObjectId(userId) });
+            if (user) {
+                // Add a flag to indicate this is a celebrity
+                user._isCelebrity = true;
+            }
+        }
+        
         return user;
     } catch (error: unknown) {
         console.error("Error in getUserSingle:", error);
+        throw error;
+    }
+}
+
+export async function getCelebSingle(celebId: string): Promise<any> {
+    console.log("getCelebSingle", { celebId });
+    try {
+        const celeb = await celebCollection.findOne({ _id: new ObjectId(celebId) });
+        return celeb;
+    } catch (error: unknown) {
+        console.error("Error in getCelebSingle:", error);
         throw error;
     }
 }
@@ -444,6 +484,17 @@ export async function saveUser(user: any): Promise<any> {
             };
         }
         // Re-throw other errors
+        throw error;
+    }
+}
+
+export async function saveCeleb(celeb: any): Promise<any> {
+    try {
+        // Simply insert the celeb without email checking
+        const result = await celebCollection.insertOne(celeb);
+        return result;
+    } catch (error: any) {
+        console.error('Error saving celeb:', error);
         throw error;
     }
 }

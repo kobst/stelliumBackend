@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Stellium Backend uses MongoDB as its primary database with the database name `stellium`. The application employs a document-oriented database structure to store astrological data, user information, chart analyses, and related interpretations. All collections support connection pooling with a maximum pool size of 10 connections and retry mechanisms for both reads and writes.
+The Stellium Backend uses MongoDB as its primary database with the database name `stellium`. The application employs a document-oriented database structure to store astrological data, user information, celebrity data, chart analyses, and related interpretations. All collections support connection pooling with a maximum pool size of 10 connections and retry mechanisms for both reads and writes.
 
 ## Database Connection Configuration
 
@@ -51,9 +51,42 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 - Birth chart data is embedded within the user document
 - Supports users with unknown birth times
 
+#### 2. `celebs`
+**Purpose**: Stores celebrity profile information and birth chart data
+
+**Schema**:
+```typescript
+{
+  _id: ObjectId,
+  firstName: string,
+  lastName: string,
+  dateOfBirth: Date,
+  timeOfBirth?: string,       // Optional birth time
+  placeOfBirth: string,
+  latitude: number,
+  longitude: number,
+  timezone: string,
+  birthChart?: BirthChart,    // Embedded birth chart data
+  birthTimeUnknown?: boolean,
+  totalOffsetHours: number,
+  createdAt?: Date,
+  updatedAt?: Date
+}
+```
+
+**Indexes**:
+- `{ _id: 1 }` - Primary key index
+- `{ firstName: 1, lastName: 1 }` - Compound index for name-based lookups
+
+**Key Notes**:
+- No email field required for celebrities
+- Birth chart data is embedded within the celebrity document
+- Supports celebrities with unknown birth times
+- Similar structure to users but without authentication-related fields
+
 ### Chart and Relationship Collections
 
-#### 2. `composite_charts`
+#### 3. `composite_charts`
 **Purpose**: Stores composite charts for relationship analysis between two users
 
 **Schema**:
@@ -79,7 +112,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 - Related to `composite_chart_interpretations` via `_id`
 - Related to `relationship_analysis` via `_id`
 
-#### 3. `composite_chart_interpretations`
+#### 4. `composite_chart_interpretations`
 **Purpose**: Stores interpretations for composite and synastry charts
 
 **Schema**:
@@ -108,7 +141,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 
 ### Analysis Collections
 
-#### 4. `birth_chart_analysis`
+#### 5. `birth_chart_analysis`
 **Purpose**: Comprehensive birth chart analysis including basic and topic-based interpretations
 
 **Schema**:
@@ -174,7 +207,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 - Monitors workflow processing status
 - Supports incremental updates to analysis sections
 
-#### 5. `relationship_analysis`
+#### 6. `relationship_analysis`
 **Purpose**: Stores relationship compatibility scores and analysis
 
 **Schema**:
@@ -237,7 +270,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 
 ### Transit and Ephemeris Collections
 
-#### 6. `daily_transits`
+#### 7. `daily_transits`
 **Purpose**: Pre-calculated daily planetary positions
 
 **Schema**:
@@ -259,7 +292,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 **Indexes**:
 - `{ date: 1 }` - Index on date for efficient time-based queries
 
-#### 7. `daily_aspects`
+#### 8. `daily_aspects`
 **Purpose**: Pre-calculated planetary aspects for each day
 
 **Schema**:
@@ -279,7 +312,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 **Indexes**:
 - `{ "date_range.0": 1, "date_range.1": 1 }` - Compound index on date range
 
-#### 8. `retrogrades`
+#### 9. `retrogrades`
 **Purpose**: Planetary retrograde periods
 
 **Schema**:
@@ -298,7 +331,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 **Indexes**:
 - `{ "date_range.0": 1, "date_range.1": 1 }` - Compound index on date range
 
-#### 9. `transit_ephemeris`
+#### 10. `transit_ephemeris`
 **Purpose**: Pre-generated transit series data for efficient lookups
 
 **Schema**:
@@ -321,7 +354,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 
 ### Interpretation Collections
 
-#### 10. `user_birth_chart_interpretation`
+#### 11. `user_birth_chart_interpretation`
 **Purpose**: Stores individual birth chart interpretations by topic
 
 **Schema**:
@@ -341,7 +374,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 **Relationships**:
 - References `users` via `userId`
 
-#### 11. `user_transit_aspects`
+#### 12. `user_transit_aspects`
 **Purpose**: User-specific transit aspects
 
 **Schema**:
@@ -358,7 +391,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 **Relationships**:
 - References `users` via `userId`
 
-#### 12. `daily_transit_interpretations`
+#### 13. `daily_transit_interpretations`
 **Purpose**: AI-generated interpretations for daily transits
 
 **Schema**:
@@ -371,7 +404,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 }
 ```
 
-#### 13. `weekly_transit_interpretations`
+#### 14. `weekly_transit_interpretations`
 **Purpose**: AI-generated weekly horoscope interpretations by sign
 
 **Schema**:
@@ -387,7 +420,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 }
 ```
 
-#### 14. `horoscopes`
+#### 15. `horoscopes`
 **Purpose**: Generated horoscopes for users
 
 **Schema**:
@@ -415,7 +448,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 
 ### Communication Collections
 
-#### 15. `chat_threads_birth_chart_analysis`
+#### 16. `chat_threads_birth_chart_analysis`
 **Purpose**: Chat conversation history for birth chart analysis
 
 **Schema**:
@@ -441,7 +474,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 - References `users` via `userId`
 - References `birth_chart_analysis` via `birthChartAnalysisId`
 
-#### 16. `chat_threads_relationship_analysis`
+#### 17. `chat_threads_relationship_analysis`
 **Purpose**: Chat conversation history for relationship analysis
 
 **Schema**:
@@ -469,7 +502,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 
 ### Logging Collections
 
-#### 17. `relationship_logs`
+#### 18. `relationship_logs`
 **Purpose**: Audit log for relationship-related actions
 
 **Schema**:
@@ -495,7 +528,7 @@ The Stellium Backend uses MongoDB as its primary database with the database name
 users
   ├── birth_chart_analysis (1:1)
   │   └── user_birth_chart_interpretation (1:1)
-  ├── composite_charts (M:N with other users)
+  ├── composite_charts (M:N with other users/celebs)
   │   ├── composite_chart_interpretations (1:1)
   │   ├── relationship_analysis (1:1)
   │   └── relationship_logs (1:M)
@@ -503,6 +536,9 @@ users
   ├── horoscopes (1:M)
   ├── chat_threads_birth_chart_analysis (1:M)
   └── chat_threads_relationship_analysis (1:M)
+
+celebs
+  └── composite_charts (M:N with users/other celebs)
 
 daily_transits ←→ daily_aspects ←→ retrogrades
                         │

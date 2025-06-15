@@ -33,7 +33,7 @@ Stellium Backend is a serverless astrology service built with Express.js, deploy
 2. **Chart Generation**: Birth charts, synastry, composite charts, and transit calculations
 3. **AI Interpretation**: OpenAI GPT generates astrological analyses based on chart data
 4. **Vector Search**: Pinecone stores and searches generated interpretations for semantic similarity
-5. **Persistence**: MongoDB stores users, charts, relationships, and generated content
+5. **Persistence**: MongoDB stores users, celebrities, charts, relationships, and generated content
 
 ### Key Services
 - **ephemerisDataService.ts**: Swiss Ephemeris wrapper for planetary calculations and transit tracking
@@ -243,10 +243,36 @@ The system includes a comprehensive set of improvements for RAG-based content ge
 These improvements target the core challenges in RAG systems: maintaining context, ensuring relevance, and producing coherent, flowing text that reads naturally while preserving the semantic richness of the source material.
 
 ### Database Architecture
-- **MongoDB Database**: Named `stellium` with 17 collections
+- **MongoDB Database**: Named `stellium` with 18 collections
 - **Complete Documentation**: See `DATABASE.md` for detailed collection schemas and relationships
 - **User Collection Note**: Currently in testing phase - uses email as identifier with upsert behavior
   - Not true user accounts, represents birth chart data
   - Future will integrate Firebase/Cognito authentication
   - Will separate user accounts from birth chart storage
+- **Celebrity Collection**: Stores celebrity birth chart data without authentication requirements
+  - No email field required for celebrities
+  - Supports both known and unknown birth times
+  - Can be used in relationship analysis with users or other celebrities
 - **Index Management**: Graceful handling of duplicate key errors with fallback strategies
+
+### API Endpoints
+
+#### User Management
+- `POST /getUsers` - Retrieve all users (limit 50)
+- `POST /createUser` - Create user with birth time
+- `POST /createUserUnknownTime` - Create user without birth time
+
+#### Celebrity Management
+- `POST /getCelebs` - Retrieve all celebrities (limit 50)
+- `POST /createCeleb` - Create celebrity with birth time
+- `POST /createCelebUnknownTime` - Create celebrity without birth time
+
+**Celebrity API Notes**:
+- Celebrity endpoints mirror user endpoints but store in separate `celebs` collection
+- No email field required or validated for celebrities
+- Can be used in relationship analysis alongside users
+- Indexed by name (firstName, lastName) rather than email
+- **Workflow Compatibility**: The individual workflow system (`/workflow/individual/start`) automatically works with celebrity IDs
+  - `getUserSingle()` function checks both `users` and `celebs` collections
+  - Celebrity records are flagged with `_isCelebrity: true` when retrieved
+  - All existing analysis and vectorization workflows support celebrities seamlessly

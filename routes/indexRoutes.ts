@@ -5,6 +5,8 @@ const router = express.Router();
 import {
     handleUserCreation,
     handleUserCreationUnknownTime,
+    handleCelebCreation,
+    handleCelebCreationUnknownTime,
     handleCreateRelationship,
     handleGetTransitWindows
 } from '../controllers/astroDataController.js';
@@ -31,6 +33,7 @@ import {
     handleSaveCompositeChartProfile,
     handleSaveSynastryChartInterpretation,
     handleGetUsers,
+    handleGetCelebs,
     handleGetUserSingle,
     handleGetCompositeCharts,
     handleGetRelationshipScore,
@@ -60,6 +63,7 @@ import {
 
 router.post('/getUser', handleGetUserSingle);
 router.post('/getUsers', handleGetUsers);
+router.post('/getCelebs', handleGetCelebs);
 
 router.post('/getCompositeCharts', handleGetCompositeCharts);
 router.post('/saveCompositeChartProfile', handleSaveCompositeChartProfile);
@@ -72,6 +76,8 @@ router.post('/saveSynastryChartInterpretation', handleSaveSynastryChartInterpret
 // using sweph/ephemeris
 router.post('/createUser', handleUserCreation);
 router.post('/createUserUnknownTime', handleUserCreationUnknownTime);
+router.post('/createCeleb', handleCelebCreation);
+router.post('/createCelebUnknownTime', handleCelebCreationUnknownTime);
 router.post('/createRelationship', handleCreateRelationship);
 router.post('/getRelationshipScore', handleGetRelationshipScore);
 router.post('/fetchRelationshipAnalysis', handleFetchRelationshipAnalysis);

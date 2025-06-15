@@ -5,6 +5,7 @@ import {
     getCompositeCharts,
     saveSynastryChartInterpretation,
     getUsers,
+    getCelebs,
     getUserSingle,
     saveRelationshipScoring,
     fetchRelationshipAnalysisByCompositeId,
@@ -25,6 +26,16 @@ export async function handleGetUsers(req, res) {
     try {
         const users = await getUsers();
         res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export async function handleGetCelebs(req, res) {
+    console.log("handleGetCelebs")
+    try {
+        const celebs = await getCelebs();
+        res.status(200).json(celebs);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

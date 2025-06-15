@@ -1,6 +1,6 @@
 // @ts-nocheck
 // import { getRawChartData, getPlanetsData } from '../services/astroDataService.js';
-import { saveUser, saveCompositeChart, getPreGeneratedTransitSeries, getUserSingle } from '../services/dbService.js';
+import { saveUser, saveCeleb, saveCompositeChart, getPreGeneratedTransitSeries, getUserSingle } from '../services/dbService.js';
 import {
   getRawChartDataEphemeris,
   getRawChartDataEphemerisNoTime,
@@ -144,6 +144,99 @@ export async function handleUserCreationUnknownTime(req, res) {
     res.json({ user, saveUserResponse });
   } catch (error) {
     console.error('Error in handleUserCreationUnknownTime:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+export async function handleCelebCreation(req, res) {
+  try {
+    const { firstName, lastName, gender, placeOfBirth, dateOfBirth, time, lat, lon, tzone } = req.body;
+    // Parse date and time
+    const date = new Date(dateOfBirth); // handles ISO format correctly
+
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hour = date.getHours();     // local time
+    const minute = date.getMinutes(); // local time
+    console.log("firstName: ", firstName)
+    console.log("lastName: ", lastName)
+    console.log("placeOfBirth: ", placeOfBirth)
+    console.log("dateOfBirth: ", dateOfBirth)
+    console.log('raw dateOfBirth:', dateOfBirth);  // should be 'YYYY-MM-DD'
+  
+     // Create the data object expected by getRawChartDataEphemeris
+     const chartData = await getRawChartDataEphemeris({
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      min: minute,  // Note: parameter is 'min' not 'minute'
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      tzone: parseFloat(tzone)
+  });
+  
+    const celeb = { 
+        firstName, 
+        lastName, 
+        gender,
+        dateOfBirth, 
+        placeOfBirth, 
+        time, 
+        totalOffsetHours: tzone, 
+        birthChart: chartData
+    };
+
+    const saveCelebResponse = await saveCeleb(celeb)
+    
+    res.json({ celeb, saveCelebResponse});
+  } catch (error) {
+    console.error('Error in handleCelebCreation:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+export async function handleCelebCreationUnknownTime(req, res) {
+  try {
+    const { firstName, lastName, gender, placeOfBirth, dateOfBirth, lat, lon, tzone } = req.body;
+
+    const date = new Date(dateOfBirth);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    // Generate chart with 12:00 noon time
+    const baseChartData = await getRawChartDataEphemeris({
+      year,
+      month,
+      day,
+      hour: 12,  // 12 noon
+      min: 0,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      tzone: parseFloat(tzone)
+    });
+
+    // Remove house-dependent data for unknown time
+    const chartData = getRawChartDataEphemerisNoTime(baseChartData);
+
+    const celeb = {
+      firstName,
+      lastName,
+      gender,
+      dateOfBirth,
+      placeOfBirth,
+      totalOffsetHours: tzone,
+      birthTimeUnknown: true,
+      birthChart: chartData
+    };
+
+    const saveCelebResponse = await saveCeleb(celeb);
+
+    res.json({ celeb, saveCelebResponse });
+  } catch (error) {
+    console.error('Error in handleCelebCreationUnknownTime:', error);
     res.status(500).send('Server error');
   }
 };
