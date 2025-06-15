@@ -559,7 +559,10 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
               const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
               const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-              // Generate panel analyses
+              // Get score synopsis data for inline context if available
+              const scoreSynopsisData = relationshipAnalysis.debug?.categories?.[categoryValue]?.scoreAnalysis || null;
+              
+              // Generate panel analyses with enhanced context
               const panels = await getRelationshipCategoryPanels(
                   userAName,
                   userBName,
@@ -567,7 +570,9 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
                   relationshipScoresForCategory,
                   astrologicalDetails,
                   contextA,
-                  contextB
+                  contextB,
+                  categoryValue, // Pass category for context summarization
+                  scoreSynopsisData // Pass synopsis data for inline context
               );
 
               // Create combined string for storage compatibility
@@ -766,7 +771,10 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
             const contextB = contextsUserB[categoryValue] || "No specific context found for User B in this category.";
             const astrologicalDetails = formatAstrologicalDetailsForLLM(relationshipAstrologyDetails, userAName, userBName);
 
-            // Generate panel analyses
+            // Get score synopsis data for inline context if available
+            const scoreSynopsisData = relationshipAnalysis.debug?.categories?.[categoryValue]?.scoreAnalysis || null;
+            
+            // Generate panel analyses with enhanced context
             const panels = await getRelationshipCategoryPanels(
                 userAName,
                 userBName,
@@ -774,7 +782,9 @@ async function executeProcessRelationshipAnalysis(compositeChartId: string, user
                 relationshipScoresForCategory,
                 astrologicalDetails,
                 contextA,
-                contextB
+                contextB,
+                categoryValue, // Pass category for context summarization
+                scoreSynopsisData // Pass synopsis data for inline context
             );
 
             // Create combined string for storage compatibility

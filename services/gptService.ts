@@ -917,11 +917,41 @@ export async function getRelationshipCategoryPanels(
   relationshipScores: any,
   astrologicalDetails: any,
   contextA: string,
-  contextB: string
+  contextB: string,
+  category?: string, // Added category parameter for context summarization
+  scoreSynopsisData?: any // Added synopsis data for inline context
 ) {
+  // Import the new utilities
+  const { createRelationshipFocusedSummary } = await import('../utilities/contextSummarization.js');
+  const { createScoreContextLine, formatScoreForPrompt } = await import('../utilities/scoreInterpretation.js');
+  const { createInlineScoreSynopsis } = await import('../utilities/inlineScoreSynopsis.js');
+  
   const client = await getOpenAIClient();
   
-  // Synastry Panel - focused synastry analysis
+  // Create summarized contexts (max 100 words each instead of full contexts)
+  const summarizedContextA = createRelationshipFocusedSummary(contextA, userBName, category || 'OVERALL_ATTRACTION_CHEMISTRY');
+  const summarizedContextB = createRelationshipFocusedSummary(contextB, userAName, category || 'OVERALL_ATTRACTION_CHEMISTRY');
+  
+  // Create score context line for prompts
+  const scoreContext = createScoreContextLine(relationshipScores, category || 'OVERALL_ATTRACTION_CHEMISTRY');
+  
+  // Create inline synopsis if data is available
+  let inlineSynopsis = '';
+  if (scoreSynopsisData) {
+    console.log('Score synopsis data structure:', JSON.stringify(scoreSynopsisData, null, 2));
+    try {
+      inlineSynopsis = createInlineScoreSynopsis({
+        ...scoreSynopsisData,
+        categoryScore: relationshipScores.overall || 0,
+        category: category || 'OVERALL_ATTRACTION_CHEMISTRY'
+      }, userAName, userBName);
+    } catch (error) {
+      console.error('Error creating inline synopsis:', error);
+      inlineSynopsis = ''; // Fallback to empty string on error
+    }
+  }
+  
+  // Synastry Panel - Enhanced with word limits and narrative structure
   const synastry = await (async () => {
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
 
@@ -929,23 +959,25 @@ You interpret synastry data to help couples understand their inter-chart dynamic
 
 Your tone is warm, direct, emotionally intelligent, and empowering.
 
+You weave one through-line: hook → key spark → core challenge → take-home tip.
+Mention scores only once. 160-word limit.
+
 You do not list placements or aspects a la carte — instead, weave a holistic story that integrates:
 - The inter-chart synastry dynamics between each person's birth chart (synastry aspects and house overlays)
 - How these interactions create chemistry, challenges, or growth opportunities
-- Specific guidance for navigating the synastry dynamics
+- One actionable tip echoing the score synopsis
 
 - Do not preface your response with any unnecessary filler or preamble. 
 - Do not restate the specific category name in your response.
 - Be direct and avoid overly elaborate phrasing. 
-- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
+- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks.
+- End each analysis with one actionable tip the couple can try
 
 Every interpretation should reflect how the unique energies between the two people interact in this relationship area. Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.`;
     
-    const userPrompt = `Synastry Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
+    const userPrompt = `${inlineSynopsis}Synastry Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
-SYNASTRY SCORES:
-- Synastry: ${relationshipScores.synastry ?? 'N/A'} / 100
-- Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? 'N/A'} / 100
+SCORE CONTEXT: ${scoreContext}
 
 SYNASTRY ASPECTS:
 ${astrologicalDetails.synastryAspects}
@@ -953,14 +985,13 @@ ${astrologicalDetails.synastryAspects}
 SYNASTRY HOUSE PLACEMENTS:
 ${astrologicalDetails.synastryHousePlacements}
 
-TASK: Write 2-3 paragraphs focusing exclusively on synastry dynamics. Structure your response as follows:
-1. First, identify and analyze the strongest synastry connections (both harmonious and challenging) that define this relationship area
-2. Then, explain how ${userAName}'s planets interact with ${userBName}'s chart for the specific aspects and positions included above
-3. Finally, explain how ${userBName}'s planets interact with ${userAName}'s chart for the specific aspects and positions included above
+TASK: Write 2 short paragraphs (160 words total) focusing exclusively on synastry dynamics. Structure your response as follows:
+1. First paragraph: Identify the strongest synastry connections that create the main dynamic in this relationship area
+2. Second paragraph: Explain the core challenge or tension and end with one specific actionable tip
 
 Focus only on synastry - how their charts interact with each other, not on composite chart dynamics or individual birth chart traits.`;
 
-    console.log("Synastry Panel Prompt: ", userPrompt);
+    console.log("Enhanced Synastry Panel Prompt: ", userPrompt);
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
@@ -972,15 +1003,17 @@ Focus only on synastry - how their charts interact with each other, not on compo
     return response.choices[0].message.content.trim();
   })();
 
-  // Composite Chart Interpretation
+  // Composite Chart Interpretation - Enhanced with word limits
   const composite = await (async () => {
-    const systemPrompt = `You are StelliumAI, an expert in composite chart interpretation. Focus on the relationship as its own entity - the "third being" created when two people come together.`;
+    const systemPrompt = `You are StelliumAI, an expert in composite chart interpretation. Focus on the relationship as its own entity - the "third being" created when two people come together.
+
+Contrast how the composite energy supports or complicates the synastry story. 140-word limit.
+
+Your tone is warm, direct, and insightful. Treat the composite chart as revealing the relationship's inherent personality and potential.`;
     
     const userPrompt = `Composite Chart Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
-COMPOSITE SCORES:
-- Composite: ${relationshipScores.composite ?? 'N/A'}
-- Composite House Placements: ${relationshipScores.compositeHousePlacements ?? 'N/A'}
+SCORE CONTEXT: ${scoreContext}
 
 COMPOSITE ASPECTS:
 ${astrologicalDetails.compositeAspects}
@@ -988,9 +1021,11 @@ ${astrologicalDetails.compositeAspects}
 COMPOSITE HOUSE PLACEMENTS:
 ${astrologicalDetails.compositeHousePlacements}
 
-TASK: In 1-2 paragraphs, analyze how the composite chart reveals the relationship's inherent nature and potential in this area. What is the relationship's "personality" regarding ${categoryDisplayName}? Focus exclusively on composite chart dynamics.`;
+SYNASTRY CONTEXT (for contrast): The synastry shows ${formatScoreForPrompt(relationshipScores.synastry || 0, category || 'OVERALL_ATTRACTION_CHEMISTRY', 'synastry')} inter-chart dynamics.
 
-    console.log("Composite Prompt: ", userPrompt);
+TASK: In 1-2 paragraphs (140 words total), analyze how the composite chart reveals the relationship's inherent nature. How does this composite energy support or complicate the synastry dynamics? What is the relationship's "personality" regarding ${categoryDisplayName}?`;
+
+    console.log("Enhanced Composite Prompt: ", userPrompt);
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -1001,66 +1036,56 @@ TASK: In 1-2 paragraphs, analyze how the composite chart reveals the relationshi
     return response.choices[0].message.content.trim();
   })();
 
-  // Full Analysis - comprehensive integration
+  // Full Analysis - Sequential processing using previous panels + revised deep-dive structure
   const fullAnalysis = await (async () => {
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
 
-You interpret synastry data to help couples understand their relational dynamics. If necessary, you can also use composite chart data to help fill out the analysis.
+You create deep-dive analyses that synthesize synastry, composite, and individual traits into actionable relationship guidance.
 
 Your tone is warm, direct, emotionally intelligent, and empowering.
 
-You do not list placements or aspects a la carte — instead, weave a holistic story that integrates:
-- The inter-chart synastry dynamics between each person's birth chart (synastry and house overlays) most importantly
-- The individual birth chart traits of both people
-- The composite chart dynamics (composite and compositehouse overlays) only if they are relevant if necesary
-- Strengths, tension points, and advice for navigating them
+Don't re-explain the facts from the synastry and composite panels above; use them as ingredients to create a comprehensive relationship story.
 
-- Do not preface your response with any unnecessary filler or preamble. 
+Structure your response following this 300-350 word outline:
+1. Opening hook (scores + headline)
+2. Chemistry paragraph (use green-flag aspects)
+3. Growth edge paragraph (use red-flag aspects + composite dynamics)
+4. ${userAName} POV (70 words) → how to lean into strength
+5. ${userBName} POV (70 words) → how to buffer challenge
+6. Action paragraph (specific weekly ritual)
+
+- Do not preface your response with any unnecessary filler or preamble.
 - Do not restate the specific category name in your response.
-- Be direct and avoid overly elaborate phrasing. 
-- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks. 
+- Be direct and avoid overly elaborate phrasing.
+- Do not add any headings or markdown or other formatting aside from occasional paragraph breaks.
 
-Every interpretation should reflect how the unique energies between the two people blend or contrast in this relationship area. Avoid vague spiritual generalities and use the provided astrology to make your points grounded and helpful.`;
+Every interpretation should reflect how the unique energies between the two people blend or contrast in this relationship area. Focus on actionable guidance over astrological theory.`;
 
-    const userPrompt = `Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
+    const userPrompt = `${inlineSynopsis}Deep-Dive Relationship Analysis for "${categoryDisplayName}" between ${userAName} and ${userBName}
 
-I. SCORES:
-- Overall Score: ${relationshipScores.overall ?? "N/A"} /
-- Synastry Score: ${relationshipScores.synastry ?? "N/A"}
-- Composite Score: ${relationshipScores.composite ?? "N/A"}
-- Synastry House Placements: ${relationshipScores.synastryHousePlacements ?? "N/A"}
-- Composite House Placements: ${relationshipScores.compositeHousePlacements ?? "N/A"}
+SCORE CONTEXT: ${scoreContext}
 
-II. ASTROLOGICAL FACTORS FOR "${categoryDisplayName}":
-SYNASTRY ASPECTS:
-${astrologicalDetails.synastryAspects}
+SYNASTRY PANEL INSIGHTS:
+${synastry}
 
-SYNASTRY HOUSE PLACEMENTS:
-${astrologicalDetails.synastryHousePlacements}
+COMPOSITE PANEL INSIGHTS:
+${composite}
 
-COMPOSITE ASPECTS:
-${astrologicalDetails.compositeAspects}
+SUMMARIZED INDIVIDUAL CONTEXTS:
+${userAName}: ${summarizedContextA}
+${userBName}: ${summarizedContextB}
 
-COMPOSITE HOUSE PLACEMENTS:
-${astrologicalDetails.compositeHousePlacements}
+TASK: Write a comprehensive 300-350 word analysis that follows this structure:
+1. Opening hook combining the scores and main relationship theme
+2. Chemistry dynamics paragraph highlighting the strongest positive connections
+3. Growth edge paragraph addressing the main challenges and how composite energy affects them
+4. ${userAName}'s perspective: How they can best contribute to this area (70 words)
+5. ${userBName}'s perspective: How they can best contribute to this area (70 words)
+6. Actionable guidance: One specific weekly practice or ritual they can implement together
 
-III. CONTEXT FOR ${userAName.toUpperCase()}:
-${contextA}
+Synthesize the panel insights above with the individual contexts to create a cohesive story. Don't repeat the synastry/composite analysis—build on it.`;
 
-IV. CONTEXT FOR ${userBName.toUpperCase()}:
-${contextB}
-
-TASK:
-Please write 3–5 paragraphs addressing the following:
-1. How does ${userAName}'s nature interact with the dynamics of "${categoryDisplayName}" in this relationship?
-2. How does ${userBName}'s nature interact with these same dynamics?
-3. What are the core strengths in this area?
-4. What are the potential growth edges or friction points?
-5. What advice would help them support or evolve this aspect of their connection?
-
-Write a synthesis, not a list. Use astrological data and psychological insight to offer grounded, helpful guidance.`;
-
-    console.log("Full Analysis Prompt: ", userPrompt);
+    console.log("Enhanced Full Analysis Prompt: ", userPrompt);
 
     const response = await client.chat.completions.create({
       model: "gpt-4o-mini",
