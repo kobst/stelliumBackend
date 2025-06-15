@@ -21,15 +21,15 @@ export const RELATIONSHIP_CATEGORY_PROMPTS = {
 
 export const ALL_RELATIONSHIP_CATEGORIES = Object.values(RELATIONSHIP_CATEGORIES);
 
-    // Define category weights
+    // Define category weights - synastry given more importance overall
     export const categoryWeights = {
-        [RELATIONSHIP_CATEGORIES.OVERALL_ATTRACTION_CHEMISTRY]: { synastry: 0.7, composite: 0.3 },
-        [RELATIONSHIP_CATEGORIES.EMOTIONAL_SECURITY_CONNECTION]: { synastry: 0.6, composite: 0.4 },
-        [RELATIONSHIP_CATEGORIES.SEX_AND_INTIMACY]: { synastry: 0.8, composite: 0.2 },
-        [RELATIONSHIP_CATEGORIES.COMMUNICATION_AND_MENTAL_CONNECTION]: { synastry: 0.5, composite: 0.5 },
-        [RELATIONSHIP_CATEGORIES.COMMITMENT_LONG_TERM_POTENTIAL]: { synastry: 0.4, composite: 0.6 },
-        [RELATIONSHIP_CATEGORIES.KARMIC_LESSONS_GROWTH]: { synastry: 0.5, composite: 0.5 },
-        [RELATIONSHIP_CATEGORIES.PRACTICAL_GROWTH_SHARED_GOALS]: { synastry: 0.4, composite: 0.6 }
+        [RELATIONSHIP_CATEGORIES.OVERALL_ATTRACTION_CHEMISTRY]: { synastry: 0.85, composite: 0.15 },
+        [RELATIONSHIP_CATEGORIES.EMOTIONAL_SECURITY_CONNECTION]: { synastry: 0.80, composite: 0.20 },
+        [RELATIONSHIP_CATEGORIES.SEX_AND_INTIMACY]: { synastry: 0.85, composite: 0.15 },
+        [RELATIONSHIP_CATEGORIES.COMMUNICATION_AND_MENTAL_CONNECTION]: { synastry: 0.80, composite: 0.25 },
+        [RELATIONSHIP_CATEGORIES.COMMITMENT_LONG_TERM_POTENTIAL]: { synastry: 0.70, composite: 0.30 },
+        [RELATIONSHIP_CATEGORIES.KARMIC_LESSONS_GROWTH]: { synastry: 0.65, composite: 0.35 },
+        [RELATIONSHIP_CATEGORIES.PRACTICAL_GROWTH_SHARED_GOALS]: { synastry: 0.70, composite: 0.30 }
     };
 
     export const aspectScoringProfiles = {

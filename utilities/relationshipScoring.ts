@@ -1,4 +1,50 @@
 // @ts-nocheck
+
+/**
+ * RELATIONSHIP COMPATIBILITY SCORING SYSTEM
+ * ========================================
+ * 
+ * This module calculates normalized compatibility scores (0-1 scale) for relationships
+ * based on astrological synastry and composite chart analysis.
+ * 
+ * SCORING METHODOLOGY:
+ * 
+ * 1. RAW SCORE CALCULATION
+ *    - Synastry Aspects: Points based on planetary aspects between two charts
+ *    - Synastry House Placements: Points for planets in partner's houses
+ *    - Composite Aspects: Points for aspects in the composite chart
+ *    - Composite House Placements: Points for planets in composite houses
+ * 
+ * 2. STATISTICAL NORMALIZATION
+ *    Each raw score is converted to a percentile (0-100) using:
+ *    - Mean and standard deviation from historical data (28 relationships)
+ *    - Z-score calculation and normal distribution CDF
+ *    - Final conversion to 0-1 scale
+ * 
+ * 3. COMPONENT BLENDING
+ *    - Synastry Total = 80% Aspects + 20% House Placements
+ *    - Composite Total = 80% Aspects + 20% House Placements
+ *    
+ * 4. OVERALL SCORE CALCULATION
+ *    Each category has specific synastry/composite weights:
+ *    - OVERALL_ATTRACTION_CHEMISTRY: 85% synastry, 15% composite
+ *    - EMOTIONAL_SECURITY_CONNECTION: 80% synastry, 20% composite
+ *    - SEX_AND_INTIMACY: 85% synastry, 15% composite
+ *    - COMMUNICATION_AND_MENTAL_CONNECTION: 80% synastry, 25% composite
+ *    - COMMITMENT_LONG_TERM_POTENTIAL: 70% synastry, 30% composite
+ *    - KARMIC_LESSONS_GROWTH: 65% synastry, 35% composite
+ *    - PRACTICAL_GROWTH_SHARED_GOALS: 70% synastry, 30% composite
+ * 
+ * 5. OUTPUT FORMAT
+ *    All scores are normalized to 0-1 scale where:
+ *    - 0.0 = Bottom percentile
+ *    - 0.5 = 50th percentile (average)
+ *    - 1.0 = Top percentile
+ *    
+ * The scoring emphasizes synastry (person-to-person dynamics) over composite
+ * (relationship as entity) as synastry better reflects interpersonal chemistry
+ * and attraction patterns.
+ */
 import path from 'path';
 import fs from 'fs';
 import { relationshipScoringStats } from './relationshipScoringStats.js';
@@ -207,17 +253,54 @@ export function scoreRelationshipCompatibility(synastryAspects, compositeChart, 
             const overallScore = ((rawScores[category].synastry.score + rawScores[category].synastryHousePlacements.score) * weights.synastry) + ((rawScores[category].composite.score + rawScores[category].compositeHousePlacements.score)     * weights.composite);
             console.log("calculateRelationshipScores: overallScore", overallScore);
 
+            // Get stats for this category from historical data
+            const categoryStats = statsData.stats[category];
+            
+            // STEP 1: Normalize each component score to percentile (0-1 scale)
+            // Using statistical normalization with mean/stdDev from 28 relationships
+            const normalizedSynastryAspects = normalizeToPercentile(
+                rawScores[category].synastry.score,
+                categoryStats.synastry.mean,
+                categoryStats.synastry.stdDev
+            ) / 100; // Convert from 0-100 to 0-1
+            
+            const normalizedSynastryHouses = normalizeToPercentile(
+                rawScores[category].synastryHousePlacements.score,
+                categoryStats.synastryHousePlacements.mean,
+                categoryStats.synastryHousePlacements.stdDev
+            ) / 100;
+            
+            const normalizedCompositeAspects = normalizeToPercentile(
+                rawScores[category].composite.score,
+                categoryStats.composite.mean,
+                categoryStats.composite.stdDev
+            ) / 100;
+            
+            const normalizedCompositeHouses = normalizeToPercentile(
+                rawScores[category].compositeHousePlacements.score,
+                categoryStats.compositeHousePlacements.mean,
+                categoryStats.compositeHousePlacements.stdDev
+            ) / 100;
+            
+            // STEP 2: Blend components with 85/15 weighting for synastry, 80/20 weighting for composite
+            // Aspects are weighted more heavily as they represent direct planetary interactions
+            const blendedSynastry = (normalizedSynastryAspects * 0.875) + (normalizedSynastryHouses * 0.125);
+            const blendedComposite = (normalizedCompositeAspects * 0.8) + (normalizedCompositeHouses * 0.2);
+            
+            // STEP 3: Calculate overall score using category-specific synastry/composite weights
+            // Synastry weighted more heavily as it reflects person-to-person dynamics
+            const overallBlended = (blendedSynastry * weights.synastry) + (blendedComposite * weights.composite);
+            
             finalScores[category] = {
-                overall: Math.round(overallScore),
-                synastry: Math.round(rawScores[category].synastry.score),
-                composite: Math.round(rawScores[category].composite.score),
-                synastryHousePlacements: Math.round(rawScores[category].synastryHousePlacements.score),
-                compositeHousePlacements: Math.round(rawScores[category].compositeHousePlacements.score)
+                overall: overallBlended,
+                synastry: normalizedSynastryAspects,
+                composite: normalizedCompositeAspects,
+                synastryHousePlacements: normalizedSynastryHouses,
+                compositeHousePlacements: normalizedCompositeHouses
             };
             
             // Log normalized scores
             if (debug) {
-                const categoryStats = statsData.stats[category];
                 debugLog.normalizedScores[category] = {
                     synastry: {
                         raw: rawScores[category].synastry.score,

@@ -1038,20 +1038,20 @@ TASK: In 1-2 paragraphs (140 words total), analyze how the composite chart revea
 
   // Full Analysis - Sequential processing using previous panels + revised deep-dive structure
   const fullAnalysis = await (async () => {
-    // Convert score to tone using the same approach as generateScoreAnalysis
+    // Convert normalized score (0-1) to tone
     const overallScore = relationshipScores.overall || 0;
     const scoreTone = 
-      overallScore >= 75 ? "high-energy" :
-      overallScore >= 60 ? "strong" :
-      overallScore >= 45 ? "moderate" :
-      overallScore >= 30 ? "gentle" :
+      overallScore >= 0.75 ? "high-energy" :
+      overallScore >= 0.60 ? "strong" :
+      overallScore >= 0.45 ? "moderate" :
+      overallScore >= 0.30 ? "gentle" :
       "nuanced";
     
     const scoreIntensity = 
-      overallScore >= 75 ? "powerfully resonant" :
-      overallScore >= 60 ? "harmoniously aligned" :
-      overallScore >= 45 ? "thoughtfully balanced" :
-      overallScore >= 30 ? "subtly connected" :
+      overallScore >= 0.75 ? "powerfully resonant" :
+      overallScore >= 0.60 ? "harmoniously aligned" :
+      overallScore >= 0.45 ? "thoughtfully balanced" :
+      overallScore >= 0.30 ? "subtly connected" :
       "consciously crafted";
 
     const systemPrompt = `You are StelliumAI, an expert in astrological relationship interpretation.
@@ -1166,11 +1166,14 @@ export async function generateScoreAnalysis(
     // Add score color context if category score is provided
     let scoreLine = "";
     if (categoryScore !== undefined) {
+      // Convert normalized score (0-1) to descriptive tone
       const scoreTone = 
-        categoryScore >= 75 ? "high" :
-        categoryScore >= 45 ? "moderate" :
+        categoryScore >= 0.75 ? "high" :
+        categoryScore >= 0.45 ? "moderate" :
         "low";
-      scoreLine = `Overall ${categoryDisplayName} score: ${categoryScore}/100 – a ${scoreTone}-vibe zone.\n`;
+      // Display as percentage for clarity
+      const scorePercentage = Math.round(categoryScore * 100);
+      scoreLine = `Overall ${categoryDisplayName} score: ${scorePercentage}th percentile – a ${scoreTone}-vibe zone.\n`;
     }
 
     const userPrompt = `${scoreLine}Top astro drivers for ${userAName} × ${userBName}:
