@@ -1,6 +1,6 @@
 // @ts-nocheck
 // import { getRawChartData, getPlanetsData } from '../services/astroDataService.js';
-import { saveUser, saveCeleb, saveCompositeChart, getPreGeneratedTransitSeries, getUserSingle } from '../services/dbService.js';
+import { saveUser, saveCeleb, saveGuestSubject, saveCompositeChart, getPreGeneratedTransitSeries, getUserSingle } from '../services/dbService.js';
 import {
   getRawChartDataEphemeris,
   getRawChartDataEphemerisNoTime,
@@ -237,6 +237,102 @@ export async function handleCelebCreationUnknownTime(req, res) {
     res.json({ celeb, saveCelebResponse });
   } catch (error) {
     console.error('Error in handleCelebCreationUnknownTime:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+export async function handleGuestSubjectCreation(req, res) {
+  try {
+    const { firstName, lastName, gender, placeOfBirth, dateOfBirth, time, lat, lon, tzone, ownerUserId } = req.body;
+    
+    if (!ownerUserId) {
+      return res.status(400).json({ error: 'ownerUserId is required' });
+    }
+    
+    // Parse date and time
+    const date = new Date(dateOfBirth);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hour = date.getHours();
+    const minute = date.getMinutes();
+    
+    // Create the data object expected by getRawChartDataEphemeris
+    const chartData = await getRawChartDataEphemeris({
+      year: year,
+      month: month,
+      day: day,
+      hour: hour,
+      min: minute,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      tzone: parseFloat(tzone)
+    });
+    
+    const guestSubject = { 
+        firstName, 
+        lastName, 
+        gender,
+        dateOfBirth, 
+        placeOfBirth, 
+        time, 
+        totalOffsetHours: tzone, 
+        birthChart: chartData
+    };
+
+    const saveGuestResponse = await saveGuestSubject(guestSubject, ownerUserId);
+    
+    res.json({ guestSubject, saveGuestResponse });
+  } catch (error) {
+    console.error('Error in handleGuestSubjectCreation:', error);
+    res.status(500).send('Server error');
+  }
+};
+
+export async function handleGuestSubjectCreationUnknownTime(req, res) {
+  try {
+    const { firstName, lastName, gender, placeOfBirth, dateOfBirth, lat, lon, tzone, ownerUserId } = req.body;
+    
+    if (!ownerUserId) {
+      return res.status(400).json({ error: 'ownerUserId is required' });
+    }
+
+    const date = new Date(dateOfBirth);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+
+    // Generate chart with 12:00 noon time
+    const baseChartData = await getRawChartDataEphemeris({
+      year,
+      month,
+      day,
+      hour: 12,  // 12 noon
+      min: 0,
+      lat: parseFloat(lat),
+      lon: parseFloat(lon),
+      tzone: parseFloat(tzone)
+    });
+
+    // Remove house-dependent data for unknown time
+    const chartData = getRawChartDataEphemerisNoTime(baseChartData);
+
+    const guestSubject = {
+      firstName,
+      lastName,
+      gender,
+      dateOfBirth,
+      placeOfBirth,
+      totalOffsetHours: tzone,
+      birthTimeUnknown: true,
+      birthChart: chartData
+    };
+
+    const saveGuestResponse = await saveGuestSubject(guestSubject, ownerUserId);
+
+    res.json({ guestSubject, saveGuestResponse });
+  } catch (error) {
+    console.error('Error in handleGuestSubjectCreationUnknownTime:', error);
     res.status(500).send('Server error');
   }
 };

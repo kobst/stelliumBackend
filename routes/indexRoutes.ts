@@ -7,6 +7,8 @@ import {
     handleUserCreationUnknownTime,
     handleCelebCreation,
     handleCelebCreationUnknownTime,
+    handleGuestSubjectCreation,
+    handleGuestSubjectCreationUnknownTime,
     handleCreateRelationship,
     handleGetTransitWindows
 } from '../controllers/astroDataController.js';
@@ -35,6 +37,7 @@ import {
     handleGetUsers,
     handleGetCelebs,
     handleGetUserSingle,
+    handleGetUserSubjects,
     handleGetCompositeCharts,
     handleGetRelationshipScore,
     handleFetchRelationshipAnalysis,
@@ -64,6 +67,7 @@ import {
 router.post('/getUser', handleGetUserSingle);
 router.post('/getUsers', handleGetUsers);
 router.post('/getCelebs', handleGetCelebs);
+router.post('/getUserSubjects', handleGetUserSubjects);
 
 router.post('/getCompositeCharts', handleGetCompositeCharts);
 router.post('/saveCompositeChartProfile', handleSaveCompositeChartProfile);
@@ -78,6 +82,8 @@ router.post('/createUser', handleUserCreation);
 router.post('/createUserUnknownTime', handleUserCreationUnknownTime);
 router.post('/createCeleb', handleCelebCreation);
 router.post('/createCelebUnknownTime', handleCelebCreationUnknownTime);
+router.post('/createGuestSubject', handleGuestSubjectCreation);
+router.post('/createGuestSubjectUnknownTime', handleGuestSubjectCreationUnknownTime);
 router.post('/createRelationship', handleCreateRelationship);
 router.post('/getRelationshipScore', handleGetRelationshipScore);
 router.post('/fetchRelationshipAnalysis', handleFetchRelationshipAnalysis);

@@ -62,6 +62,7 @@ let retrogradesCollection: Collection<any>;
  */
 let userCollection: Collection<any>;
 let celebCollection: Collection<any>;
+let subjectsCollection: Collection<any>;
 let birthChartInterpretations: Collection<any>;
 let userTransitAspectsCollection: Collection<any>;
 let dailyTransitInterpretations: Collection<any>;
@@ -87,6 +88,7 @@ async function getDb(): Promise<Db> {
     retrogradesCollection = db.collection('retrogrades');
     userCollection = db.collection('users');
     celebCollection = db.collection('celebs');
+    subjectsCollection = db.collection('subjects');
     birthChartInterpretations = db.collection('user_birth_chart_interpretation');
     userTransitAspectsCollection = db.collection('user_transit_aspects');
     dailyTransitInterpretations = db.collection('daily_transit_interpretations');
@@ -378,7 +380,9 @@ export async function getBirthChart(userId: string): Promise<any> {
 
 export async function getUsers(): Promise<any[]> {
     try {
-        const users = await userCollection.find({})
+        const users = await subjectsCollection.find({ 
+            $or: [{ kind: "accountSelf" }, { isCelebrity: false }] 
+        })
             .limit(50)
             .toArray();
         return users;
@@ -390,7 +394,9 @@ export async function getUsers(): Promise<any[]> {
 
 export async function getCelebs(): Promise<any[]> {
     try {
-        const celebs = await celebCollection.find({})
+        const celebs = await subjectsCollection.find({ 
+            $or: [{ kind: "celebrity" }, { isCelebrity: true }] 
+        })
             .limit(50)
             .toArray();
         return celebs;
@@ -404,19 +410,8 @@ export async function getCelebs(): Promise<any[]> {
 export async function getUserSingle(userId: string): Promise<any> {
     console.log("getUserSingle", { userId });
     try {
-        // First try to find in users collection
-        let user = await userCollection.findOne({ _id: new ObjectId(userId) });
-        
-        // If not found in users, try celebs collection
-        if (!user) {
-            user = await celebCollection.findOne({ _id: new ObjectId(userId) });
-            if (user) {
-                // Add a flag to indicate this is a celebrity
-                user._isCelebrity = true;
-            }
-        }
-        
-        return user;
+        const subject = await subjectsCollection.findOne({ _id: new ObjectId(userId) });
+        return subject;
     } catch (error: unknown) {
         console.error("Error in getUserSingle:", error);
         throw error;
@@ -426,7 +421,10 @@ export async function getUserSingle(userId: string): Promise<any> {
 export async function getCelebSingle(celebId: string): Promise<any> {
     console.log("getCelebSingle", { celebId });
     try {
-        const celeb = await celebCollection.findOne({ _id: new ObjectId(celebId) });
+        const celeb = await subjectsCollection.findOne({ 
+            _id: new ObjectId(celebId),
+            $or: [{ kind: "celebrity" }, { isCelebrity: true }]
+        });
         return celeb;
     } catch (error: unknown) {
         console.error("Error in getCelebSingle:", error);
@@ -463,16 +461,27 @@ export async function getCompositeCharts(): Promise<any[]> {
  */
 export async function saveUser(user: any): Promise<any> {
     try {
+        // Add subjects collection fields
+        const subjectData = {
+            ...user,
+            kind: "accountSelf",
+            ownerUserId: null,
+            isCelebrity: false,
+            isReadOnly: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
         // Try to insert the user
-        const result = await userCollection.insertOne(user);
+        const result = await subjectsCollection.insertOne(subjectData);
         return result;
     } catch (error: any) {
         // If it's a duplicate key error on email, update the existing user instead
         if (error.code === 11000 && error.keyPattern?.email) {
             console.log(`User with email ${user.email} already exists. Updating instead.`);
-            const updateResult = await userCollection.findOneAndUpdate(
+            const updateResult = await subjectsCollection.findOneAndUpdate(
                 { email: user.email },
-                { $set: user },
+                { $set: { ...user, updatedAt: new Date() } },
                 { returnDocument: 'after' }
             );
             return {
@@ -490,11 +499,59 @@ export async function saveUser(user: any): Promise<any> {
 
 export async function saveCeleb(celeb: any): Promise<any> {
     try {
-        // Simply insert the celeb without email checking
-        const result = await celebCollection.insertOne(celeb);
+        // Add subjects collection fields for celebrity
+        const subjectData = {
+            ...celeb,
+            kind: "celebrity",
+            ownerUserId: null,
+            isCelebrity: true,
+            isReadOnly: true,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
+        // Insert the celeb into subjects collection
+        const result = await subjectsCollection.insertOne(subjectData);
         return result;
     } catch (error: any) {
         console.error('Error saving celeb:', error);
+        throw error;
+    }
+}
+
+export async function saveGuestSubject(subject: any, ownerUserId: string): Promise<any> {
+    try {
+        // Add subjects collection fields for guest subject
+        const subjectData = {
+            ...subject,
+            kind: "guest",
+            ownerUserId: new ObjectId(ownerUserId),
+            isCelebrity: false,
+            isReadOnly: false,
+            createdAt: new Date(),
+            updatedAt: new Date()
+        };
+        
+        // Insert the guest subject into subjects collection
+        const result = await subjectsCollection.insertOne(subjectData);
+        return result;
+    } catch (error: any) {
+        console.error('Error saving guest subject:', error);
+        throw error;
+    }
+}
+
+export async function getUserSubjects(ownerUserId: string): Promise<any[]> {
+    try {
+        const subjects = await subjectsCollection.find({ 
+            ownerUserId: new ObjectId(ownerUserId),
+            kind: "guest"
+        })
+            .limit(50)
+            .toArray();
+        return subjects;
+    } catch (error: unknown) {
+        console.error('Error fetching user subjects:', error);
         throw error;
     }
 }

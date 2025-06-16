@@ -7,6 +7,7 @@ import {
     getUsers,
     getCelebs,
     getUserSingle,
+    getUserSubjects,
     saveRelationshipScoring,
     fetchRelationshipAnalysisByCompositeId,
     saveRelationshipAnalysis
@@ -36,6 +37,20 @@ export async function handleGetCelebs(req, res) {
     try {
         const celebs = await getCelebs();
         res.status(200).json(celebs);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export async function handleGetUserSubjects(req, res) {
+    console.log("handleGetUserSubjects")
+    try {
+        const { ownerUserId } = req.body;
+        if (!ownerUserId) {
+            return res.status(400).json({ error: 'ownerUserId is required' });
+        }
+        const subjects = await getUserSubjects(ownerUserId);
+        res.status(200).json(subjects);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
