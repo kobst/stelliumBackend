@@ -3,6 +3,7 @@
 import {
     saveCompositeChart,
     getCompositeCharts,
+    getUserCompositeCharts,
     saveSynastryChartInterpretation,
     getUsers,
     getCelebs,
@@ -51,6 +52,20 @@ export async function handleGetUserSubjects(req, res) {
         }
         const subjects = await getUserSubjects(ownerUserId);
         res.status(200).json(subjects);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+};
+
+export async function handleGetUserCompositeCharts(req, res) {
+    console.log("handleGetUserCompositeCharts")
+    try {
+        const { ownerUserId } = req.body;
+        if (!ownerUserId) {
+            return res.status(400).json({ error: 'ownerUserId is required' });
+        }
+        const compositeCharts = await getUserCompositeCharts(ownerUserId);
+        res.status(200).json(compositeCharts);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }

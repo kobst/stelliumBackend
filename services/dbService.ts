@@ -556,10 +556,35 @@ export async function getUserSubjects(ownerUserId: string): Promise<any[]> {
     }
 }
 
-export async function saveCompositeChart(compositeChart: any): Promise<any> {
-    // console.log("saveCompositeChart", compositeChart)
-    const result = await compositeChartCollection.insertOne(compositeChart);
+export async function saveCompositeChart(compositeChart: any, ownerUserId?: string): Promise<any> {
+    // Add ownership tracking if ownerUserId is provided
+    const chartData = {
+        ...compositeChart,
+        ownerUserId: ownerUserId ? new ObjectId(ownerUserId) : null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+    };
+    
+    const result = await compositeChartCollection.insertOne(chartData);
     return result;
+}
+
+export async function getUserCompositeCharts(ownerUserId: string): Promise<any[]> {
+    try {
+        const compositeCharts = await compositeChartCollection.find({ 
+            $or: [
+                { ownerUserId: new ObjectId(ownerUserId) },
+                { userA_id: new ObjectId(ownerUserId) },
+                { userB_id: new ObjectId(ownerUserId) }
+            ]
+        })
+            .limit(50)
+            .toArray();
+        return compositeCharts;
+    } catch (error: unknown) {
+        console.error('Error fetching user composite charts:', error);
+        throw error;
+    }
 }
 
 export async function saveRelationshipLog(relationshipLog: any): Promise<any> {

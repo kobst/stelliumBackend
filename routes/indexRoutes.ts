@@ -39,6 +39,7 @@ import {
     handleGetUserSingle,
     handleGetUserSubjects,
     handleGetCompositeCharts,
+    handleGetUserCompositeCharts,
     handleGetRelationshipScore,
     handleFetchRelationshipAnalysis,
     handleGenerateRelationshipAnalysis
@@ -70,6 +71,7 @@ router.post('/getCelebs', handleGetCelebs);
 router.post('/getUserSubjects', handleGetUserSubjects);
 
 router.post('/getCompositeCharts', handleGetCompositeCharts);
+router.post('/getUserCompositeCharts', handleGetUserCompositeCharts);
 router.post('/saveCompositeChartProfile', handleSaveCompositeChartProfile);
 router.post('/saveSynastryChartInterpretation', handleSaveSynastryChartInterpretation);
 

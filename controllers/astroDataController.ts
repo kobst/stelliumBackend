@@ -74,7 +74,7 @@ export async function handleUserCreation(req, res) {
 
 
 export const handleCreateRelationship = async (req, res) => {
-  const { userA, userB } = req.body;
+  const { userA, userB, ownerUserId } = req.body;
   const birthChartA = userA.birthChart
   const birthChartB = userB.birthChart
 
@@ -95,9 +95,13 @@ export const handleCreateRelationship = async (req, res) => {
       compositeChart
   };
 
-  // console.log("saveCompositeChart", relationshipProfile);
+  // Determine ownership: use provided ownerUserId, or default to userA if userA is accountSelf
+  let chartOwnerUserId = ownerUserId;
+  if (!chartOwnerUserId && userA.kind === "accountSelf") {
+    chartOwnerUserId = userA._id;
+  }
 
-  const result = await saveCompositeChart(relationshipProfile);
+  const result = await saveCompositeChart(relationshipProfile, chartOwnerUserId);
   console.log("insertedId: ", result.insertedId);
 
   res.status(200).json({ relationshipProfile });
