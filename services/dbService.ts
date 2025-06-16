@@ -9,7 +9,6 @@ import {
   CompositeChartInterpretationDocument,
   HoroscopeDocument,
   TransitEphemerisDocument,
-  RelationshipLogDocument,
   ChatThreadDocument,
   BirthChartInterpretationDocument
 } from '../types/database.js';
@@ -40,9 +39,6 @@ async function getClient(): Promise<MongoClient> {
 }
 // Database and collection getters with proper connection handling
 let db: Db;
-let transitsCollection: Collection<any>;
-let aspectsCollection: Collection<any>;
-let retrogradesCollection: Collection<any>;
 /**
  * Users Collection - TESTING PHASE ONLY
  * 
@@ -64,12 +60,8 @@ let userCollection: Collection<any>;
 let celebCollection: Collection<any>;
 let subjectsCollection: Collection<any>;
 let birthChartInterpretations: Collection<any>;
-let userTransitAspectsCollection: Collection<any>;
-let dailyTransitInterpretations: Collection<any>;
-let weeklyTransitInterpretations: Collection<any>;
 let compositeChartCollection: Collection<any>;
 let compositeChartInterpretations: Collection<any>;
-let relationshipLogCollection: Collection<any>;
 let birthChartAnalysisCollection: Collection<any>;
 let relationshipAnalysisCollection: Collection<any>;
 let chatThreadCollectionBirthChartAnalysis: Collection<any>;
@@ -83,19 +75,12 @@ async function getDb(): Promise<Db> {
     db = client.db('stellium');
     
     // Initialize collections
-    transitsCollection = db.collection('daily_transits');
-    aspectsCollection = db.collection('daily_aspects');
-    retrogradesCollection = db.collection('retrogrades');
     userCollection = db.collection('users');
     celebCollection = db.collection('celebs');
     subjectsCollection = db.collection('subjects');
     birthChartInterpretations = db.collection('user_birth_chart_interpretation');
-    userTransitAspectsCollection = db.collection('user_transit_aspects');
-    dailyTransitInterpretations = db.collection('daily_transit_interpretations');
-    weeklyTransitInterpretations = db.collection('weekly_transit_interpretations');
     compositeChartCollection = db.collection('composite_charts');
     compositeChartInterpretations = db.collection('composite_chart_interpretations');
-    relationshipLogCollection = db.collection('relationship_logs');
     birthChartAnalysisCollection = db.collection('birth_chart_analysis');
     relationshipAnalysisCollection = db.collection('relationship_analysis');
     chatThreadCollectionBirthChartAnalysis = db.collection('chat_threads_birth_chart_analysis');
@@ -167,10 +152,6 @@ export async function initializeDatabase(): Promise<void> {
         await createIndexSafely(celebCollection, { _id: 1 });
         await createIndexSafely(celebCollection, { firstName: 1, lastName: 1 });
         
-        // Transit collection indexes
-        await createIndexSafely(transitsCollection, { date: 1 });
-        await createIndexSafely(aspectsCollection, { "date_range.0": 1, "date_range.1": 1 });
-        await createIndexSafely(retrogradesCollection, { "date_range.0": 1, "date_range.1": 1 });
         
         // Birth chart analysis indexes
         await createIndexSafely(birthChartAnalysisCollection, { userId: 1 });
@@ -204,152 +185,6 @@ export async function initializeDatabase(): Promise<void> {
 
 
 
-export async function getDailyTransits(date: string | Date): Promise<any[]> {
-    await getDb();
-    const inputDate = new Date(date);
-    const closestTransit = await transitsCollection.findOne({ date: { $gte: inputDate } }, { sort: { date: 1 } });
-    return closestTransit ? closestTransit.transits : [];
-};
-
-export async function getPeriodTransitsObject(startDate: string | Date, endDate: string | Date): Promise<Record<string, any[]>> {
-    const query = {
-        date: {
-            $gte: new Date(startDate),
-            $lte: new Date(endDate)
-        }
-    };
-    const matchingTransits = await transitsCollection.find(query).toArray();
-    const transitsData = matchingTransits.reduce((acc: Record<string, any>, transit: any) => {
-        const dateKey = transit.date.toISOString();
-        acc[dateKey] = transit.transits.map((planet: Planet) => ({
-            name: planet.name,
-            fullDegree: planet.fullDegree,
-            normDegree: planet.normDegree,
-            speed: planet.speed,
-            isRetro: planet.isRetro.toString(),
-            sign: planet.sign,
-            date: dateKey
-        }));
-        return acc;
-    }, {});
-    return transitsData;
-};
-
-
-// get all transits from the general transit collection for a given date range
-export async function getPeriodTransits(startDate: string | Date, endDate: string | Date): Promise<any[]> {
-    const start = new Date(startDate);
-    start.setDate(start.getDate() - 7); //
-    start.setUTCHours(0, 0, 0, 0);
-    const end = new Date(endDate);
-    end.setUTCHours(23, 59, 59, 999);
-
-    const query = {
-        date: {
-            $gte: start,
-            $lte: end
-        }
-    };
-    const matchingAspects = await transitsCollection.find(query).toArray();
-    return matchingAspects
-};
-
-
-// get all aspects from the general transit collection db for a given date
-export async function getDailyAspects(date: string | Date): Promise<any[]> {
-    const inputDate = new Date(date);
-    const matchingAspects = await aspectsCollection.find({
-        $and: [
-            { "date_range.0": { $lte: inputDate } },
-            { "date_range.1": { $gte: inputDate } }
-        ]
-    }).toArray();
-    return matchingAspects;
-}
-
-// get aspects from the general transit collection given a start and end date
-export async function getPeriodAspects(startDate: string | Date, endDate: string | Date): Promise<any[]> {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const matchingAspects = await aspectsCollection.find({
-        $and: [
-            { "date_range.0": { $lte: end } },   // Start of the aspect's date range is before or at the end date
-            { "date_range.1": { $gte: start } }  // End of the aspect's date range is after or at the start date
-        ]
-    }).toArray();
-    return matchingAspects;
-}
-
-// get all retrogrades from the retrogrades collection for a given date
-export async function getRetrogrades(date: string | Date): Promise<any[]> {
-    try {
-        const inputDate = new Date(date);
-        console.log("Input Date:", inputDate);
-        
-        const retrogrades = await retrogradesCollection.find({
-            $and: [
-                { "date_range.0": { $lte: inputDate } },
-                { "date_range.1": { $gte: inputDate } }
-            ]
-        }).toArray();
-        
-        return retrogrades;
-    } catch (error: unknown) {
-        console.error("Error fetching retrogrades:", error);
-        throw new Error("Unable to fetch retrogrades");
-    }
-};
-
-
-// get all retrogrades from the retrogrades collection for a given date range
-export async function getRetrogradesForDateRange(startDate: string | Date, endDate: string | Date): Promise<any[]> {
-    try {
-        const inputStartDate = new Date(startDate);
-        const inputEndDate = new Date(endDate);
-        console.log("Input Start Date:", inputStartDate);
-        console.log("Input End Date:", inputEndDate);
-        
-        const retrogrades = await retrogradesCollection.find({
-            $or: [
-                { $and: [
-                    { "date_range.0": { $gte: inputStartDate } },
-                    { "date_range.0": { $lte: inputEndDate } }
-                ] },
-                { $and: [
-                    { "date_range.1": { $gte: inputStartDate } },
-                    { "date_range.1": { $lte: inputEndDate } }
-                ] },
-                { $and: [
-                    { "date_range.0": { $lte: inputStartDate } },
-                    { "date_range.1": { $gte: inputEndDate } }
-                ] }
-            ]
-        }).toArray();
-        
-        return retrogrades;
-    } catch (error: unknown) {
-        console.error("Error fetching retrogrades for date range:", error);
-        throw new Error("Unable to fetch retrogrades for date range");
-    }
-};
-
-// get aspects from the general transit collection given a start and end date for the requested birthchart
-export async function getAspectsForChart(startDate: string | Date, endDate: string | Date, birthChartId: string): Promise<any[]> {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const matchingAspects = await aspectsCollection.find({
-        $and: [
-            { birthChartId: birthChartId },
-            {
-                $or: [
-                    { "date_range.0": { $lte: end } },
-                    { "date_range.1": { $gte: start } }
-                ]
-            }
-        ]
-    }).toArray();
-    return matchingAspects;
-}
 
 
 // TODO: add error handling for when the user does not have a birthchart
@@ -587,10 +422,6 @@ export async function getUserCompositeCharts(ownerUserId: string): Promise<any[]
     }
 }
 
-export async function saveRelationshipLog(relationshipLog: any): Promise<any> {
-    const result = await relationshipLogCollection.insertOne(relationshipLog);
-    return result;
-}
 
 export async function saveRelationshipScoring(relationshipScoringLog: any): Promise<any> {
     try {
@@ -683,26 +514,6 @@ export async function fetchRelationshipAnalysisByCompositeId(compositeChartId: s
 
 
 
-export async function saveUserTransitAspects(groupedAspects: any[], userId: string): Promise<void> {
-    const savePromises = groupedAspects.map((aspect: any) => 
-        userTransitAspectsCollection.insertOne({ ...aspect, userId })
-    );
-    await Promise.all(savePromises);
-}
-
-// get aspects from the general transit collection given a start and end date
-export async function getPeriodAspectsForUser(startDate: string | Date, endDate: string | Date, userId: string): Promise<any[]> {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
-    const matchingAspects = await userTransitAspectsCollection.find({
-        userId: userId,
-        $or: [
-            { "date_range.0": { $lte: end } },   // Start of the aspect's date range is before or at the end date
-            { "date_range.1": { $gte: start } }  // End of the aspect's date range is after or at the start date
-        ]
-    }).toArray();
-    return matchingAspects;
-}
 
 export async function saveBirthChartInterpretation(userId: string, heading: string, promptDescription: string, interpretation: string): Promise<any> {
     console.log("saveBirthChartInterpretation", { userId, heading, promptDescription, interpretation });
@@ -918,99 +729,6 @@ export async function getSynastryChartInterpretation(synastryChartId: string): P
 }
 
 
-export async function saveDailyTransitInterpretationData(date: string | Date, combinedAspectsDescription: any[], dailyTransitInterpretation: string): Promise<any> {
-
-    // Convert the date string to a Date object
-    const isoDate = new Date(date);
-    // Set the time to 00:00:00
-    isoDate.setUTCHours(0, 0, 0, 0);
-
-    const document = {
-        date: isoDate,
-        combinedDescription: combinedAspectsDescription,
-        dailyTransitInterpretation: dailyTransitInterpretation
-    };
-
-    const result = await dailyTransitInterpretations.updateOne(
-        { date: isoDate },
-        { $set: document },
-        { upsert: true }
-    );
-
-    // If a new document was inserted, we need to fetch it to get the _id
-    if (result.upsertedId) {
-        const insertedDocument = await dailyTransitInterpretations.findOne({ _id: result.upsertedId });
-        return insertedDocument;
-    } else {
-        // If the document was updated, fetch and return the updated document
-        const updatedDocument = await dailyTransitInterpretations.findOne({ date: isoDate });
-        return updatedDocument;
-    }
-}
-
-
-export async function getDailyTransitInterpretationData(date: string | Date): Promise<any[]> {
-    const startDate = new Date(date);
-    startDate.setUTCHours(0, 0, 0, 0);
-
-    const endDate = new Date(startDate);
-    endDate.setUTCMonth(endDate.getUTCMonth() + 1);
-
-    const documents = await dailyTransitInterpretations.find({
-        date: {
-            $gte: startDate,
-            $lt: endDate
-        }
-    }).sort({ date: 1 }).toArray();
-
-    return documents;
-}
-
-
-export async function saveWeeklyTransitInterpretationData(date: string | Date, combinedAspectsDescription: any[], weeklyTransitInterpretation: string, sign: string): Promise<any> {
-    const isoDate = new Date(date);
-    isoDate.setUTCHours(0, 0, 0, 0);
-
-    const interpretation = {
-        sign,
-        combinedDescription: Array.isArray(combinedAspectsDescription) ? combinedAspectsDescription : [combinedAspectsDescription],
-        weeklyTransitInterpretation
-    };
-
-
-    const result = await weeklyTransitInterpretations.updateOne(
-        { date: isoDate },
-        { 
-            $setOnInsert: { date: isoDate },
-            $push: { weeklyInterpretations: interpretation }
-        } as any,
-        { upsert: true }
-    );
-
-    if (result.upsertedId) {
-        return await weeklyTransitInterpretations.findOne({ _id: result.upsertedId });
-    } else {
-        return await weeklyTransitInterpretations.findOne({ date: isoDate });
-    }
-
-}
-
-export async function getWeeklyTransitInterpretationData(date: string | Date): Promise<any[]> {
-    const startDate = new Date(date);
-    startDate.setUTCHours(0, 0, 0, 0);
-
-    const endDate = new Date(startDate);
-    endDate.setUTCMonth(endDate.getUTCMonth() + 1);
-
-    const documents = await weeklyTransitInterpretations.find({
-        date: {
-            $gte: startDate,
-            $lt: endDate
-        }
-    }).sort({ date: 1 }).toArray();
-
-    return documents;
-}       
 
 
 export async function saveBasicAnalysis(userId: string, analysis: any) {

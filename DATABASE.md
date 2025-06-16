@@ -11,7 +11,7 @@ As of the latest version, the system uses a unified `subjects` collection that c
 ## Database Connection Configuration
 
 - **Database Name**: `stellium`
-- **Total Collections**: 19 (including 1 unified subjects collection)
+- **Total Collections**: 11 (including 1 unified subjects collection)
 - **Connection Pool**: 
   - Max Pool Size: 10
   - Min Pool Size: 2
@@ -296,68 +296,7 @@ As of the latest version, the system uses a unified `subjects` collection that c
 
 ### Transit and Ephemeris Collections
 
-#### 8. `daily_transits`
-**Purpose**: Pre-calculated daily planetary positions
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  date: Date,
-  transits: [{
-    name: string,             // Planet name
-    fullDegree: number,       // Absolute degree (0-360)
-    normDegree: number,       // Normalized degree within sign
-    speed: number,
-    isRetro: boolean,
-    sign: string
-  }]
-}
-```
-
-**Indexes**:
-- `{ date: 1 }` - Index on date for efficient time-based queries
-
-#### 9. `daily_aspects`
-**Purpose**: Pre-calculated planetary aspects for each day
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  planet1: string,
-  planet2: string,
-  aspectType: string,
-  date_range: [Date, Date],   // [start, end] of aspect
-  exactDate: Date,
-  orb: number,
-  birthChartId?: string       // Optional reference to specific chart
-}
-```
-
-**Indexes**:
-- `{ "date_range.0": 1, "date_range.1": 1 }` - Compound index on date range
-
-#### 10. `retrogrades`
-**Purpose**: Planetary retrograde periods
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  planet: string,
-  date_range: [Date, Date],   // [retrograde start, retrograde end]
-  stationaryDates: {
-    retrograde: Date,         // Station retrograde date
-    direct: Date              // Station direct date
-  }
-}
-```
-
-**Indexes**:
-- `{ "date_range.0": 1, "date_range.1": 1 }` - Compound index on date range
-
-#### 11. `transit_ephemeris`
+#### 8. `transit_ephemeris`
 **Purpose**: Pre-generated transit series data for efficient lookups
 
 **Schema**:
@@ -380,7 +319,7 @@ As of the latest version, the system uses a unified `subjects` collection that c
 
 ### Interpretation Collections
 
-#### 12. `user_birth_chart_interpretation`
+#### 9. `user_birth_chart_interpretation`
 **Purpose**: Stores individual birth chart interpretations by topic
 
 **Schema**:
@@ -400,53 +339,7 @@ As of the latest version, the system uses a unified `subjects` collection that c
 **Relationships**:
 - References `users` via `userId`
 
-#### 13. `user_transit_aspects`
-**Purpose**: User-specific transit aspects
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  userId: ObjectId,
-  date_range?: [Date, Date],
-  transitAspects?: Array,
-  // Additional aspect data fields
-}
-```
-
-**Relationships**:
-- References `users` via `userId`
-
-#### 14. `daily_transit_interpretations`
-**Purpose**: AI-generated interpretations for daily transits
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  date: Date,
-  combinedDescription: Array,
-  dailyTransitInterpretation: string
-}
-```
-
-#### 15. `weekly_transit_interpretations`
-**Purpose**: AI-generated weekly horoscope interpretations by sign
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  date: Date,
-  weeklyInterpretations: [{
-    sign: string,
-    combinedDescription: Array,
-    weeklyTransitInterpretation: string
-  }]
-}
-```
-
-#### 16. `horoscopes`
+#### 10. `horoscopes`
 **Purpose**: Generated horoscopes for users
 
 **Schema**:
@@ -474,7 +367,7 @@ As of the latest version, the system uses a unified `subjects` collection that c
 
 ### Communication Collections
 
-#### 17. `chat_threads_birth_chart_analysis`
+#### 11. `chat_threads_birth_chart_analysis`
 **Purpose**: Chat conversation history for birth chart analysis
 
 **Schema**:
@@ -500,7 +393,7 @@ As of the latest version, the system uses a unified `subjects` collection that c
 - References `users` via `userId`
 - References `birth_chart_analysis` via `birthChartAnalysisId`
 
-#### 18. `chat_threads_relationship_analysis`
+#### 12. `chat_threads_relationship_analysis`
 **Purpose**: Chat conversation history for relationship analysis
 
 **Schema**:
@@ -528,25 +421,6 @@ As of the latest version, the system uses a unified `subjects` collection that c
 
 ### Logging Collections
 
-#### 19. `relationship_logs`
-**Purpose**: Audit log for relationship-related actions
-
-**Schema**:
-```typescript
-{
-  _id: ObjectId,
-  userAId: ObjectId,
-  userBId: ObjectId,
-  compositeChartId: ObjectId,
-  action: string,
-  details: any,               // Flexible object for action details
-  timestamp: Date
-}
-```
-
-**Relationships**:
-- References `users` via `userAId` and `userBId`
-- References `composite_charts` via `compositeChartId`
 
 ## Data Relationships Diagram
 
@@ -567,14 +441,7 @@ subjects (unified collection)
 users → migrated to subjects with kind="accountSelf"
 celebs → migrated to subjects with kind="celebrity"
 
-daily_transits ←→ daily_aspects ←→ retrogrades
-                        │
-                        └→ user_transit_aspects
-
 transit_ephemeris (standalone pre-calculated data)
-
-daily_transit_interpretations (standalone)
-weekly_transit_interpretations (standalone)
 ```
 
 ## Key Design Patterns
